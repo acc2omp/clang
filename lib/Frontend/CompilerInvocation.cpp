@@ -2451,6 +2451,9 @@ static void ParseLangArgs(LangOptions &Opts, ArgList &Args, InputKind IK,
     }
   }
 
+  // Check if -fopenacc is specified.
+  Opts.OpenACC = Args.hasArg(options::OPT_fopenacc) ? 1 : 0;
+
   // Check if -fopenmp is specified.
   Opts.OpenMP = Args.hasArg(options::OPT_fopenmp) ? 1 : 0;
   // Check if -fopenmp-simd is specified.
