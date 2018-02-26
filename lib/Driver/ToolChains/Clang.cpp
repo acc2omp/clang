@@ -3935,7 +3935,7 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddLastArg(CmdArgs, options::OPT_fno_elide_type);
 
   // Forward flags for OpenACC.
-  if (Args.hasFlag(options::OPT_fopenacc, false)) {
+  if (Args.hasFlag(options::OPT_fopenacc, options::OPT_fno_openacc, false)) {
     CmdArgs.push_back("-fopenacc");
   }
 
