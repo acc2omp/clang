@@ -12,8 +12,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_BASIC_OPENMPKINDS_H
-#define LLVM_CLANG_BASIC_OPENMPKINDS_H
+#ifndef LLVM_CLANG_BASIC_OPENACCKINDS_H
+#define LLVM_CLANG_BASIC_OPENACCKINDS_H
 
 #include "llvm/ADT/StringRef.h"
 
@@ -21,9 +21,9 @@ namespace clang {
 
 /// \brief OpenACC directives.
 enum OpenACCDirectiveKind {
-#define OPENMP_DIRECTIVE(Name) \
+#define OPENACC_DIRECTIVE(Name) \
   ACCD_##Name,
-#define OPENMP_DIRECTIVE_EXT(Name, Str) \
+#define OPENACC_DIRECTIVE_EXT(Name, Str) \
   ACCD_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCD_unknown
@@ -31,7 +31,7 @@ enum OpenACCDirectiveKind {
 
 /// \brief OpenACC clauses.
 enum OpenACCClauseKind {
-#define OPENMP_CLAUSE(Name, Class) \
+#define OPENACC_CLAUSE(Name, Class) \
   ACCC_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_threadprivate,
@@ -41,7 +41,7 @@ enum OpenACCClauseKind {
 
 /// \brief OpenACC attributes for 'default' clause.
 enum OpenACCDefaultClauseKind {
-#define OPENMP_DEFAULT_KIND(Name) \
+#define OPENACC_DEFAULT_KIND(Name) \
   ACCC_DEFAULT_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_DEFAULT_unknown
@@ -49,7 +49,7 @@ enum OpenACCDefaultClauseKind {
 
 /// \brief OpenACC attributes for 'proc_bind' clause.
 enum OpenACCProcBindClauseKind {
-#define OPENMP_PROC_BIND_KIND(Name) \
+#define OPENACC_PROC_BIND_KIND(Name) \
   ACCC_PROC_BIND_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_PROC_BIND_unknown
@@ -57,7 +57,7 @@ enum OpenACCProcBindClauseKind {
 
 /// \brief OpenACC attributes for 'schedule' clause.
 enum OpenACCScheduleClauseKind {
-#define OPENMP_SCHEDULE_KIND(Name) \
+#define OPENACC_SCHEDULE_KIND(Name) \
   ACCC_SCHEDULE_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_SCHEDULE_unknown
@@ -66,7 +66,7 @@ enum OpenACCScheduleClauseKind {
 /// \brief OpenACC modifiers for 'schedule' clause.
 enum OpenACCScheduleClauseModifier {
   ACCC_SCHEDULE_MODIFIER_unknown = ACCC_SCHEDULE_unknown,
-#define OPENMP_SCHEDULE_MODIFIER(Name) \
+#define OPENACC_SCHEDULE_MODIFIER(Name) \
   ACCC_SCHEDULE_MODIFIER_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_SCHEDULE_MODIFIER_last
@@ -74,7 +74,7 @@ enum OpenACCScheduleClauseModifier {
 
 /// \brief OpenACC attributes for 'depend' clause.
 enum OpenACCDependClauseKind {
-#define OPENMP_DEPEND_KIND(Name) \
+#define OPENACC_DEPEND_KIND(Name) \
   ACCC_DEPEND_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_DEPEND_unknown
@@ -82,7 +82,7 @@ enum OpenACCDependClauseKind {
 
 /// \brief OpenACC attributes for 'linear' clause.
 enum OpenACCLinearClauseKind {
-#define OPENMP_LINEAR_KIND(Name) \
+#define OPENACC_LINEAR_KIND(Name) \
   ACCC_LINEAR_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_LINEAR_unknown
@@ -90,7 +90,7 @@ enum OpenACCLinearClauseKind {
 
 /// \brief OpenACC mapping kind for 'map' clause.
 enum OpenACCMapClauseKind {
-#define OPENMP_MAP_KIND(Name) \
+#define OPENACC_MAP_KIND(Name) \
   ACCC_MAP_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_MAP_unknown
@@ -98,14 +98,14 @@ enum OpenACCMapClauseKind {
 
 /// \brief OpenACC attributes for 'dist_schedule' clause.
 enum OpenACCDistScheduleClauseKind {
-#define OPENMP_DIST_SCHEDULE_KIND(Name) ACCC_DIST_SCHEDULE_##Name,
+#define OPENACC_DIST_SCHEDULE_KIND(Name) ACCC_DIST_SCHEDULE_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_DIST_SCHEDULE_unknown
 };
 
 /// \brief OpenACC attributes for 'defaultmap' clause.
 enum OpenACCDefaultmapClauseKind {
-#define OPENMP_DEFAULTMAP_KIND(Name) \
+#define OPENACC_DEFAULTMAP_KIND(Name) \
   ACCC_DEFAULTMAP_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_DEFAULTMAP_unknown
@@ -114,7 +114,7 @@ enum OpenACCDefaultmapClauseKind {
 /// \brief OpenACC modifiers for 'defaultmap' clause.
 enum OpenACCDefaultmapClauseModifier {
   ACCC_DEFAULTMAP_MODIFIER_unknown = ACCC_DEFAULTMAP_unknown,
-#define OPENMP_DEFAULTMAP_MODIFIER(Name) \
+#define OPENACC_DEFAULTMAP_MODIFIER(Name) \
   ACCC_DEFAULTMAP_MODIFIER_##Name,
 #include "clang/Basic/OpenACCKinds.def"
   ACCC_DEFAULTMAP_MODIFIER_last
