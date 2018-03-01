@@ -2144,25 +2144,27 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
 
   llvm::outs() << "I AM OPENACC! THIS IS WHERE WE HANDLE THE PRAGMA\n";
 
-  /*
+  
 
   SmallVector<Token, 16> Pragma;
   Token Tok;
   Tok.startToken();
   Tok.setKind(tok::annot_pragma_openacc);
   Tok.setLocation(FirstTok.getLocation());
+  
+  llvm::outs()<<"My token kind is:"<<Tok.getName()<<"\n";
 
   while (Tok.isNot(tok::eod) && Tok.isNot(tok::eof)) {
     Pragma.push_back(Tok);
     PP.Lex(Tok);
-    if (Tok.is(tok::annot_pragma_openmp)) {
+    if (Tok.is(tok::annot_pragma_openacc)) {
       PP.Diag(Tok, diag::err_omp_unexpected_directive) << 0;
       unsigned InnerPragmaCnt = 1;
       while (InnerPragmaCnt != 0) {
         PP.Lex(Tok);
-        if (Tok.is(tok::annot_pragma_openmp))
+        if (Tok.is(tok::annot_pragma_openacc))
           ++InnerPragmaCnt;
-        else if (Tok.is(tok::annot_pragma_openmp_end))
+        else if (Tok.is(tok::annot_pragma_openacc_end))
           --InnerPragmaCnt;
       }
       PP.Lex(Tok);
@@ -2170,15 +2172,15 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   }
   SourceLocation EodLoc = Tok.getLocation();
   Tok.startToken();
-  Tok.setKind(tok::annot_pragma_openmp_end);
+  Tok.setKind(tok::annot_pragma_openacc_end);
   Tok.setLocation(EodLoc);
   Pragma.push_back(Tok);
 
-  */
-  //auto Toks = llvm::make_unique<Token[]>(Pragma.size());
-  //std::copy(Pragma.begin(), Pragma.end(), Toks.get());
-  //PP.EnterTokenStream(std::move(Toks), Pragma.size(),
-  //                    /*DisableMacroExpansion=*/false);
+  
+  auto Toks = llvm::make_unique<Token[]>(Pragma.size());
+  std::copy(Pragma.begin(), Pragma.end(), Toks.get());
+  PP.EnterTokenStream(std::move(Toks), Pragma.size(),
+                      /*DisableMacroExpansion=*/false);
 }
 
 

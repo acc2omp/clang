@@ -788,6 +788,12 @@ ANNOTATION(pragma_ms_pragma)
 // handles them.
 ANNOTATION(pragma_opencl_extension)
 
+// Annotations for OpenACC pragma directives - #pragma acc ...
+// The lexer produces these so that they only take effect when the parser
+// handles #pragma acc ... directives.
+ANNOTATION(pragma_openacc)
+ANNOTATION(pragma_openacc_end)
+
 // Annotations for OpenMP pragma directives - #pragma omp ...
 // The lexer produces these so that they only take effect when the parser
 // handles #pragma omp ... directives.
