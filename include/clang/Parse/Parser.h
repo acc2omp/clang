@@ -15,6 +15,7 @@
 #define LLVM_CLANG_PARSE_PARSER_H
 
 #include "clang/AST/Availability.h"
+#include "clang/Basic/OpenACCKinds.h"
 #include "clang/Basic/OpenMPKinds.h"
 #include "clang/Basic/OperatorPrecedence.h"
 #include "clang/Basic/Specifiers.h"
@@ -46,6 +47,7 @@ namespace clang {
   class InMessageExpressionRAIIObject;
   class PoisonSEHIdentifiersRAIIObject;
   class VersionTuple;
+  class ACCClause;
   class OMPClause;
   class ObjCTypeParamList;
   class ObjCTypeParameter;
@@ -2657,6 +2659,25 @@ private:
       const llvm::function_ref<void(CXXScopeSpec &, DeclarationNameInfo)> &
           Callback,
       bool AllowScopeSpecifier);
+
+
+  // TODO acc2mp 
+  // Copyied ParseOpenMPDeclarativeOrExecutableDirective() and created
+  // ParseOpenACCDeclarativeOrExecutableDirective() , organize this better
+  
+  /// \brief Parses declarative or executable directive.
+  ///
+  /// \param Allowed ACK_Any, if any directives are allowed,
+  /// ACK_StatementsOpenMPAnyExecutable - if any executable directives are
+  /// allowed, ACK_StatementsOpenMPNonStandalone - if only non-standalone
+  /// executable directives are allowed.
+  ///
+  StmtResult
+  ParseOpenACCDeclarativeOrExecutableDirective(AllowedConstructsKind Allowed);
+
+
+
+
   /// \brief Parses declarative or executable directive.
   ///
   /// \param Allowed ACK_Any, if any directives are allowed,

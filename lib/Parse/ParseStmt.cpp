@@ -356,6 +356,11 @@ Retry:
   case tok::annot_pragma_captured:
     ProhibitAttributes(Attrs);
     return HandlePragmaCaptured();
+  
+  case tok::annot_pragma_openacc:
+    ProhibitAttributes(Attrs);
+    llvm::outs()<< "Entering function ParseOpenACCDeclarativeOrExecutableDirective()\n";
+    return ParseOpenACCDeclarativeOrExecutableDirective(Allowed);
 
   case tok::annot_pragma_openmp:
     ProhibitAttributes(Attrs);

@@ -2134,15 +2134,15 @@ PragmaNoOpenACCHandler::HandlePragma(Preprocessor &PP,
   PP.DiscardUntilEndOfDirective();
 }
 
-/// \brief Handle '#pragma omp ...' when OpenMP is enabled.
+/// \brief Handle '#pragma acc ...' when OpenACC is enabled.
 ///
 void
 PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
                                   PragmaIntroducerKind Introducer,
                                   Token &FirstTok) {
   
-
-  llvm::outs() << "I AM OPENACC! THIS IS WHERE WE HANDLE THE PRAGMA\n";
+  //TODO acc2mp remove this
+  //llvm::outs() << "I AM OPENACC! THIS IS WHERE WE HANDLE THE PRAGMA\n";
 
   
 
@@ -2152,7 +2152,7 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   Tok.setKind(tok::annot_pragma_openacc);
   Tok.setLocation(FirstTok.getLocation());
   
-  llvm::outs()<<"My token kind is:"<<Tok.getName()<<"\n";
+  llvm::outs()<<"Generating tokens for OPENACC annotation:\n";
 
   while (Tok.isNot(tok::eod) && Tok.isNot(tok::eof)) {
     Pragma.push_back(Tok);
@@ -2175,12 +2175,21 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   Tok.setKind(tok::annot_pragma_openacc_end);
   Tok.setLocation(EodLoc);
   Pragma.push_back(Tok);
-
   
   auto Toks = llvm::make_unique<Token[]>(Pragma.size());
   std::copy(Pragma.begin(), Pragma.end(), Toks.get());
   PP.EnterTokenStream(std::move(Toks), Pragma.size(),
                       /*DisableMacroExpansion=*/false);
+
+  //TODO acc2mp THIS IS JUST A DEBUG, remove later
+  llvm::outs()<<"Pragma token size is: "<< Pragma.size() << "\n";
+
+
+  while(Pragma.size() > 0){
+    llvm::outs()<<" ["<<Pragma.pop_back_val().getName()<<"]";
+  }
+
+  llvm::outs()<<"\nFOR THIS PRAGMA ACC, ALL TOKENS WERE PASSED TO PP\n\n";
 }
 
 

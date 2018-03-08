@@ -632,7 +632,7 @@ OPENACC_DISTRIBUTE_PARALLEL_FOR_SIMD_CLAUSE(safelen)
 OPENACC_DISTRIBUTE_PARALLEL_FOR_SIMD_CLAUSE(simdlen)
 
 // Clauses allowed for OpenACC directive 'distribute simd'
-PATH=/opt/clang-ykt/llvm-ykt/install/bin:$PATH
+// PATH=/opt/clang-ykt/llvm-lsc/install/bin:$PATH
 OPENACC_DISTRIBUTE_SIMD_CLAUSE(private)
 OPENACC_DISTRIBUTE_SIMD_CLAUSE(firstprivate)
 OPENACC_DISTRIBUTE_SIMD_CLAUSE(lastprivate)
