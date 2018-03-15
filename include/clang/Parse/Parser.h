@@ -2663,7 +2663,7 @@ private:
 
   // TODO acc2mp 
   // Copyied ParseOpenMPDeclarativeOrExecutableDirective() and created
-  // ParseOpenACCDeclarativeOrExecutableDirective() , organize this better
+  // ParseOpenACCDeclarativeOrExecutableDirective() , organize this better in near future
   
   /// \brief Parses declarative or executable directive.
   ///

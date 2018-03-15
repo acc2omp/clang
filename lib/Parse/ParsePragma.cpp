@@ -2181,6 +2181,8 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   PP.EnterTokenStream(std::move(Toks), Pragma.size(),
                       /*DisableMacroExpansion=*/false);
 
+  /*
+
   //TODO acc2mp THIS IS JUST A DEBUG, remove later
   llvm::outs()<<"Pragma token size is: "<< Pragma.size() << "\n";
 
@@ -2189,7 +2191,9 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
     llvm::outs()<<" ["<<Pragma.pop_back_val().getName()<<"]";
   }
 
-  llvm::outs()<<"\nFOR THIS PRAGMA ACC, ALL TOKENS WERE PASSED TO PP\n\n";
+  llvm::outs()<<"\nPassed tokens into PP.EnterTokenStream()\n";
+  
+  */
 }
 
 
