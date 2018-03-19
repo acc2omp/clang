@@ -47,6 +47,7 @@ add_clang_library(clangAST
   NestedNameSpecifier.cpp
   NSAPI.cpp
   ODRHash.cpp
+  OpenACCClause.cpp
   OpenMPClause.cpp
   ParentMap.cpp
   QualTypeNames.cpp
@@ -58,6 +59,7 @@ add_clang_library(clangAST
   StmtCXX.cpp
   StmtIterator.cpp
   StmtObjC.cpp
+  StmtOpenACC.cpp
   StmtOpenMP.cpp
   StmtPrinter.cpp
   StmtProfile.cpp

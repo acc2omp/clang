@@ -12,7 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/StmtOpenMP.h"
+#include "clang/AST/StmtOpenACC.h"
 #include "clang/Parse/ParseDiagnostic.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Parse/RAIIObjectsForParser.h"
@@ -60,8 +60,9 @@ public:
   }
   llvm::ArrayRef<Expr *> getIdentifiers() const { return Identifiers; }
 };
-} // namespace
 */
+} // namespace
+
 
 
 // Map token string to extended OMP token kind that are
@@ -160,7 +161,6 @@ static OpenACCDirectiveKind ParseOpenACCDirectiveKind(Parser &P) {
 
 // TODO acc2mp
 // Move this function from here
-
 /// \brief Parsing of declarative or executable OpenACC directives.
 ///
 ///       threadprivate-directive:
@@ -198,7 +198,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     AllowedConstructsKind Allowed) {
 
   llvm::outs()<<"ParseOpenACCDeclarativeOrExecutableDirective ...\n";
-
+  /*
   assert(Tok.is(tok::annot_pragma_openacc) && "Not an OpenACC directive!");
   ParenBraceBracketBalancer BalancerRAIIObj(*this);
   SmallVector<OMPClause *, 5> Clauses;
@@ -207,6 +207,9 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   unsigned ScopeFlags = Scope::FnScope | Scope::DeclScope |
                         Scope::CompoundStmtScope | Scope::OpenMPDirectiveScope;
   SourceLocation Loc = ConsumeAnnotationToken(), EndLoc;
+
+  auto DKind = ParseOpenACCDirectiveKind(*this);
+  OpenACCDirectiveKind CancelRegion = ACCD_unknown;
 
   // Name of critical directive.
   DeclarationNameInfo DirName;
@@ -222,9 +225,9 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
        llvm::outs()<<"<<Parallel ACC directive Detected>>\n";
        break;
   }
-
+  */
   SkipUntil(tok::annot_pragma_openacc_end);
-  return Directive;
+  return StmtError();
 }
 
 /// \brief Parsing of declarative OpenACC directives.

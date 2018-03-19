@@ -66,6 +66,7 @@ def UnaryOperator : DStmt<Expr>;
 def OffsetOfExpr : DStmt<Expr>;
 def UnaryExprOrTypeTraitExpr : DStmt<Expr>;
 def ArraySubscriptExpr : DStmt<Expr>;
+def ACCArraySectionExpr : DStmt<Expr>;
 def OMPArraySectionExpr : DStmt<Expr>;
 def CallExpr : DStmt<Expr>;
 def MemberExpr : DStmt<Expr>;
@@ -196,6 +197,57 @@ def MSDependentExistsStmt : Stmt;
 // OpenCL Extensions.
 def AsTypeExpr : DStmt<Expr>;
 
+// OpenACC Directives.
+def ACCExecutableDirective : Stmt<1>;
+def ACCLoopDirective : DStmt<ACCExecutableDirective, 1>;
+def ACCParallelDirective : DStmt<ACCExecutableDirective>;
+def ACCSimdDirective : DStmt<ACCLoopDirective>;
+def ACCForDirective : DStmt<ACCLoopDirective>;
+def ACCForSimdDirective : DStmt<ACCLoopDirective>;
+def ACCSectionsDirective : DStmt<ACCExecutableDirective>;
+def ACCSectionDirective : DStmt<ACCExecutableDirective>;
+def ACCSingleDirective : DStmt<ACCExecutableDirective>;
+def ACCMasterDirective : DStmt<ACCExecutableDirective>;
+def ACCCriticalDirective : DStmt<ACCExecutableDirective>;
+def ACCParallelForDirective : DStmt<ACCLoopDirective>;
+def ACCParallelForSimdDirective : DStmt<ACCLoopDirective>;
+def ACCParallelSectionsDirective : DStmt<ACCExecutableDirective>;
+def ACCTaskDirective : DStmt<ACCExecutableDirective>;
+def ACCTaskyieldDirective : DStmt<ACCExecutableDirective>;
+def ACCBarrierDirective : DStmt<ACCExecutableDirective>;
+def ACCTaskwaitDirective : DStmt<ACCExecutableDirective>;
+def ACCTaskgroupDirective : DStmt<ACCExecutableDirective>;
+def ACCFlushDirective : DStmt<ACCExecutableDirective>;
+def ACCOrderedDirective : DStmt<ACCExecutableDirective>;
+def ACCAtomicDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetDataDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetEnterDataDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetExitDataDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetParallelDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetParallelForDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetUpdateDirective : DStmt<ACCExecutableDirective>;
+def ACCTeamsDirective : DStmt<ACCExecutableDirective>;
+def ACCCancellationPointDirective : DStmt<ACCExecutableDirective>;
+def ACCCancelDirective : DStmt<ACCExecutableDirective>;
+def ACCTaskLoopDirective : DStmt<ACCLoopDirective>;
+def ACCTaskLoopSimdDirective : DStmt<ACCLoopDirective>;
+def ACCDistributeDirective : DStmt<ACCLoopDirective>;
+def ACCDistributeParallelForDirective : DStmt<ACCLoopDirective>;
+def ACCDistributeParallelForSimdDirective : DStmt<ACCLoopDirective>;
+def ACCDistributeSimdDirective : DStmt<ACCLoopDirective>;
+def ACCTargetParallelForSimdDirective : DStmt<ACCLoopDirective>;
+def ACCTargetSimdDirective : DStmt<ACCLoopDirective>;
+def ACCTeamsDistributeDirective : DStmt<ACCLoopDirective>;
+def ACCTeamsDistributeSimdDirective : DStmt<ACCLoopDirective>;
+def ACCTeamsDistributeParallelForSimdDirective : DStmt<ACCLoopDirective>;
+def ACCTeamsDistributeParallelForDirective : DStmt<ACCLoopDirective>;
+def ACCTargetTeamsDirective : DStmt<ACCExecutableDirective>;
+def ACCTargetTeamsDistributeDirective : DStmt<ACCLoopDirective>;
+def ACCTargetTeamsDistributeParallelForDirective : DStmt<ACCLoopDirective>;
+def ACCTargetTeamsDistributeParallelForSimdDirective : DStmt<ACCLoopDirective>;
+def ACCTargetTeamsDistributeSimdDirective : DStmt<ACCLoopDirective>;
+
 // OpenMP Directives.
 def OMPExecutableDirective : Stmt<1>;
 def OMPLoopDirective : DStmt<OMPExecutableDirective, 1>;
@@ -246,3 +298,5 @@ def OMPTargetTeamsDistributeDirective : DStmt<OMPLoopDirective>;
 def OMPTargetTeamsDistributeParallelForDirective : DStmt<OMPLoopDirective>;
 def OMPTargetTeamsDistributeParallelForSimdDirective : DStmt<OMPLoopDirective>;
 def OMPTargetTeamsDistributeSimdDirective : DStmt<OMPLoopDirective>;
+
+
