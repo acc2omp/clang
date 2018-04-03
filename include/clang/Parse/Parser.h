@@ -2757,7 +2757,7 @@ public:
 
   //===--------------------------------------------------------------------===//
   // OpenACC: Directives and clauses.
-  /// Parse clauses for '#pragma omp declare simd'.
+  /// Parse clauses for '#pragma acc declare simd'.
   DeclGroupPtrTy ParseACCDeclareSimdClauses(DeclGroupPtrTy Ptr,
                                             CachedTokens &Toks,
                                             SourceLocation Loc);

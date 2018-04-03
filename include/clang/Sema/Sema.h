@@ -32,6 +32,7 @@
 #include "clang/Basic/ExpressionTraits.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/Module.h"
+#include "clang/Basic/OpenACCKinds.h"
 #include "clang/Basic/OpenMPKinds.h"
 #include "clang/Basic/PragmaKinds.h"
 #include "clang/Basic/Specifiers.h"
@@ -3039,6 +3040,8 @@ public:
     LookupObjCProtocolName,
     /// Look up implicit 'self' parameter of an objective-c method.
     LookupObjCImplicitSelfParam,
+    /// \brief Look up the name of an OpenACC user-defined reduction operation.
+    LookupACCReductionName,
     /// \brief Look up the name of an OpenMP user-defined reduction operation.
     LookupOMPReductionName,
     /// \brief Look up any declaration with any name.
@@ -8563,6 +8566,703 @@ public:
   /// emit diagnostics.
   /// \return true if type is disabled.
   bool checkOpenCLDisabledDecl(const NamedDecl &D, const Expr &E);
+
+  //===--------------------------------------------------------------------===//
+  // OpenACC directives and clauses.
+  //
+private:
+  void *VarDataSharingAttributesStack;
+  /// Set to true inside '#pragma omp declare target' region.
+  bool IsInOpenACCDeclareTargetContext = false;
+  /// \brief Initialization of data-sharing attributes stack.
+  void InitDataSharingAttributesStack();
+  void DestroyDataSharingAttributesStack();
+  ExprResult
+  VerifyPositiveIntegerConstantInClause(Expr *Op, OpenACCClauseKind CKind,
+                                        bool StrictlyPositive = true);
+  /// Returns OpenACC nesting level for current directive.
+  unsigned getOpenACCNestingLevel() const;
+
+  /// Adjusts the function scopes index for the target-based regions.
+  void adjustOpenACCTargetScopeIndex(unsigned &FunctionScopesIndex,
+                                    unsigned Level) const;
+
+  /// Push new OpenACC function region for non-capturing function.
+  void pushOpenACCFunctionRegion();
+
+  /// Pop OpenACC function region for non-capturing function.
+  void popOpenACCFunctionRegion(const sema::FunctionScopeInfo *OldFSI);
+
+  /// Checks if a type or a declaration is disabled due to the owning extension
+  /// being disabled, and emits diagnostic messages if it is disabled.
+  /// \param D type or declaration to be checked.
+  /// \param DiagLoc source location for the diagnostic message.
+  /// \param DiagInfo information to be emitted for the diagnostic message.
+  /// \param SrcRange source range of the declaration.
+  /// \param Map maps type or declaration to the extensions.
+  /// \param Selector selects diagnostic message: 0 for type and 1 for
+  ///        declaration.
+  /// \return true if the type or declaration is disabled.
+  template <typename T, typename DiagLocT, typename DiagInfoT, typename MapT>
+  bool checkOpenCLDisabledTypeOrDecl(T D, DiagLocT DiagLoc, DiagInfoT DiagInfo,
+                                     MapT &Map, unsigned Selector = 0,
+                                     SourceRange SrcRange = SourceRange());
+
+public:
+  /// \brief Return true if the provided declaration \a VD should be captured by
+  /// reference.
+  /// \param Level Relative level of nested OpenACC construct for that the check
+  /// is performed.
+  bool IsOpenACCCapturedByRef(ValueDecl *D, unsigned Level);
+
+  /// \brief Check if the specified variable is used in one of the private
+  /// clauses (private, firstprivate, lastprivate, reduction etc.) in OpenACC
+  /// constructs.
+  VarDecl *IsOpenACCCapturedDecl(ValueDecl *D);
+  ExprResult getOpenACCCapturedExpr(VarDecl *Capture, ExprValueKind VK,
+                                   ExprObjectKind OK, SourceLocation Loc);
+
+  /// \brief Check if the specified variable is used in 'private' clause.
+  /// \param Level Relative level of nested OpenACC construct for that the check
+  /// is performed.
+  bool isOpenACCPrivateDecl(ValueDecl *D, unsigned Level);
+
+  /// Sets OpenACC capture kind (ACCC_private, ACCC_firstprivate, ACCC_map etc.)
+  /// for \p FD based on DSA for the provided corresponding captured declaration
+  /// \p D.
+  void setOpenACCCaptureKind(FieldDecl *FD, ValueDecl *D, unsigned Level);
+
+  /// \brief Check if the specified variable is captured  by 'target' directive.
+  /// \param Level Relative level of nested OpenACC construct for that the check
+  /// is performed.
+  bool isOpenACCTargetCapturedDecl(ValueDecl *D, unsigned Level);
+
+  ExprResult PerformOpenACCImplicitIntegerConversion(SourceLocation OpLoc,
+                                                    Expr *Op);
+  /// \brief Called on start of new data sharing attribute block.
+  void StartOpenACCDSABlock(OpenACCDirectiveKind K,
+                           const DeclarationNameInfo &DirName, Scope *CurScope,
+                           SourceLocation Loc);
+  /// \brief Start analysis of clauses.
+  void StartOpenACCClause(OpenACCClauseKind K);
+  /// \brief End analysis of clauses.
+  void EndOpenACCClause();
+  /// \brief Called on end of data sharing attribute block.
+  void EndOpenACCDSABlock(Stmt *CurDirective);
+
+  /// \brief Check if the current region is an OpenACC loop region and if it is,
+  /// mark loop control variable, used in \p Init for loop initialization, as
+  /// private by default.
+  /// \param Init First part of the for loop.
+  void ActOnOpenACCLoopInitialization(SourceLocation ForLoc, Stmt *Init);
+
+  // OpenACC directives and clauses.
+  /// \brief Called on correct id-expression from the '#pragma omp
+  /// threadprivate'.
+  ExprResult ActOnOpenACCIdExpression(Scope *CurScope,
+                                     CXXScopeSpec &ScopeSpec,
+                                     const DeclarationNameInfo &Id);
+  /// \brief Called on well-formed '#pragma omp threadprivate'.
+  DeclGroupPtrTy ActOnOpenACCThreadprivateDirective(
+                                     SourceLocation Loc,
+                                     ArrayRef<Expr *> VarList);
+  /// \brief Builds a new OpenACCThreadPrivateDecl and checks its correctness.
+  ACCThreadPrivateDecl *CheckACCThreadPrivateDecl(
+                                     SourceLocation Loc,
+                                     ArrayRef<Expr *> VarList);
+  /// \brief Check if the specified type is allowed to be used in 'omp declare
+  /// reduction' construct.
+  QualType ActOnOpenACCDeclareReductionType(SourceLocation TyLoc,
+                                           TypeResult ParsedType);
+  /// \brief Called on start of '#pragma omp declare reduction'.
+  DeclGroupPtrTy ActOnOpenACCDeclareReductionDirectiveStart(
+      Scope *S, DeclContext *DC, DeclarationName Name,
+      ArrayRef<std::pair<QualType, SourceLocation>> ReductionTypes,
+      AccessSpecifier AS, Decl *PrevDeclInScope = nullptr);
+  /// \brief Initialize declare reduction construct initializer.
+  void ActOnOpenACCDeclareReductionCombinerStart(Scope *S, Decl *D);
+  /// \brief Finish current declare reduction construct initializer.
+  void ActOnOpenACCDeclareReductionCombinerEnd(Decl *D, Expr *Combiner);
+  /// \brief Initialize declare reduction construct initializer.
+  /// \return omp_priv variable.
+  VarDecl *ActOnOpenACCDeclareReductionInitializerStart(Scope *S, Decl *D);
+  /// \brief Finish current declare reduction construct initializer.
+  void ActOnOpenACCDeclareReductionInitializerEnd(Decl *D, Expr *Initializer,
+                                                 VarDecl *OmpPrivParm);
+  /// \brief Called at the end of '#pragma omp declare reduction'.
+  DeclGroupPtrTy ActOnOpenACCDeclareReductionDirectiveEnd(
+      Scope *S, DeclGroupPtrTy DeclReductions, bool IsValid);
+
+  /// Called on the start of target region i.e. '#pragma omp declare target'.
+  bool ActOnStartOpenACCDeclareTargetDirective(SourceLocation Loc);
+  /// Called at the end of target region i.e. '#pragme omp end declare target'.
+  void ActOnFinishOpenACCDeclareTargetDirective();
+  /// Called on correct id-expression from the '#pragma omp declare target'.
+  void ActOnOpenACCDeclareTargetName(Scope *CurScope, CXXScopeSpec &ScopeSpec,
+                                    const DeclarationNameInfo &Id,
+                                    ACCDeclareTargetDeclAttr::MapTypeTy MT,
+                                    NamedDeclSetType &SameDirectiveDecls);
+  /// Check declaration inside target region.
+  void checkDeclIsAllowedInOpenACCTarget(Expr *E, Decl *D,
+                                        SourceLocation IdLoc = SourceLocation());
+  /// Return true inside OpenACC declare target region.
+  bool isInOpenACCDeclareTargetContext() const {
+    return IsInOpenACCDeclareTargetContext;
+  }
+  /// Return true inside OpenACC target region.
+  bool isInOpenACCTargetExecutionDirective() const;
+  /// Return true if (un)supported features for the current target should be
+  /// diagnosed if OpenACC (offloading) is enabled.
+  bool shouldDiagnoseTargetSupportFromOpenACC() const {
+    return !getLangOpts().OpenACCIsDevice || isInOpenACCDeclareTargetContext() ||
+      isInOpenACCTargetExecutionDirective();
+  }
+
+  /// Return the number of captured regions created for an OpenACC directive.
+  static int getOpenACCCaptureLevels(OpenACCDirectiveKind Kind);
+
+  /// \brief Initialization of captured region for OpenACC region.
+  void ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope);
+  /// \brief End of OpenACC region.
+  ///
+  /// \param S Statement associated with the current OpenACC region.
+  /// \param Clauses List of clauses for the current OpenACC region.
+  ///
+  /// \returns Statement for finished OpenACC region.
+  StmtResult ActOnOpenACCRegionEnd(StmtResult S, ArrayRef<ACCClause *> Clauses);
+  StmtResult ActOnOpenACCExecutableDirective(
+      OpenACCDirectiveKind Kind, const DeclarationNameInfo &DirName,
+      OpenACCDirectiveKind CancelRegion, ArrayRef<ACCClause *> Clauses,
+      Stmt *AStmt, SourceLocation StartLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp parallel' after parsing
+  /// of the  associated statement.
+  StmtResult ActOnOpenACCParallelDirective(ArrayRef<ACCClause *> Clauses,
+                                          Stmt *AStmt,
+                                          SourceLocation StartLoc,
+                                          SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp simd' after parsing
+  /// of the associated statement.
+  StmtResult ActOnOpenACCSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp for' after parsing
+  /// of the associated statement.
+  StmtResult ActOnOpenACCForDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp for simd' after parsing
+  /// of the associated statement.
+  StmtResult ActOnOpenACCForSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp sections' after parsing
+  /// of the associated statement.
+  StmtResult ActOnOpenACCSectionsDirective(ArrayRef<ACCClause *> Clauses,
+                                          Stmt *AStmt, SourceLocation StartLoc,
+                                          SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp section' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCSectionDirective(Stmt *AStmt, SourceLocation StartLoc,
+                                         SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp single' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCSingleDirective(ArrayRef<ACCClause *> Clauses,
+                                        Stmt *AStmt, SourceLocation StartLoc,
+                                        SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp master' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCMasterDirective(Stmt *AStmt, SourceLocation StartLoc,
+                                        SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp critical' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCCriticalDirective(const DeclarationNameInfo &DirName,
+                                          ArrayRef<ACCClause *> Clauses,
+                                          Stmt *AStmt, SourceLocation StartLoc,
+                                          SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp parallel for' after parsing
+  /// of the  associated statement.
+  StmtResult ActOnOpenACCParallelForDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp parallel for simd' after
+  /// parsing of the  associated statement.
+  StmtResult ActOnOpenACCParallelForSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp parallel sections' after
+  /// parsing of the  associated statement.
+  StmtResult ActOnOpenACCParallelSectionsDirective(ArrayRef<ACCClause *> Clauses,
+                                                  Stmt *AStmt,
+                                                  SourceLocation StartLoc,
+                                                  SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp task' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCTaskDirective(ArrayRef<ACCClause *> Clauses,
+                                      Stmt *AStmt, SourceLocation StartLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp taskyield'.
+  StmtResult ActOnOpenACCTaskyieldDirective(SourceLocation StartLoc,
+                                           SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp barrier'.
+  StmtResult ActOnOpenACCBarrierDirective(SourceLocation StartLoc,
+                                         SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp taskwait'.
+  StmtResult ActOnOpenACCTaskwaitDirective(SourceLocation StartLoc,
+                                          SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp taskgroup'.
+  StmtResult ActOnOpenACCTaskgroupDirective(ArrayRef<ACCClause *> Clauses,
+                                           Stmt *AStmt, SourceLocation StartLoc,
+                                           SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp flush'.
+  StmtResult ActOnOpenACCFlushDirective(ArrayRef<ACCClause *> Clauses,
+                                       SourceLocation StartLoc,
+                                       SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp ordered' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCOrderedDirective(ArrayRef<ACCClause *> Clauses,
+                                         Stmt *AStmt, SourceLocation StartLoc,
+                                         SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp atomic' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
+                                        Stmt *AStmt, SourceLocation StartLoc,
+                                        SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp target' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCTargetDirective(ArrayRef<ACCClause *> Clauses,
+                                        Stmt *AStmt, SourceLocation StartLoc,
+                                        SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp target data' after parsing of
+  /// the associated statement.
+  StmtResult ActOnOpenACCTargetDataDirective(ArrayRef<ACCClause *> Clauses,
+                                            Stmt *AStmt, SourceLocation StartLoc,
+                                            SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp target enter data' after
+  /// parsing of the associated statement.
+  StmtResult ActOnOpenACCTargetEnterDataDirective(ArrayRef<ACCClause *> Clauses,
+                                                 SourceLocation StartLoc,
+                                                 SourceLocation EndLoc,
+                                                 Stmt *AStmt);
+  /// \brief Called on well-formed '\#pragma omp target exit data' after
+  /// parsing of the associated statement.
+  StmtResult ActOnOpenACCTargetExitDataDirective(ArrayRef<ACCClause *> Clauses,
+                                                SourceLocation StartLoc,
+                                                SourceLocation EndLoc,
+                                                Stmt *AStmt);
+  /// \brief Called on well-formed '\#pragma omp target parallel' after
+  /// parsing of the associated statement.
+  StmtResult ActOnOpenACCTargetParallelDirective(ArrayRef<ACCClause *> Clauses,
+                                                Stmt *AStmt,
+                                                SourceLocation StartLoc,
+                                                SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp target parallel for' after
+  /// parsing of the  associated statement.
+  StmtResult ActOnOpenACCTargetParallelForDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp teams' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCTeamsDirective(ArrayRef<ACCClause *> Clauses,
+                                       Stmt *AStmt, SourceLocation StartLoc,
+                                       SourceLocation EndLoc);
+  /// \brief Called on well-formed '\#pragma omp cancellation point'.
+  StmtResult
+  ActOnOpenACCCancellationPointDirective(SourceLocation StartLoc,
+                                        SourceLocation EndLoc,
+                                        OpenACCDirectiveKind CancelRegion);
+  /// \brief Called on well-formed '\#pragma omp cancel'.
+  StmtResult ActOnOpenACCCancelDirective(ArrayRef<ACCClause *> Clauses,
+                                        SourceLocation StartLoc,
+                                        SourceLocation EndLoc,
+                                        OpenACCDirectiveKind CancelRegion);
+  /// \brief Called on well-formed '\#pragma omp taskloop' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCTaskLoopDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp taskloop simd' after parsing of
+  /// the associated statement.
+  StmtResult ActOnOpenACCTaskLoopSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp distribute' after parsing
+  /// of the associated statement.
+  StmtResult ActOnOpenACCDistributeDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp target update'.
+  StmtResult ActOnOpenACCTargetUpdateDirective(ArrayRef<ACCClause *> Clauses,
+                                              SourceLocation StartLoc,
+                                              SourceLocation EndLoc,
+                                              Stmt *AStmt);
+  /// \brief Called on well-formed '\#pragma omp distribute parallel for' after
+  /// parsing of the associated statement.
+  StmtResult ActOnOpenACCDistributeParallelForDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp distribute parallel for simd'
+  /// after parsing of the associated statement.
+  StmtResult ActOnOpenACCDistributeParallelForSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp distribute simd' after
+  /// parsing of the associated statement.
+  StmtResult ActOnOpenACCDistributeSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp target parallel for simd' after
+  /// parsing of the associated statement.
+  StmtResult ActOnOpenACCTargetParallelForSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// \brief Called on well-formed '\#pragma omp target simd' after parsing of
+  /// the associated statement.
+  StmtResult ActOnOpenACCTargetSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp teams distribute' after parsing of
+  /// the associated statement.
+  StmtResult ActOnOpenACCTeamsDistributeDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp teams distribute simd' after parsing
+  /// of the associated statement.
+  StmtResult ActOnOpenACCTeamsDistributeSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp teams distribute parallel for simd'
+  /// after parsing of the associated statement.
+  StmtResult ActOnOpenACCTeamsDistributeParallelForSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp teams distribute parallel for'
+  /// after parsing of the associated statement.
+  StmtResult ActOnOpenACCTeamsDistributeParallelForDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp target teams' after parsing of the
+  /// associated statement.
+  StmtResult ActOnOpenACCTargetTeamsDirective(ArrayRef<ACCClause *> Clauses,
+                                             Stmt *AStmt,
+                                             SourceLocation StartLoc,
+                                             SourceLocation EndLoc);
+  /// Called on well-formed '\#pragma omp target teams distribute' after parsing
+  /// of the associated statement.
+  StmtResult ActOnOpenACCTargetTeamsDistributeDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp target teams distribute parallel for'
+  /// after parsing of the associated statement.
+  StmtResult ActOnOpenACCTargetTeamsDistributeParallelForDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp target teams distribute parallel for
+  /// simd' after parsing of the associated statement.
+  StmtResult ActOnOpenACCTargetTeamsDistributeParallelForSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+  /// Called on well-formed '\#pragma omp target teams distribute simd' after
+  /// parsing of the associated statement.
+  StmtResult ActOnOpenACCTargetTeamsDistributeSimdDirective(
+      ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
+      SourceLocation EndLoc,
+      llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
+
+  /// Checks correctness of linear modifiers.
+  bool CheckOpenACCLinearModifier(OpenACCLinearClauseKind LinKind,
+                                 SourceLocation LinLoc);
+  /// Checks that the specified declaration matches requirements for the linear
+  /// decls.
+  bool CheckOpenACCLinearDecl(ValueDecl *D, SourceLocation ELoc,
+                             OpenACCLinearClauseKind LinKind, QualType Type);
+
+  /// \brief Called on well-formed '\#pragma omp declare simd' after parsing of
+  /// the associated method/function.
+  DeclGroupPtrTy ActOnOpenACCDeclareSimdDirective(
+      DeclGroupPtrTy DG, ACCDeclareSimdDeclAttr::BranchStateTy BS,
+      Expr *Simdlen, ArrayRef<Expr *> Uniforms, ArrayRef<Expr *> Aligneds,
+      ArrayRef<Expr *> Alignments, ArrayRef<Expr *> Linears,
+      ArrayRef<unsigned> LinModifiers, ArrayRef<Expr *> Steps, SourceRange SR);
+
+  ACCClause *ActOnOpenACCSingleExprClause(OpenACCClauseKind Kind,
+                                         Expr *Expr,
+                                         SourceLocation StartLoc,
+                                         SourceLocation LParenLoc,
+                                         SourceLocation EndLoc);
+  /// \brief Called on well-formed 'if' clause.
+  ACCClause *ActOnOpenACCIfClause(OpenACCDirectiveKind NameModifier,
+                                 Expr *Condition, SourceLocation StartLoc,
+                                 SourceLocation LParenLoc,
+                                 SourceLocation NameModifierLoc,
+                                 SourceLocation ColonLoc,
+                                 SourceLocation EndLoc);
+  /// \brief Called on well-formed 'final' clause.
+  ACCClause *ActOnOpenACCFinalClause(Expr *Condition, SourceLocation StartLoc,
+                                    SourceLocation LParenLoc,
+                                    SourceLocation EndLoc);
+  /// \brief Called on well-formed 'num_threads' clause.
+  ACCClause *ActOnOpenACCNumThreadsClause(Expr *NumThreads,
+                                         SourceLocation StartLoc,
+                                         SourceLocation LParenLoc,
+                                         SourceLocation EndLoc);
+  /// \brief Called on well-formed 'safelen' clause.
+  ACCClause *ActOnOpenACCSafelenClause(Expr *Length,
+                                      SourceLocation StartLoc,
+                                      SourceLocation LParenLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'simdlen' clause.
+  ACCClause *ActOnOpenACCSimdlenClause(Expr *Length, SourceLocation StartLoc,
+                                      SourceLocation LParenLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'collapse' clause.
+  ACCClause *ActOnOpenACCCollapseClause(Expr *NumForLoops,
+                                       SourceLocation StartLoc,
+                                       SourceLocation LParenLoc,
+                                       SourceLocation EndLoc);
+  /// \brief Called on well-formed 'ordered' clause.
+  ACCClause *
+  ActOnOpenACCOrderedClause(SourceLocation StartLoc, SourceLocation EndLoc,
+                           SourceLocation LParenLoc = SourceLocation(),
+                           Expr *NumForLoops = nullptr);
+  /// \brief Called on well-formed 'grainsize' clause.
+  ACCClause *ActOnOpenACCGrainsizeClause(Expr *Size, SourceLocation StartLoc,
+                                        SourceLocation LParenLoc,
+                                        SourceLocation EndLoc);
+  /// \brief Called on well-formed 'num_tasks' clause.
+  ACCClause *ActOnOpenACCNumTasksClause(Expr *NumTasks, SourceLocation StartLoc,
+                                       SourceLocation LParenLoc,
+                                       SourceLocation EndLoc);
+  /// \brief Called on well-formed 'hint' clause.
+  ACCClause *ActOnOpenACCHintClause(Expr *Hint, SourceLocation StartLoc,
+                                   SourceLocation LParenLoc,
+                                   SourceLocation EndLoc);
+
+  ACCClause *ActOnOpenACCSimpleClause(OpenACCClauseKind Kind,
+                                     unsigned Argument,
+                                     SourceLocation ArgumentLoc,
+                                     SourceLocation StartLoc,
+                                     SourceLocation LParenLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'default' clause.
+  ACCClause *ActOnOpenACCDefaultClause(OpenACCDefaultClauseKind Kind,
+                                      SourceLocation KindLoc,
+                                      SourceLocation StartLoc,
+                                      SourceLocation LParenLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'proc_bind' clause.
+  ACCClause *ActOnOpenACCProcBindClause(OpenACCProcBindClauseKind Kind,
+                                       SourceLocation KindLoc,
+                                       SourceLocation StartLoc,
+                                       SourceLocation LParenLoc,
+                                       SourceLocation EndLoc);
+
+  ACCClause *ActOnOpenACCSingleExprWithArgClause(
+      OpenACCClauseKind Kind, ArrayRef<unsigned> Arguments, Expr *Expr,
+      SourceLocation StartLoc, SourceLocation LParenLoc,
+      ArrayRef<SourceLocation> ArgumentsLoc, SourceLocation DelimLoc,
+      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'schedule' clause.
+  ACCClause *ActOnOpenACCScheduleClause(
+      OpenACCScheduleClauseModifier M1, OpenACCScheduleClauseModifier M2,
+      OpenACCScheduleClauseKind Kind, Expr *ChunkSize, SourceLocation StartLoc,
+      SourceLocation LParenLoc, SourceLocation M1Loc, SourceLocation M2Loc,
+      SourceLocation KindLoc, SourceLocation CommaLoc, SourceLocation EndLoc);
+
+  ACCClause *ActOnOpenACCClause(OpenACCClauseKind Kind, SourceLocation StartLoc,
+                               SourceLocation EndLoc);
+  /// \brief Called on well-formed 'nowait' clause.
+  ACCClause *ActOnOpenACCNowaitClause(SourceLocation StartLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'untied' clause.
+  ACCClause *ActOnOpenACCUntiedClause(SourceLocation StartLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'mergeable' clause.
+  ACCClause *ActOnOpenACCMergeableClause(SourceLocation StartLoc,
+                                        SourceLocation EndLoc);
+  /// \brief Called on well-formed 'read' clause.
+  ACCClause *ActOnOpenACCReadClause(SourceLocation StartLoc,
+                                   SourceLocation EndLoc);
+  /// \brief Called on well-formed 'write' clause.
+  ACCClause *ActOnOpenACCWriteClause(SourceLocation StartLoc,
+                                    SourceLocation EndLoc);
+  /// \brief Called on well-formed 'update' clause.
+  ACCClause *ActOnOpenACCUpdateClause(SourceLocation StartLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'capture' clause.
+  ACCClause *ActOnOpenACCCaptureClause(SourceLocation StartLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'seq_cst' clause.
+  ACCClause *ActOnOpenACCSeqCstClause(SourceLocation StartLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'threads' clause.
+  ACCClause *ActOnOpenACCThreadsClause(SourceLocation StartLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'simd' clause.
+  ACCClause *ActOnOpenACCSIMDClause(SourceLocation StartLoc,
+                                   SourceLocation EndLoc);
+  /// \brief Called on well-formed 'nogroup' clause.
+  ACCClause *ActOnOpenACCNogroupClause(SourceLocation StartLoc,
+                                      SourceLocation EndLoc);
+
+  ACCClause *ActOnOpenACCVarListClause(
+      OpenACCClauseKind Kind, ArrayRef<Expr *> Vars, Expr *TailExpr,
+      SourceLocation StartLoc, SourceLocation LParenLoc,
+      SourceLocation ColonLoc, SourceLocation EndLoc,
+      CXXScopeSpec &ReductionIdScopeSpec,
+      const DeclarationNameInfo &ReductionId, OpenACCDependClauseKind DepKind,
+      OpenACCLinearClauseKind LinKind, OpenACCMapClauseKind MapTypeModifier,
+      OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+      SourceLocation DepLinMapLoc);
+  /// \brief Called on well-formed 'private' clause.
+  ACCClause *ActOnOpenACCPrivateClause(ArrayRef<Expr *> VarList,
+                                      SourceLocation StartLoc,
+                                      SourceLocation LParenLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'firstprivate' clause.
+  ACCClause *ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
+                                           SourceLocation StartLoc,
+                                           SourceLocation LParenLoc,
+                                           SourceLocation EndLoc);
+  /// \brief Called on well-formed 'lastprivate' clause.
+  ACCClause *ActOnOpenACCLastprivateClause(ArrayRef<Expr *> VarList,
+                                          SourceLocation StartLoc,
+                                          SourceLocation LParenLoc,
+                                          SourceLocation EndLoc);
+  /// \brief Called on well-formed 'shared' clause.
+  ACCClause *ActOnOpenACCSharedClause(ArrayRef<Expr *> VarList,
+                                     SourceLocation StartLoc,
+                                     SourceLocation LParenLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'reduction' clause.
+  ACCClause *ActOnOpenACCReductionClause(
+      ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+      SourceLocation LParenLoc, SourceLocation ColonLoc, SourceLocation EndLoc,
+      CXXScopeSpec &ReductionIdScopeSpec,
+      const DeclarationNameInfo &ReductionId,
+      ArrayRef<Expr *> UnresolvedReductions = llvm::None);
+  /// Called on well-formed 'task_reduction' clause.
+  ACCClause *ActOnOpenACCTaskReductionClause(
+      ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+      SourceLocation LParenLoc, SourceLocation ColonLoc, SourceLocation EndLoc,
+      CXXScopeSpec &ReductionIdScopeSpec,
+      const DeclarationNameInfo &ReductionId,
+      ArrayRef<Expr *> UnresolvedReductions = llvm::None);
+  /// Called on well-formed 'in_reduction' clause.
+  ACCClause *ActOnOpenACCInReductionClause(
+      ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+      SourceLocation LParenLoc, SourceLocation ColonLoc, SourceLocation EndLoc,
+      CXXScopeSpec &ReductionIdScopeSpec,
+      const DeclarationNameInfo &ReductionId,
+      ArrayRef<Expr *> UnresolvedReductions = llvm::None);
+  /// \brief Called on well-formed 'linear' clause.
+  ACCClause *
+  ActOnOpenACCLinearClause(ArrayRef<Expr *> VarList, Expr *Step,
+                          SourceLocation StartLoc, SourceLocation LParenLoc,
+                          OpenACCLinearClauseKind LinKind, SourceLocation LinLoc,
+                          SourceLocation ColonLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'aligned' clause.
+  ACCClause *ActOnOpenACCAlignedClause(ArrayRef<Expr *> VarList,
+                                      Expr *Alignment,
+                                      SourceLocation StartLoc,
+                                      SourceLocation LParenLoc,
+                                      SourceLocation ColonLoc,
+                                      SourceLocation EndLoc);
+  /// \brief Called on well-formed 'copyin' clause.
+  ACCClause *ActOnOpenACCCopyinClause(ArrayRef<Expr *> VarList,
+                                     SourceLocation StartLoc,
+                                     SourceLocation LParenLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'copyprivate' clause.
+  ACCClause *ActOnOpenACCCopyprivateClause(ArrayRef<Expr *> VarList,
+                                          SourceLocation StartLoc,
+                                          SourceLocation LParenLoc,
+                                          SourceLocation EndLoc);
+  /// \brief Called on well-formed 'flush' pseudo clause.
+  ACCClause *ActOnOpenACCFlushClause(ArrayRef<Expr *> VarList,
+                                    SourceLocation StartLoc,
+                                    SourceLocation LParenLoc,
+                                    SourceLocation EndLoc);
+  /// \brief Called on well-formed 'depend' clause.
+  ACCClause *
+  ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind, SourceLocation DepLoc,
+                          SourceLocation ColonLoc, ArrayRef<Expr *> VarList,
+                          SourceLocation StartLoc, SourceLocation LParenLoc,
+                          SourceLocation EndLoc);
+  /// \brief Called on well-formed 'device' clause.
+  ACCClause *ActOnOpenACCDeviceClause(Expr *Device, SourceLocation StartLoc,
+                                     SourceLocation LParenLoc,
+                                     SourceLocation EndLoc);
+  /// \brief Called on well-formed 'map' clause.
+  ACCClause *
+  ActOnOpenACCMapClause(OpenACCMapClauseKind MapTypeModifier,
+                       OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                       SourceLocation MapLoc, SourceLocation ColonLoc,
+                       ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                       SourceLocation LParenLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'num_teams' clause.
+  ACCClause *ActOnOpenACCNumTeamsClause(Expr *NumTeams, SourceLocation StartLoc,
+                                       SourceLocation LParenLoc,
+                                       SourceLocation EndLoc);
+  /// \brief Called on well-formed 'thread_limit' clause.
+  ACCClause *ActOnOpenACCThreadLimitClause(Expr *ThreadLimit,
+                                          SourceLocation StartLoc,
+                                          SourceLocation LParenLoc,
+                                          SourceLocation EndLoc);
+  /// \brief Called on well-formed 'priority' clause.
+  ACCClause *ActOnOpenACCPriorityClause(Expr *Priority, SourceLocation StartLoc,
+                                       SourceLocation LParenLoc,
+                                       SourceLocation EndLoc);
+  /// \brief Called on well-formed 'dist_schedule' clause.
+  ACCClause *ActOnOpenACCDistScheduleClause(
+      OpenACCDistScheduleClauseKind Kind, Expr *ChunkSize,
+      SourceLocation StartLoc, SourceLocation LParenLoc, SourceLocation KindLoc,
+      SourceLocation CommaLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'defaultmap' clause.
+  ACCClause *ActOnOpenACCDefaultmapClause(
+      OpenACCDefaultmapClauseModifier M, OpenACCDefaultmapClauseKind Kind,
+      SourceLocation StartLoc, SourceLocation LParenLoc, SourceLocation MLoc,
+      SourceLocation KindLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'to' clause.
+  ACCClause *ActOnOpenACCToClause(ArrayRef<Expr *> VarList,
+                                 SourceLocation StartLoc,
+                                 SourceLocation LParenLoc,
+                                 SourceLocation EndLoc);
+  /// \brief Called on well-formed 'from' clause.
+  ACCClause *ActOnOpenACCFromClause(ArrayRef<Expr *> VarList,
+                                   SourceLocation StartLoc,
+                                   SourceLocation LParenLoc,
+                                   SourceLocation EndLoc);
+  /// Called on well-formed 'use_device_ptr' clause.
+  ACCClause *ActOnOpenACCUseDevicePtrClause(ArrayRef<Expr *> VarList,
+                                           SourceLocation StartLoc,
+                                           SourceLocation LParenLoc,
+                                           SourceLocation EndLoc);
+  /// Called on well-formed 'is_device_ptr' clause.
+  ACCClause *ActOnOpenACCIsDevicePtrClause(ArrayRef<Expr *> VarList,
+                                          SourceLocation StartLoc,
+                                          SourceLocation LParenLoc,
+                                          SourceLocation EndLoc);
 
   //===--------------------------------------------------------------------===//
   // OpenMP directives and clauses.
