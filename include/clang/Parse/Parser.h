@@ -1741,6 +1741,10 @@ private:
   /// A SmallVector of types.
   typedef SmallVector<ParsedType, 12> TypeVector;
 
+  //TODO acc2mp
+  // C99 Argument for bool AllowOpenACCStandalone
+  // Expand AllowedConstructsKind
+
   StmtResult ParseStatement(SourceLocation *TrailingElseLoc = nullptr,
                             bool AllowOpenMPStandalone = false);
   enum AllowedConstructsKind {
@@ -2660,24 +2664,6 @@ private:
           Callback,
       bool AllowScopeSpecifier);
 
-
-  // TODO acc2mp 
-  // Copyied ParseOpenMPDeclarativeOrExecutableDirective() and created
-  // ParseOpenACCDeclarativeOrExecutableDirective() , organize this better in near future
-  
-  /// \brief Parses declarative or executable directive.
-  ///
-  /// \param Allowed ACK_Any, if any directives are allowed,
-  /// ACK_StatementsOpenMPAnyExecutable - if any executable directives are
-  /// allowed, ACK_StatementsOpenMPNonStandalone - if only non-standalone
-  /// executable directives are allowed.
-  ///
-  StmtResult
-  ParseOpenACCDeclarativeOrExecutableDirective(AllowedConstructsKind Allowed);
-
-
-
-
   /// \brief Parses declarative or executable directive.
   ///
   /// \param Allowed ACK_Any, if any directives are allowed,
@@ -2760,6 +2746,127 @@ public:
   bool ParseOpenMPVarList(OpenMPDirectiveKind DKind, OpenMPClauseKind Kind,
                           SmallVectorImpl<Expr *> &Vars,
                           OpenMPVarListDataTy &Data);
+  bool ParseUnqualifiedId(CXXScopeSpec &SS, bool EnteringContext,
+                          bool AllowDestructorName,
+                          bool AllowConstructorName,
+                          bool AllowDeductionGuide,
+                          ParsedType ObjectType,
+                          SourceLocation& TemplateKWLoc,
+                          UnqualifiedId &Result);
+
+
+  //===--------------------------------------------------------------------===//
+  // OpenACC: Directives and clauses.
+  /// Parse clauses for '#pragma omp declare simd'.
+  DeclGroupPtrTy ParseACCDeclareSimdClauses(DeclGroupPtrTy Ptr,
+                                            CachedTokens &Toks,
+                                            SourceLocation Loc);
+  /// \brief Parses declarative OpenACC directives.
+  DeclGroupPtrTy ParseOpenACCDeclarativeDirectiveWithExtDecl(
+      AccessSpecifier &AS, ParsedAttributesWithRange &Attrs,
+      DeclSpec::TST TagType = DeclSpec::TST_unspecified,
+      Decl *TagDecl = nullptr);
+  /// \brief Parse 'omp declare reduction' construct.
+  DeclGroupPtrTy ParseOpenACCDeclareReductionDirective(AccessSpecifier AS);
+  /// Parses initializer for provided omp_priv declaration inside the reduction
+  /// initializer.
+  void ParseOpenACCReductionInitializerForDecl(VarDecl *OmpPrivParm);
+
+  /// \brief Parses simple list of variables.
+  ///
+  /// \param Kind Kind of the directive.
+  /// \param Callback Callback function to be called for the list elements.
+  /// \param AllowScopeSpecifier true, if the variables can have fully
+  /// qualified names.
+  ///
+  bool ParseOpenACCSimpleVarList(
+      OpenACCDirectiveKind Kind,
+      const llvm::function_ref<void(CXXScopeSpec &, DeclarationNameInfo)> &
+          Callback,
+      bool AllowScopeSpecifier);
+
+  /// \brief Parses declarative or executable directive.
+  ///
+  /// \param Allowed ACK_Any, if any directives are allowed,
+  /// ACK_StatementsOpenACCAnyExecutable - if any executable directives are
+  /// allowed, ACK_StatementsOpenACCNonStandalone - if only non-standalone
+  /// executable directives are allowed.
+  ///
+  StmtResult
+  ParseOpenACCDeclarativeOrExecutableDirective(AllowedConstructsKind Allowed);
+  /// \brief Parses clause of kind \a CKind for directive of a kind \a Kind.
+  ///
+  /// \param DKind Kind of current directive.
+  /// \param CKind Kind of current clause.
+  /// \param FirstClause true, if this is the first clause of a kind \a CKind
+  /// in current directive.
+  ///
+  ACCClause *ParseOpenACCClause(OpenACCDirectiveKind DKind,
+                               OpenACCClauseKind CKind, bool FirstClause);
+  /// \brief Parses clause with a single expression of a kind \a Kind.
+  ///
+  /// \param Kind Kind of current clause.
+  /// \param ParseOnly true to skip the clause's semantic actions and return
+  /// nullptr.
+  ///
+  ACCClause *ParseOpenACCSingleExprClause(OpenACCClauseKind Kind,
+                                         bool ParseOnly);
+  /// \brief Parses simple clause of a kind \a Kind.
+  ///
+  /// \param Kind Kind of current clause.
+  /// \param ParseOnly true to skip the clause's semantic actions and return
+  /// nullptr.
+  ///
+  ACCClause *ParseOpenACCSimpleClause(OpenACCClauseKind Kind, bool ParseOnly);
+  /// \brief Parses clause with a single expression and an additional argument
+  /// of a kind \a Kind.
+  ///
+  /// \param Kind Kind of current clause.
+  /// \param ParseOnly true to skip the clause's semantic actions and return
+  /// nullptr.
+  ///
+  ACCClause *ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
+                                                bool ParseOnly);
+  /// \brief Parses clause without any additional arguments.
+  ///
+  /// \param Kind Kind of current clause.
+  /// \param ParseOnly true to skip the clause's semantic actions and return
+  /// nullptr.
+  ///
+  ACCClause *ParseOpenACCClause(OpenACCClauseKind Kind, bool ParseOnly = false);
+  /// \brief Parses clause with the list of variables of a kind \a Kind.
+  ///
+  /// \param Kind Kind of current clause.
+  /// \param ParseOnly true to skip the clause's semantic actions and return
+  /// nullptr.
+  ///
+  ACCClause *ParseOpenACCVarListClause(OpenACCDirectiveKind DKind,
+                                      OpenACCClauseKind Kind, bool ParseOnly);
+
+public:
+  /// Parses simple expression in parens for single-expression clauses of OpenACC
+  /// constructs.
+  /// \param RLoc Returned location of right paren.
+  ExprResult ParseOpenACCParensExpr(StringRef ClauseName, SourceLocation &RLoc);
+
+  /// Data used for parsing list of variables in OpenACC clauses.
+  struct OpenACCVarListDataTy {
+    Expr *TailExpr = nullptr;
+    SourceLocation ColonLoc;
+    CXXScopeSpec ReductionIdScopeSpec;
+    DeclarationNameInfo ReductionId;
+    OpenACCDependClauseKind DepKind = ACCC_DEPEND_unknown;
+    OpenACCLinearClauseKind LinKind = ACCC_LINEAR_val;
+    OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
+    OpenACCMapClauseKind MapType = ACCC_MAP_unknown;
+    bool IsMapTypeImplicit = false;
+    SourceLocation DepLinMapLoc;
+  };
+
+  /// Parses clauses with list.
+  bool ParseOpenACCVarList(OpenACCDirectiveKind DKind, OpenACCClauseKind Kind,
+                          SmallVectorImpl<Expr *> &Vars,
+                          OpenACCVarListDataTy &Data);
   bool ParseUnqualifiedId(CXXScopeSpec &SS, bool EnteringContext,
                           bool AllowDestructorName,
                           bool AllowConstructorName,
