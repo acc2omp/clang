@@ -1,0 +1,5 @@
+
+	- Duplicate file include/clang/AST/ExprOpenMP.h into OpenACC version
+	- At include/clang/AST/StmtVisitor.h, include ExprOpenACC.h
+	- 
+

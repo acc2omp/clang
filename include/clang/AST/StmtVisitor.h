@@ -16,6 +16,7 @@
 
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/StmtCXX.h"
@@ -196,7 +197,7 @@ template<typename ImplClass, typename RetTy=void, typename... ParamTys>
 class ConstStmtVisitor
  : public StmtVisitorBase<make_const_ptr, ImplClass, RetTy, ParamTys...> {};
 
-/*
+
 /// \brief This class implements a simple visitor for ACCClause
 /// subclasses.
 template<class ImplClass, template <typename> class Ptr, typename RetTy>
@@ -231,7 +232,7 @@ class ACCClauseVisitor :
 template<class ImplClass, typename RetTy = void>
 class ConstACCClauseVisitor :
       public ACCClauseVisitorBase <ImplClass, make_const_ptr, RetTy> {};
-*/
+
 
 /// \brief This class implements a simple visitor for OMPClause
 /// subclasses.
