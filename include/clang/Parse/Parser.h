@@ -2867,14 +2867,18 @@ public:
   bool ParseOpenACCVarList(OpenACCDirectiveKind DKind, OpenACCClauseKind Kind,
                           SmallVectorImpl<Expr *> &Vars,
                           OpenACCVarListDataTy &Data);
-  bool ParseUnqualifiedId(CXXScopeSpec &SS, bool EnteringContext,
+  
+
+  //TODO acc2mp
+  //Uncomment this duplicate function
+  /*->bool ParseUnqualifiedId(CXXScopeSpec &SS, bool EnteringContext,
                           bool AllowDestructorName,
                           bool AllowConstructorName,
                           bool AllowDeductionGuide,
                           ParsedType ObjectType,
                           SourceLocation& TemplateKWLoc,
                           UnqualifiedId &Result);
-
+  */
 private:
   //===--------------------------------------------------------------------===//
   // C++ 14: Templates [temp]

@@ -152,6 +152,10 @@ namespace clang {
   class ObjCMethodDecl;
   class ObjCPropertyDecl;
   class ObjCProtocolDecl;
+  class ACCThreadPrivateDecl;
+  class ACCDeclareReductionDecl;
+  class ACCDeclareSimdDecl;
+  class ACCClause;
   class OMPThreadPrivateDecl;
   class OMPDeclareReductionDecl;
   class OMPDeclareSimdDecl;
@@ -8662,7 +8666,7 @@ public:
   ExprResult ActOnOpenACCIdExpression(Scope *CurScope,
                                      CXXScopeSpec &ScopeSpec,
                                      const DeclarationNameInfo &Id);
-  /// \brief Called on well-formed '#pragma omp threadprivate'.
+  /// \brief Called on well-formed '#pragma acc threadprivate'.
   DeclGroupPtrTy ActOnOpenACCThreadprivateDirective(
                                      SourceLocation Loc,
                                      ArrayRef<Expr *> VarList);
@@ -8674,7 +8678,7 @@ public:
   /// reduction' construct.
   QualType ActOnOpenACCDeclareReductionType(SourceLocation TyLoc,
                                            TypeResult ParsedType);
-  /// \brief Called on start of '#pragma omp declare reduction'.
+  /// \brief Called on start of '#pragma acc declare reduction'.
   DeclGroupPtrTy ActOnOpenACCDeclareReductionDirectiveStart(
       Scope *S, DeclContext *DC, DeclarationName Name,
       ArrayRef<std::pair<QualType, SourceLocation>> ReductionTypes,
@@ -8684,12 +8688,12 @@ public:
   /// \brief Finish current declare reduction construct initializer.
   void ActOnOpenACCDeclareReductionCombinerEnd(Decl *D, Expr *Combiner);
   /// \brief Initialize declare reduction construct initializer.
-  /// \return omp_priv variable.
+  /// \return acc_priv variable.
   VarDecl *ActOnOpenACCDeclareReductionInitializerStart(Scope *S, Decl *D);
   /// \brief Finish current declare reduction construct initializer.
   void ActOnOpenACCDeclareReductionInitializerEnd(Decl *D, Expr *Initializer,
                                                  VarDecl *OmpPrivParm);
-  /// \brief Called at the end of '#pragma omp declare reduction'.
+  /// \brief Called at the end of '#pragma acc declare reduction'.
   DeclGroupPtrTy ActOnOpenACCDeclareReductionDirectiveEnd(
       Scope *S, DeclGroupPtrTy DeclReductions, bool IsValid);
 
@@ -8734,255 +8738,255 @@ public:
       OpenACCDirectiveKind Kind, const DeclarationNameInfo &DirName,
       OpenACCDirectiveKind CancelRegion, ArrayRef<ACCClause *> Clauses,
       Stmt *AStmt, SourceLocation StartLoc, SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp parallel' after parsing
+  /// \brief Called on well-formed '\#pragma acc parallel' after parsing
   /// of the  associated statement.
   StmtResult ActOnOpenACCParallelDirective(ArrayRef<ACCClause *> Clauses,
                                           Stmt *AStmt,
                                           SourceLocation StartLoc,
                                           SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp simd' after parsing
+  /// \brief Called on well-formed '\#pragma acc simd' after parsing
   /// of the associated statement.
   StmtResult ActOnOpenACCSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp for' after parsing
+  /// \brief Called on well-formed '\#pragma acc for' after parsing
   /// of the associated statement.
   StmtResult ActOnOpenACCForDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp for simd' after parsing
+  /// \brief Called on well-formed '\#pragma acc for simd' after parsing
   /// of the associated statement.
   StmtResult ActOnOpenACCForSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp sections' after parsing
+  /// \brief Called on well-formed '\#pragma acc sections' after parsing
   /// of the associated statement.
   StmtResult ActOnOpenACCSectionsDirective(ArrayRef<ACCClause *> Clauses,
                                           Stmt *AStmt, SourceLocation StartLoc,
                                           SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp section' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc section' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCSectionDirective(Stmt *AStmt, SourceLocation StartLoc,
                                          SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp single' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc single' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCSingleDirective(ArrayRef<ACCClause *> Clauses,
                                         Stmt *AStmt, SourceLocation StartLoc,
                                         SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp master' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc master' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCMasterDirective(Stmt *AStmt, SourceLocation StartLoc,
                                         SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp critical' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc critical' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCCriticalDirective(const DeclarationNameInfo &DirName,
                                           ArrayRef<ACCClause *> Clauses,
                                           Stmt *AStmt, SourceLocation StartLoc,
                                           SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp parallel for' after parsing
+  /// \brief Called on well-formed '\#pragma acc parallel for' after parsing
   /// of the  associated statement.
   StmtResult ActOnOpenACCParallelForDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp parallel for simd' after
+  /// \brief Called on well-formed '\#pragma acc parallel for simd' after
   /// parsing of the  associated statement.
   StmtResult ActOnOpenACCParallelForSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp parallel sections' after
+  /// \brief Called on well-formed '\#pragma acc parallel sections' after
   /// parsing of the  associated statement.
   StmtResult ActOnOpenACCParallelSectionsDirective(ArrayRef<ACCClause *> Clauses,
                                                   Stmt *AStmt,
                                                   SourceLocation StartLoc,
                                                   SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp task' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc task' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCTaskDirective(ArrayRef<ACCClause *> Clauses,
                                       Stmt *AStmt, SourceLocation StartLoc,
                                       SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp taskyield'.
+  /// \brief Called on well-formed '\#pragma acc taskyield'.
   StmtResult ActOnOpenACCTaskyieldDirective(SourceLocation StartLoc,
                                            SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp barrier'.
+  /// \brief Called on well-formed '\#pragma acc barrier'.
   StmtResult ActOnOpenACCBarrierDirective(SourceLocation StartLoc,
                                          SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp taskwait'.
+  /// \brief Called on well-formed '\#pragma acc taskwait'.
   StmtResult ActOnOpenACCTaskwaitDirective(SourceLocation StartLoc,
                                           SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp taskgroup'.
+  /// \brief Called on well-formed '\#pragma acc taskgroup'.
   StmtResult ActOnOpenACCTaskgroupDirective(ArrayRef<ACCClause *> Clauses,
                                            Stmt *AStmt, SourceLocation StartLoc,
                                            SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp flush'.
+  /// \brief Called on well-formed '\#pragma acc flush'.
   StmtResult ActOnOpenACCFlushDirective(ArrayRef<ACCClause *> Clauses,
                                        SourceLocation StartLoc,
                                        SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp ordered' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc ordered' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCOrderedDirective(ArrayRef<ACCClause *> Clauses,
                                          Stmt *AStmt, SourceLocation StartLoc,
                                          SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp atomic' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc atomic' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
                                         Stmt *AStmt, SourceLocation StartLoc,
                                         SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp target' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc target' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCTargetDirective(ArrayRef<ACCClause *> Clauses,
                                         Stmt *AStmt, SourceLocation StartLoc,
                                         SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp target data' after parsing of
+  /// \brief Called on well-formed '\#pragma acc target data' after parsing of
   /// the associated statement.
   StmtResult ActOnOpenACCTargetDataDirective(ArrayRef<ACCClause *> Clauses,
                                             Stmt *AStmt, SourceLocation StartLoc,
                                             SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp target enter data' after
+  /// \brief Called on well-formed '\#pragma acc target enter data' after
   /// parsing of the associated statement.
   StmtResult ActOnOpenACCTargetEnterDataDirective(ArrayRef<ACCClause *> Clauses,
                                                  SourceLocation StartLoc,
                                                  SourceLocation EndLoc,
                                                  Stmt *AStmt);
-  /// \brief Called on well-formed '\#pragma omp target exit data' after
+  /// \brief Called on well-formed '\#pragma acc target exit data' after
   /// parsing of the associated statement.
   StmtResult ActOnOpenACCTargetExitDataDirective(ArrayRef<ACCClause *> Clauses,
                                                 SourceLocation StartLoc,
                                                 SourceLocation EndLoc,
                                                 Stmt *AStmt);
-  /// \brief Called on well-formed '\#pragma omp target parallel' after
+  /// \brief Called on well-formed '\#pragma acc target parallel' after
   /// parsing of the associated statement.
   StmtResult ActOnOpenACCTargetParallelDirective(ArrayRef<ACCClause *> Clauses,
                                                 Stmt *AStmt,
                                                 SourceLocation StartLoc,
                                                 SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp target parallel for' after
+  /// \brief Called on well-formed '\#pragma acc target parallel for' after
   /// parsing of the  associated statement.
   StmtResult ActOnOpenACCTargetParallelForDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp teams' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc teams' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCTeamsDirective(ArrayRef<ACCClause *> Clauses,
                                        Stmt *AStmt, SourceLocation StartLoc,
                                        SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma omp cancellation point'.
+  /// \brief Called on well-formed '\#pragma acc cancellation point'.
   StmtResult
   ActOnOpenACCCancellationPointDirective(SourceLocation StartLoc,
                                         SourceLocation EndLoc,
                                         OpenACCDirectiveKind CancelRegion);
-  /// \brief Called on well-formed '\#pragma omp cancel'.
+  /// \brief Called on well-formed '\#pragma acc cancel'.
   StmtResult ActOnOpenACCCancelDirective(ArrayRef<ACCClause *> Clauses,
                                         SourceLocation StartLoc,
                                         SourceLocation EndLoc,
                                         OpenACCDirectiveKind CancelRegion);
-  /// \brief Called on well-formed '\#pragma omp taskloop' after parsing of the
+  /// \brief Called on well-formed '\#pragma acc taskloop' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCTaskLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp taskloop simd' after parsing of
+  /// \brief Called on well-formed '\#pragma acc taskloop simd' after parsing of
   /// the associated statement.
   StmtResult ActOnOpenACCTaskLoopSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp distribute' after parsing
+  /// \brief Called on well-formed '\#pragma acc distribute' after parsing
   /// of the associated statement.
   StmtResult ActOnOpenACCDistributeDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp target update'.
+  /// \brief Called on well-formed '\#pragma acc target update'.
   StmtResult ActOnOpenACCTargetUpdateDirective(ArrayRef<ACCClause *> Clauses,
                                               SourceLocation StartLoc,
                                               SourceLocation EndLoc,
                                               Stmt *AStmt);
-  /// \brief Called on well-formed '\#pragma omp distribute parallel for' after
+  /// \brief Called on well-formed '\#pragma acc distribute parallel for' after
   /// parsing of the associated statement.
   StmtResult ActOnOpenACCDistributeParallelForDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp distribute parallel for simd'
+  /// \brief Called on well-formed '\#pragma acc distribute parallel for simd'
   /// after parsing of the associated statement.
   StmtResult ActOnOpenACCDistributeParallelForSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp distribute simd' after
+  /// \brief Called on well-formed '\#pragma acc distribute simd' after
   /// parsing of the associated statement.
   StmtResult ActOnOpenACCDistributeSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp target parallel for simd' after
+  /// \brief Called on well-formed '\#pragma acc target parallel for simd' after
   /// parsing of the associated statement.
   StmtResult ActOnOpenACCTargetParallelForSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// \brief Called on well-formed '\#pragma omp target simd' after parsing of
+  /// \brief Called on well-formed '\#pragma acc target simd' after parsing of
   /// the associated statement.
   StmtResult ActOnOpenACCTargetSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp teams distribute' after parsing of
+  /// Called on well-formed '\#pragma acc teams distribute' after parsing of
   /// the associated statement.
   StmtResult ActOnOpenACCTeamsDistributeDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp teams distribute simd' after parsing
+  /// Called on well-formed '\#pragma acc teams distribute simd' after parsing
   /// of the associated statement.
   StmtResult ActOnOpenACCTeamsDistributeSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp teams distribute parallel for simd'
+  /// Called on well-formed '\#pragma acc teams distribute parallel for simd'
   /// after parsing of the associated statement.
   StmtResult ActOnOpenACCTeamsDistributeParallelForSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp teams distribute parallel for'
+  /// Called on well-formed '\#pragma acc teams distribute parallel for'
   /// after parsing of the associated statement.
   StmtResult ActOnOpenACCTeamsDistributeParallelForDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp target teams' after parsing of the
+  /// Called on well-formed '\#pragma acc target teams' after parsing of the
   /// associated statement.
   StmtResult ActOnOpenACCTargetTeamsDirective(ArrayRef<ACCClause *> Clauses,
                                              Stmt *AStmt,
                                              SourceLocation StartLoc,
                                              SourceLocation EndLoc);
-  /// Called on well-formed '\#pragma omp target teams distribute' after parsing
+  /// Called on well-formed '\#pragma acc target teams distribute' after parsing
   /// of the associated statement.
   StmtResult ActOnOpenACCTargetTeamsDistributeDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp target teams distribute parallel for'
+  /// Called on well-formed '\#pragma acc target teams distribute parallel for'
   /// after parsing of the associated statement.
   StmtResult ActOnOpenACCTargetTeamsDistributeParallelForDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp target teams distribute parallel for
+  /// Called on well-formed '\#pragma acc target teams distribute parallel for
   /// simd' after parsing of the associated statement.
   StmtResult ActOnOpenACCTargetTeamsDistributeParallelForSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
-  /// Called on well-formed '\#pragma omp target teams distribute simd' after
+  /// Called on well-formed '\#pragma acc target teams distribute simd' after
   /// parsing of the associated statement.
   StmtResult ActOnOpenACCTargetTeamsDistributeSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
@@ -8997,7 +9001,7 @@ public:
   bool CheckOpenACCLinearDecl(ValueDecl *D, SourceLocation ELoc,
                              OpenACCLinearClauseKind LinKind, QualType Type);
 
-  /// \brief Called on well-formed '\#pragma omp declare simd' after parsing of
+  /// \brief Called on well-formed '\#pragma acc declare simd' after parsing of
   /// the associated method/function.
   DeclGroupPtrTy ActOnOpenACCDeclareSimdDirective(
       DeclGroupPtrTy DG, ACCDeclareSimdDeclAttr::BranchStateTy BS,
@@ -9267,13 +9271,17 @@ public:
   //===--------------------------------------------------------------------===//
   // OpenMP directives and clauses.
   //
+
+  //TODO acc2mp
+  //Uncomment variables and functions that were redeclared  
+
 private:
-  void *VarDataSharingAttributesStack;
+  //->void *VarDataSharingAttributesStack;
   /// Set to true inside '#pragma omp declare target' region.
   bool IsInOpenMPDeclareTargetContext = false;
   /// \brief Initialization of data-sharing attributes stack.
-  void InitDataSharingAttributesStack();
-  void DestroyDataSharingAttributesStack();
+  //->void InitDataSharingAttributesStack();
+  //->void DestroyDataSharingAttributesStack();
   ExprResult
   VerifyPositiveIntegerConstantInClause(Expr *Op, OpenMPClauseKind CKind,
                                         bool StrictlyPositive = true);
@@ -9300,10 +9308,11 @@ private:
   /// \param Selector selects diagnostic message: 0 for type and 1 for
   ///        declaration.
   /// \return true if the type or declaration is disabled.
-  template <typename T, typename DiagLocT, typename DiagInfoT, typename MapT>
+  /*->template <typename T, typename DiagLocT, typename DiagInfoT, typename MapT>
   bool checkOpenCLDisabledTypeOrDecl(T D, DiagLocT DiagLoc, DiagInfoT DiagInfo,
                                      MapT &Map, unsigned Selector = 0,
                                      SourceRange SrcRange = SourceRange());
+  */
 
 public:
   /// \brief Return true if the provided declaration \a VD should be captured by
