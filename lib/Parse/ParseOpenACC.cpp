@@ -573,7 +573,7 @@ ACCClause *Parser::ParseOpenACCSimpleClause(OpenACCClauseKind Kind,
                          getOpenACCClauseName(Kind)))
     return nullptr;
 
-  unsigned Type = getOpenMPSimpleClauseType(
+  unsigned Type = getOpenACCSimpleClauseType(
       Kind, Tok.isAnnotation() ? "" : PP.getSpelling(Tok));
   SourceLocation TypeLoc = Tok.getLocation();
   if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
@@ -585,7 +585,7 @@ ACCClause *Parser::ParseOpenACCSimpleClause(OpenACCClauseKind Kind,
 
   if (ParseOnly)
     return nullptr;
-  return Actions.ActOnOpenMPSimpleClause(Kind, Type, TypeLoc, LOpen, Loc,
+  return Actions.ActOnOpenACCSimpleClause(Kind, Type, TypeLoc, LOpen, Loc,
                                          Tok.getLocation());
 }
 

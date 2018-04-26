@@ -12,8 +12,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_AST_STMTOPENMP_H
-#define LLVM_CLANG_AST_STMTOPENMP_H
+#ifndef LLVM_CLANG_AST_STMTOPENACC_H
+#define LLVM_CLANG_AST_STMTOPENACC_H
 
 #include "clang/AST/Expr.h"
 #include "clang/AST/OpenACCClause.h"
@@ -244,17 +244,8 @@ public:
   OpenACCDirectiveKind getDirectiveKind() const { return Kind; }
 
   static bool classof(const Stmt *S) {
-
-    // TODO acc2mp
-    // Don't know why but this functionality has invalid reference.
-    // Where is the definition of firstACCExecutableDirectiveConstant?
-    // Where is the omp's equivalent firstOMPExecutableDirectiveConstant?
-    //
-    // Uncomment this and find out what's missing
      return S->getStmtClass() >= firstACCExecutableDirectiveConstant &&
            S->getStmtClass() <= lastACCExecutableDirectiveConstant;
-
-    //return false;
   }
 
   child_range children() {
