@@ -4102,6 +4102,13 @@ Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
       base->getType()->isSpecificPlaceholderType(BuiltinType::OMPArraySection))
     return ActOnOMPArraySectionExpr(base, lbLoc, idx, SourceLocation(),
                                     /*Length=*/nullptr, rbLoc);
+  
+// TODO acc2mp
+// Figure out the need of the following copy
+//  if (base && !base->getType().isNull() &&
+//      base->getType()->isSpecificPlaceholderType(BuiltinType::ACCArraySection))
+//    return ActOnACCArraySectionExpr(base, lbLoc, idx, SourceLocation(),
+//                                    /*Length=*/nullptr, rbLoc);
 
   // Since this might be a postfix expression, get rid of ParenListExprs.
   if (isa<ParenListExpr>(base)) {
@@ -4169,6 +4176,158 @@ Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
   }
 
   return CreateBuiltinArraySubscriptExpr(base, lbLoc, idx, rbLoc);
+}
+
+ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
+                                          Expr *LowerBound,
+                                          SourceLocation ColonLoc, Expr *Length,
+                                          SourceLocation RBLoc) {
+  
+  /*
+ *  TODO acc2mp
+ *  Figure out what to do with semantics on our OpenACC mod
+ *
+  if (Base->getType()->isPlaceholderType() &&
+      !Base->g0etType()->isSpecificPlaceholderType(
+          BuiltinType::ACCArraySection)) {
+    ExprResult Result = CheckPlaceholderExpr(Base);
+    if (Result.isInvalid())
+      return ExprError();
+    Base = Result.get();
+  }
+  if (LowerBound && LowerBound->getType()->isNonOverloadPlaceholderType()) {
+    ExprResult Result = CheckPlaceholderExpr(LowerBound);
+    if (Result.isInvalid())
+      return ExprError();
+    Result = DefaultLvalueConversion(Result.get());
+    if (Result.isInvalid())
+      return ExprError();
+    LowerBound = Result.get();
+  }
+  if (Length && Length->getType()->isNonOverloadPlaceholderType()) {
+    ExprResult Result = CheckPlaceholderExpr(Length);
+    if (Result.isInvalid())
+      return ExprError();
+    Result = DefaultLvalueConversion(Result.get());
+    if (Result.isInvalid())
+      return ExprError();
+    Length = Result.get();
+  }
+
+  // Build an unanalyzed expression if either operand is type-dependent.
+  if (Base->isTypeDependent() ||
+      (LowerBound &&
+       (LowerBound->isTypeDependent() || LowerBound->isValueDependent())) ||
+      (Length && (Length->isTypeDependent() || Length->isValueDependent()))) {
+    return new (Context)
+        ACCArraySectionExpr(Base, LowerBound, Length, Context.DependentTy,
+                            VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
+  }
+
+  // Perform default conversions.
+  QualType OriginalTy = ACCArraySectionExpr::getBaseOriginalType(Base);
+  QualType ResultTy;
+  if (OriginalTy->isAnyPointerType()) {
+    ResultTy = OriginalTy->getPointeeType();
+  } else if (OriginalTy->isArrayType()) {
+    ResultTy = OriginalTy->getAsArrayTypeUnsafe()->getElementType();
+  } else {
+    return ExprError(
+        Diag(Base->getExprLoc(), diag::err_omp_typecheck_section_value)
+        << Base->getSourceRange());
+  }
+  // C99 6.5.2.1p1
+  if (LowerBound) {
+    auto Res = PerformOpenACCImplicitIntegerConversion(LowerBound->getExprLoc(),
+                                                      LowerBound);
+    if (Res.isInvalid())
+      return ExprError(Diag(LowerBound->getExprLoc(),
+                            diag::err_omp_typecheck_section_not_integer)
+                       << 0 << LowerBound->getSourceRange());
+    LowerBound = Res.get();
+
+    if (LowerBound->getType()->isSpecificBuiltinType(BuiltinType::Char_S) ||
+        LowerBound->getType()->isSpecificBuiltinType(BuiltinType::Char_U))
+      Diag(LowerBound->getExprLoc(), diag::warn_omp_section_is_char)
+          << 0 << LowerBound->getSourceRange();
+  }
+  if (Length) {
+    auto Res =
+        PerformOpenACCImplicitIntegerConversion(Length->getExprLoc(), Length);
+    if (Res.isInvalid())
+      return ExprError(Diag(Length->getExprLoc(),
+                            diag::err_omp_typecheck_section_not_integer)
+                       << 1 << Length->getSourceRange());
+    Length = Res.get();
+
+    if (Length->getType()->isSpecificBuiltinType(BuiltinType::Char_S) ||
+        Length->getType()->isSpecificBuiltinType(BuiltinType::Char_U))
+      Diag(Length->getExprLoc(), diag::warn_omp_section_is_char)
+          << 1 << Length->getSourceRange();
+  }
+
+  // C99 6.5.2.1p1: "shall have type "pointer to *object* type". Similarly,
+  // C++ [expr.sub]p1: The type "T" shall be a completely-defined object
+  // type. Note that functions are not objects, and that (in C99 parlance)
+  // incomplete types are not object types.
+  if (ResultTy->isFunctionType()) {
+    Diag(Base->getExprLoc(), diag::err_omp_section_function_type)
+        << ResultTy << Base->getSourceRange();
+    return ExprError();
+  }
+
+  if (RequireCompleteType(Base->getExprLoc(), ResultTy,
+                          diag::err_omp_section_incomplete_type, Base))
+    return ExprError();
+
+  if (LowerBound && !OriginalTy->isAnyPointerType()) {
+    llvm::APSInt LowerBoundValue;
+    if (LowerBound->EvaluateAsInt(LowerBoundValue, Context)) {
+      // OpenACC 4.5, [2.4 Array Sections]
+      // The array section must be a subset of the original array.
+      if (LowerBoundValue.isNegative()) {
+        Diag(LowerBound->getExprLoc(), diag::err_omp_section_not_subset_of_array)
+            << LowerBound->getSourceRange();
+        return ExprError();
+      }
+    }
+  }
+
+  if (Length) {
+    llvm::APSInt LengthValue;
+    if (Length->EvaluateAsInt(LengthValue, Context)) {
+      // OpenACC 4.5, [2.4 Array Sections]
+      // The length must evaluate to non-negative integers.
+      if (LengthValue.isNegative()) {
+        Diag(Length->getExprLoc(), diag::err_omp_section_length_negative)
+*///            << LengthValue.toString(/*Radix=*/10, /*Signed=*/true)
+/*            << Length->getSourceRange();
+        return ExprError();
+      }
+    }
+  } else if (ColonLoc.isValid() &&
+             (OriginalTy.isNull() || (!OriginalTy->isConstantArrayType() &&
+                                      !OriginalTy->isVariableArrayType()))) {
+    // OpenACC 4.5, [2.4 Array Sections]
+    // When the size of the array dimension is not known, the length must be
+    // specified explicitly.
+    Diag(ColonLoc, diag::err_omp_section_length_undefined)
+        << (!OriginalTy.isNull() && OriginalTy->isArrayType());
+    return ExprError();
+  }
+
+  if (!Base->getType()->isSpecificPlaceholderType(
+          BuiltinType::ACCArraySection)) {
+    ExprResult Result = DefaultFunctionArrayLvalueConversion(Base);
+    if (Result.isInvalid())
+      return ExprError();
+    Base = Result.get();
+  }
+  return new (Context)
+      ACCArraySectionExpr(Base, LowerBound, Length, Context.ACCArraySectionTy,
+                          VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
+*/
+  return NULL;
 }
 
 ExprResult Sema::ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,

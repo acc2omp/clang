@@ -22,10 +22,12 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/StmtCXX.h"
 #include "clang/AST/StmtObjC.h"
+#include "clang/AST/StmtOpenACC.h"
 #include "clang/AST/StmtOpenMP.h"
 #include "clang/Sema/Designator.h"
 #include "clang/Sema/Lookup.h"
@@ -2674,6 +2676,18 @@ public:
     return getSema().ActOnArraySubscriptExpr(/*Scope=*/nullptr, LHS,
                                              LBracketLoc, RHS,
                                              RBracketLoc);
+  }
+
+  /// \brief Build a new array section expression.
+  ///
+  /// By default, performs semantic analysis to build the new expression.
+  /// Subclasses may override this routine to provide different behavior.
+  ExprResult RebuildACCArraySectionExpr(Expr *Base, SourceLocation LBracketLoc,
+                                        Expr *LowerBound,
+                                        SourceLocation ColonLoc, Expr *Length,
+                                        SourceLocation RBracketLoc) {
+    return getSema().ActOnACCArraySectionExpr(Base, LBracketLoc, LowerBound,
+                                              ColonLoc, Length, RBracketLoc);
   }
 
   /// \brief Build a new array section expression.
