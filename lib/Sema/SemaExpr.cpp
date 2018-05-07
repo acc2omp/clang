@@ -4327,7 +4327,7 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
       ACCArraySectionExpr(Base, LowerBound, Length, Context.ACCArraySectionTy,
                           VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
 */
-  return NULL;
+  return 0;
 }
 
 ExprResult Sema::ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,
