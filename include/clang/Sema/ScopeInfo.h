@@ -111,6 +111,9 @@ public:
   /// \brief Whether a statement was dropped because it was invalid.
   bool HasDroppedStmt : 1;
 
+  /// \brief True if current scope is for OpenACC declare reduction combiner.
+  bool HasACCDeclareReductionCombiner : 1;
+
   /// \brief True if current scope is for OpenMP declare reduction combiner.
   bool HasOMPDeclareReductionCombiner : 1;
 
@@ -373,6 +376,10 @@ public:
     HasDroppedStmt = true;
   }
 
+  void setHasACCDeclareReductionCombiner() {
+    HasACCDeclareReductionCombiner = true;
+  }
+
   void setHasOMPDeclareReductionCombiner() {
     HasOMPDeclareReductionCombiner = true;
   }
@@ -445,6 +452,7 @@ public:
       HasBranchIntoScope(false),
       HasIndirectGoto(false),
       HasDroppedStmt(false),
+      HasACCDeclareReductionCombiner(false),
       HasOMPDeclareReductionCombiner(false),
       HasFallthroughStmt(false),
       HasPotentialAvailabilityViolations(false),
@@ -715,8 +723,12 @@ public:
   ImplicitParamDecl *ContextParam;
   /// \brief The kind of captured region.
   unsigned short CapRegionKind;
+  unsigned short OpenACCLevel;
   unsigned short OpenMPLevel;
 
+
+// TODO acc2mp
+// Figure out how to implement acc's equivalence
   CapturedRegionScopeInfo(DiagnosticsEngine &Diag, Scope *S, CapturedDecl *CD,
                           RecordDecl *RD, ImplicitParamDecl *Context,
                           CapturedRegionKind K, unsigned OpenMPLevel)
@@ -734,6 +746,8 @@ public:
     switch (CapRegionKind) {
     case CR_Default:
       return "default captured statement";
+    case CR_OpenACC:
+      return "OpenACC region";
     case CR_OpenMP:
       return "OpenMP region";
     }

@@ -159,6 +159,14 @@ public:
   /// \brief A list of all -fno-builtin-* function names (e.g., memset).
   std::vector<std::string> NoBuiltinFuncs;
 
+  /// \brief Triples of the OpenACC targets that the host code codegen should
+  /// take into account in order to generate accurate offloading descriptors.
+  std::vector<llvm::Triple> ACCTargetTriples;
+
+  /// \brief Name of the IR file that contains the result of the OpenACC target
+  /// host code generation.
+  std::string ACCHostIRFile;
+
   /// \brief Triples of the OpenMP targets that the host code codegen should
   /// take into account in order to generate accurate offloading descriptors.
   std::vector<llvm::Triple> OMPTargetTriples;

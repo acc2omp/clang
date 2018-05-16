@@ -1588,6 +1588,11 @@ void ASTWriter::WriteControlBlock(Preprocessor &PP, ASTContext &Context,
   }
   Record.push_back(LangOpts.CommentOpts.ParseAllComments);
 
+  // OpenACC offloading options.
+  Record.push_back(LangOpts.ACCTargetTriples.size());
+  for (auto &T : LangOpts.ACCTargetTriples)
+    AddString(T.getTriple(), Record);
+
   // OpenMP offloading options.
   Record.push_back(LangOpts.OMPTargetTriples.size());
   for (auto &T : LangOpts.OMPTargetTriples)
@@ -6365,6 +6370,26 @@ void ASTWriter::DeclarationMarkedUsed(const Decl *D) {
       return;
 
   DeclUpdates[D].push_back(DeclUpdate(UPD_DECL_MARKED_USED));
+}
+
+void ASTWriter::DeclarationMarkedOpenACCThreadPrivate(const Decl *D) {
+  if (Chain && Chain->isProcessingUpdateRecords()) return;
+  assert(!WritingAST && "Already writing the AST!");
+  if (!D->isFromASTFile())
+    return;
+
+  DeclUpdates[D].push_back(DeclUpdate(UPD_DECL_MARKED_OPENACC_THREADPRIVATE));
+}
+
+void ASTWriter::DeclarationMarkedOpenACCDeclareTarget(const Decl *D,
+                                                     const Attr *Attr) {
+  if (Chain && Chain->isProcessingUpdateRecords()) return;
+  assert(!WritingAST && "Already writing the AST!");
+  if (!D->isFromASTFile())
+    return;
+
+  DeclUpdates[D].push_back(
+      DeclUpdate(UPD_DECL_MARKED_OPENACC_DECLARETARGET, Attr));
 }
 
 void ASTWriter::DeclarationMarkedOpenMPThreadPrivate(const Decl *D) {

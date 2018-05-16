@@ -735,6 +735,9 @@ private:
   void AddedObjCCategoryToInterface(const ObjCCategoryDecl *CatD,
                                     const ObjCInterfaceDecl *IFD) override;
   void DeclarationMarkedUsed(const Decl *D) override;
+  void DeclarationMarkedOpenACCThreadPrivate(const Decl *D) override;
+  void DeclarationMarkedOpenACCDeclareTarget(const Decl *D,
+                                            const Attr *Attr) override;
   void DeclarationMarkedOpenMPThreadPrivate(const Decl *D) override;
   void DeclarationMarkedOpenMPDeclareTarget(const Decl *D,
                                             const Attr *Attr) override;

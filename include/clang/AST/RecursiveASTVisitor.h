@@ -21,6 +21,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclFriend.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
@@ -528,6 +529,18 @@ private:
   bool TraverseDeclContextHelper(DeclContext *DC);
   bool TraverseFunctionHelper(FunctionDecl *D);
   bool TraverseVarHelper(VarDecl *D);
+
+  bool TraverseACCExecutableDirective(ACCExecutableDirective *S);
+  bool TraverseACCLoopDirective(ACCLoopDirective *S);
+  bool TraverseACCClause(ACCClause *C);
+#define OPENACC_CLAUSE(Name, Class) bool Visit##Class(Class *C);
+#include "clang/Basic/OpenACCKinds.def"
+  /// \brief Process clauses with list of variables.
+  template <typename T> bool VisitACCClauseList(T *Node);
+  /// Process clauses with pre-initis.
+  bool VisitACCClauseWithPreInit(ACCClauseWithPreInit *Node);
+  bool VisitACCClauseWithPostUpdate(ACCClauseWithPostUpdate *Node);
+  
   bool TraverseOMPExecutableDirective(OMPExecutableDirective *S);
   bool TraverseOMPLoopDirective(OMPLoopDirective *S);
   bool TraverseOMPClause(OMPClause *C);
@@ -1577,6 +1590,22 @@ DEF_TRAVERSE_DECL(UsingShadowDecl, {})
 
 DEF_TRAVERSE_DECL(ConstructorUsingShadowDecl, {})
 
+DEF_TRAVERSE_DECL(ACCThreadPrivateDecl, {
+  for (auto *I : D->varlists()) {
+    TRY_TO(TraverseStmt(I));
+  }
+})
+
+DEF_TRAVERSE_DECL(ACCDeclareReductionDecl, {
+  TRY_TO(TraverseStmt(D->getCombiner()));
+  if (auto *Initializer = D->getInitializer())
+    TRY_TO(TraverseStmt(Initializer));
+  TRY_TO(TraverseType(D->getType()));
+  return true;
+})
+
+DEF_TRAVERSE_DECL(ACCCapturedExprDecl, { TRY_TO(TraverseVarHelper(D)); })
+
 DEF_TRAVERSE_DECL(OMPThreadPrivateDecl, {
   for (auto *I : D->varlists()) {
     TRY_TO(TraverseStmt(I));
@@ -2427,6 +2456,7 @@ DEF_TRAVERSE_STMT(CXXMemberCallExpr, {})
 // over the children.
 DEF_TRAVERSE_STMT(AddrLabelExpr, {})
 DEF_TRAVERSE_STMT(ArraySubscriptExpr, {})
+DEF_TRAVERSE_STMT(ACCArraySectionExpr, {})
 DEF_TRAVERSE_STMT(OMPArraySectionExpr, {})
 
 DEF_TRAVERSE_STMT(BlockExpr, {
@@ -2601,6 +2631,167 @@ DEF_TRAVERSE_STMT(ObjCDictionaryLiteral, {})
 // Traverse OpenCL: AsType, Convert.
 DEF_TRAVERSE_STMT(AsTypeExpr, {})
 
+// OpenACC directives.
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::TraverseACCExecutableDirective(
+    ACCExecutableDirective *S) {
+  for (auto *C : S->clauses()) {
+    TRY_TO(TraverseACCClause(C));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool
+RecursiveASTVisitor<Derived>::TraverseACCLoopDirective(ACCLoopDirective *S) {
+  return TraverseACCExecutableDirective(S);
+}
+
+DEF_TRAVERSE_STMT(ACCParallelDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCForDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCForSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCSectionsDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCSectionDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCSingleDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCMasterDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCCriticalDirective, {
+  TRY_TO(TraverseDeclarationNameInfo(S->getDirectiveName()));
+  TRY_TO(TraverseACCExecutableDirective(S));
+})
+
+DEF_TRAVERSE_STMT(ACCParallelForDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCParallelForSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCParallelSectionsDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTaskDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTaskyieldDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCBarrierDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTaskwaitDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTaskgroupDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCCancellationPointDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCCancelDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCFlushDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCOrderedDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCAtomicDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetDataDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetEnterDataDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetExitDataDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetParallelDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetParallelForDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTeamsDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetUpdateDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTaskLoopDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTaskLoopSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCDistributeDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCDistributeParallelForDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCDistributeParallelForSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCDistributeSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetParallelForSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTeamsDistributeDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTeamsDistributeSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelForSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelForDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetTeamsDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelForDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelForSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeSimdDirective,
+                  { TRY_TO(TraverseACCExecutableDirective(S)); })
+
+
+
 // OpenMP directives.
 template <typename Derived>
 bool RecursiveASTVisitor<Derived>::TraverseOMPExecutableDirective(
@@ -2759,6 +2950,458 @@ DEF_TRAVERSE_STMT(OMPTargetTeamsDistributeParallelForSimdDirective,
 
 DEF_TRAVERSE_STMT(OMPTargetTeamsDistributeSimdDirective,
                   { TRY_TO(TraverseOMPExecutableDirective(S)); })
+
+
+// -- MYHEADER --
+
+// OpenACC clauses.
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::TraverseACCClause(ACCClause *C) {
+  if (!C)
+    return true;
+  switch (C->getClauseKind()) {
+#define OPENACC_CLAUSE(Name, Class)                                             \
+  case ACCC_##Name:                                                            \
+    TRY_TO(Visit##Class(static_cast<Class *>(C)));                             \
+    break;
+#include "clang/Basic/OpenACCKinds.def"
+  case ACCC_threadprivate:
+  case ACCC_uniform:
+  case ACCC_unknown:
+    break;
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCClauseWithPreInit(
+    ACCClauseWithPreInit *Node) {
+  TRY_TO(TraverseStmt(Node->getPreInitStmt()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCClauseWithPostUpdate(
+    ACCClauseWithPostUpdate *Node) {
+  TRY_TO(VisitACCClauseWithPreInit(Node));
+  TRY_TO(TraverseStmt(Node->getPostUpdateExpr()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCIfClause(ACCIfClause *C) {
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  TRY_TO(TraverseStmt(C->getCondition()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCFinalClause(ACCFinalClause *C) {
+  TRY_TO(TraverseStmt(C->getCondition()));
+  return true;
+}
+
+template <typename Derived>
+bool
+RecursiveASTVisitor<Derived>::VisitACCNumThreadsClause(ACCNumThreadsClause *C) {
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  TRY_TO(TraverseStmt(C->getNumThreads()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCSafelenClause(ACCSafelenClause *C) {
+  TRY_TO(TraverseStmt(C->getSafelen()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCSimdlenClause(ACCSimdlenClause *C) {
+  TRY_TO(TraverseStmt(C->getSimdlen()));
+  return true;
+}
+
+template <typename Derived>
+bool
+RecursiveASTVisitor<Derived>::VisitACCCollapseClause(ACCCollapseClause *C) {
+  TRY_TO(TraverseStmt(C->getNumForLoops()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCDefaultClause(ACCDefaultClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCProcBindClause(ACCProcBindClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool
+RecursiveASTVisitor<Derived>::VisitACCScheduleClause(ACCScheduleClause *C) {
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  TRY_TO(TraverseStmt(C->getChunkSize()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCOrderedClause(ACCOrderedClause *C) {
+  TRY_TO(TraverseStmt(C->getNumForLoops()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCNowaitClause(ACCNowaitClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCUntiedClause(ACCUntiedClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool
+RecursiveASTVisitor<Derived>::VisitACCMergeableClause(ACCMergeableClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCReadClause(ACCReadClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCWriteClause(ACCWriteClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCUpdateClause(ACCUpdateClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCCaptureClause(ACCCaptureClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCSeqCstClause(ACCSeqCstClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCThreadsClause(ACCThreadsClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCSIMDClause(ACCSIMDClause *) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCNogroupClause(ACCNogroupClause *) {
+  return true;
+}
+
+template <typename Derived>
+template <typename T>
+bool RecursiveASTVisitor<Derived>::VisitACCClauseList(T *Node) {
+  for (auto *E : Node->varlists()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCPrivateClause(ACCPrivateClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  for (auto *E : C->private_copies()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCFirstprivateClause(
+    ACCFirstprivateClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  for (auto *E : C->private_copies()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->inits()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCLastprivateClause(
+    ACCLastprivateClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  TRY_TO(VisitACCClauseWithPostUpdate(C));
+  for (auto *E : C->private_copies()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->source_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->destination_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->assignment_ops()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCSharedClause(ACCSharedClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCLinearClause(ACCLinearClause *C) {
+  TRY_TO(TraverseStmt(C->getStep()));
+  TRY_TO(TraverseStmt(C->getCalcStep()));
+  TRY_TO(VisitACCClauseList(C));
+  TRY_TO(VisitACCClauseWithPostUpdate(C));
+  for (auto *E : C->privates()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->inits()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->updates()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->finals()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCAlignedClause(ACCAlignedClause *C) {
+  TRY_TO(TraverseStmt(C->getAlignment()));
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCCopyinClause(ACCCopyinClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  for (auto *E : C->source_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->destination_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->assignment_ops()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCCopyprivateClause(
+    ACCCopyprivateClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  for (auto *E : C->source_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->destination_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->assignment_ops()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool
+RecursiveASTVisitor<Derived>::VisitACCReductionClause(ACCReductionClause *C) {
+  TRY_TO(TraverseNestedNameSpecifierLoc(C->getQualifierLoc()));
+  TRY_TO(TraverseDeclarationNameInfo(C->getNameInfo()));
+  TRY_TO(VisitACCClauseList(C));
+  TRY_TO(VisitACCClauseWithPostUpdate(C));
+  for (auto *E : C->privates()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->lhs_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->rhs_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->reduction_ops()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCTaskReductionClause(
+    ACCTaskReductionClause *C) {
+  TRY_TO(TraverseNestedNameSpecifierLoc(C->getQualifierLoc()));
+  TRY_TO(TraverseDeclarationNameInfo(C->getNameInfo()));
+  TRY_TO(VisitACCClauseList(C));
+  TRY_TO(VisitACCClauseWithPostUpdate(C));
+  for (auto *E : C->privates()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->lhs_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->rhs_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->reduction_ops()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCInReductionClause(
+    ACCInReductionClause *C) {
+  TRY_TO(TraverseNestedNameSpecifierLoc(C->getQualifierLoc()));
+  TRY_TO(TraverseDeclarationNameInfo(C->getNameInfo()));
+  TRY_TO(VisitACCClauseList(C));
+  TRY_TO(VisitACCClauseWithPostUpdate(C));
+  for (auto *E : C->privates()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->lhs_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->rhs_exprs()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->reduction_ops()) {
+    TRY_TO(TraverseStmt(E));
+  }
+  for (auto *E : C->taskgroup_descriptors())
+    TRY_TO(TraverseStmt(E));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCFlushClause(ACCFlushClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCDependClause(ACCDependClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCDeviceClause(ACCDeviceClause *C) {
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  TRY_TO(TraverseStmt(C->getDevice()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCMapClause(ACCMapClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCNumTeamsClause(
+    ACCNumTeamsClause *C) {
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  TRY_TO(TraverseStmt(C->getNumTeams()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCThreadLimitClause(
+    ACCThreadLimitClause *C) {
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  TRY_TO(TraverseStmt(C->getThreadLimit()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCPriorityClause(
+    ACCPriorityClause *C) {
+  TRY_TO(TraverseStmt(C->getPriority()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCGrainsizeClause(
+    ACCGrainsizeClause *C) {
+  TRY_TO(TraverseStmt(C->getGrainsize()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCNumTasksClause(
+    ACCNumTasksClause *C) {
+  TRY_TO(TraverseStmt(C->getNumTasks()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCHintClause(ACCHintClause *C) {
+  TRY_TO(TraverseStmt(C->getHint()));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCDistScheduleClause(
+    ACCDistScheduleClause *C) {
+  TRY_TO(VisitACCClauseWithPreInit(C));
+  TRY_TO(TraverseStmt(C->getChunkSize()));
+  return true;
+}
+
+template <typename Derived>
+bool
+RecursiveASTVisitor<Derived>::VisitACCDefaultmapClause(ACCDefaultmapClause *C) {
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCToClause(ACCToClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCFromClause(ACCFromClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCUseDevicePtrClause(
+    ACCUseDevicePtrClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCIsDevicePtrClause(
+    ACCIsDevicePtrClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+// -- MYHEADER --
 
 // OpenMP clauses.
 template <typename Derived>
@@ -3206,6 +3849,8 @@ bool RecursiveASTVisitor<Derived>::VisitOMPIsDevicePtrClause(
   TRY_TO(VisitOMPClauseList(C));
   return true;
 }
+
+// -- MYHEADER --
 
 // FIXME: look at the following tricky-seeming exprs to see if we
 // need to recurse on anything.  These are ones that have methods

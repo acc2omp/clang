@@ -127,6 +127,9 @@ public:
   void AddedObjCCategoryToInterface(const ObjCCategoryDecl *CatD,
                                     const ObjCInterfaceDecl *IFD) override;
   void DeclarationMarkedUsed(const Decl *D) override;
+  void DeclarationMarkedOpenACCThreadPrivate(const Decl *D) override;
+  void DeclarationMarkedOpenACCDeclareTarget(const Decl *D,
+                                            const Attr *Attr) override;
   void DeclarationMarkedOpenMPThreadPrivate(const Decl *D) override;
   void DeclarationMarkedOpenMPDeclareTarget(const Decl *D,
                                             const Attr *Attr) override;
@@ -227,6 +230,16 @@ void MultiplexASTMutationListener::AddedObjCCategoryToInterface(
 void MultiplexASTMutationListener::DeclarationMarkedUsed(const Decl *D) {
   for (size_t i = 0, e = Listeners.size(); i != e; ++i)
     Listeners[i]->DeclarationMarkedUsed(D);
+}
+void MultiplexASTMutationListener::DeclarationMarkedOpenACCThreadPrivate(
+    const Decl *D) {
+  for (size_t i = 0, e = Listeners.size(); i != e; ++i)
+    Listeners[i]->DeclarationMarkedOpenACCThreadPrivate(D);
+}
+void MultiplexASTMutationListener::DeclarationMarkedOpenACCDeclareTarget(
+    const Decl *D, const Attr *Attr) {
+  for (auto *L : Listeners)
+    L->DeclarationMarkedOpenACCDeclareTarget(D, Attr);
 }
 void MultiplexASTMutationListener::DeclarationMarkedOpenMPThreadPrivate(
     const Decl *D) {

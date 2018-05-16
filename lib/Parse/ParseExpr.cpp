@@ -1968,6 +1968,10 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
     ExprKind = UETT_AlignOf;
   else if (OpTok.is(tok::kw_vec_step))
     ExprKind = UETT_VecStep;
+  // TODO acc2mp
+  // Remove comment, leave code if necessary
+  //else if (OpTok.is(tok::kw___builtin_acc_required_simd_align))
+  //  ExprKind = UETT_OpenACCRequiredSimdAlign;
   else if (OpTok.is(tok::kw___builtin_omp_required_simd_align))
     ExprKind = UETT_OpenMPRequiredSimdAlign;
 

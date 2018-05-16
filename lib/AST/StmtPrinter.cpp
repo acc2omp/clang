@@ -16,10 +16,12 @@
 #include "clang/AST/Attr.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
+#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/StmtVisitor.h"
@@ -75,6 +77,8 @@ namespace  {
     void PrintCallArgs(CallExpr *E);
     void PrintRawSEHExceptHandler(SEHExceptStmt *S);
     void PrintRawSEHFinallyStmt(SEHFinallyStmt *S);
+    void PrintACCExecutableDirective(ACCExecutableDirective *S,
+                                     bool ForceNoStmt = false);
     void PrintOMPExecutableDirective(OMPExecutableDirective *S,
                                      bool ForceNoStmt = false);
 
@@ -590,6 +594,720 @@ void StmtPrinter::VisitSEHLeaveStmt(SEHLeaveStmt *Node) {
   Indent() << "__leave;";
   if (Policy.IncludeNewlines) OS << "\n";
 }
+
+// -- MYHEADER
+
+//===----------------------------------------------------------------------===//
+//  OpenACC clauses printing methods
+//===----------------------------------------------------------------------===//
+
+namespace {
+class ACCClausePrinter : public ACCClauseVisitor<ACCClausePrinter> {
+  raw_ostream &OS;
+  const PrintingPolicy &Policy;
+  /// \brief Process clauses with list of variables.
+  template <typename T>
+  void VisitACCClauseList(T *Node, char StartSym);
+public:
+  ACCClausePrinter(raw_ostream &OS, const PrintingPolicy &Policy)
+    : OS(OS), Policy(Policy) { }
+#define OPENACC_CLAUSE(Name, Class)                              \
+  void Visit##Class(Class *S);
+#include "clang/Basic/OpenACCKinds.def"
+};
+
+void ACCClausePrinter::VisitACCIfClause(ACCIfClause *Node) {
+  OS << "if(";
+  if (Node->getNameModifier() != ACCD_unknown)
+    OS << getOpenACCDirectiveName(Node->getNameModifier()) << ": ";
+  Node->getCondition()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCFinalClause(ACCFinalClause *Node) {
+  OS << "final(";
+  Node->getCondition()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCNumThreadsClause(ACCNumThreadsClause *Node) {
+  OS << "num_threads(";
+  Node->getNumThreads()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCSafelenClause(ACCSafelenClause *Node) {
+  OS << "safelen(";
+  Node->getSafelen()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCSimdlenClause(ACCSimdlenClause *Node) {
+  OS << "simdlen(";
+  Node->getSimdlen()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCCollapseClause(ACCCollapseClause *Node) {
+  OS << "collapse(";
+  Node->getNumForLoops()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCDefaultClause(ACCDefaultClause *Node) {
+  OS << "default("
+     << getOpenACCSimpleClauseTypeName(ACCC_default, Node->getDefaultKind())
+     << ")";
+}
+
+void ACCClausePrinter::VisitACCProcBindClause(ACCProcBindClause *Node) {
+  OS << "proc_bind("
+     << getOpenACCSimpleClauseTypeName(ACCC_proc_bind, Node->getProcBindKind())
+     << ")";
+}
+
+void ACCClausePrinter::VisitACCScheduleClause(ACCScheduleClause *Node) {
+  OS << "schedule(";
+  if (Node->getFirstScheduleModifier() != ACCC_SCHEDULE_MODIFIER_unknown) {
+    OS << getOpenACCSimpleClauseTypeName(ACCC_schedule,
+                                        Node->getFirstScheduleModifier());
+    if (Node->getSecondScheduleModifier() != ACCC_SCHEDULE_MODIFIER_unknown) {
+      OS << ", ";
+      OS << getOpenACCSimpleClauseTypeName(ACCC_schedule,
+                                          Node->getSecondScheduleModifier());
+    }
+    OS << ": ";
+  }
+  OS << getOpenACCSimpleClauseTypeName(ACCC_schedule, Node->getScheduleKind());
+  if (auto *E = Node->getChunkSize()) {
+    OS << ", ";
+    E->printPretty(OS, nullptr, Policy);
+  }
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCOrderedClause(ACCOrderedClause *Node) {
+  OS << "ordered";
+  if (auto *Num = Node->getNumForLoops()) {
+    OS << "(";
+    Num->printPretty(OS, nullptr, Policy, 0);
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCNowaitClause(ACCNowaitClause *) {
+  OS << "nowait";
+}
+
+void ACCClausePrinter::VisitACCUntiedClause(ACCUntiedClause *) {
+  OS << "untied";
+}
+
+void ACCClausePrinter::VisitACCNogroupClause(ACCNogroupClause *) {
+  OS << "nogroup";
+}
+
+void ACCClausePrinter::VisitACCMergeableClause(ACCMergeableClause *) {
+  OS << "mergeable";
+}
+
+void ACCClausePrinter::VisitACCReadClause(ACCReadClause *) { OS << "read"; }
+
+void ACCClausePrinter::VisitACCWriteClause(ACCWriteClause *) { OS << "write"; }
+
+void ACCClausePrinter::VisitACCUpdateClause(ACCUpdateClause *) {
+  OS << "update";
+}
+
+void ACCClausePrinter::VisitACCCaptureClause(ACCCaptureClause *) {
+  OS << "capture";
+}
+
+void ACCClausePrinter::VisitACCSeqCstClause(ACCSeqCstClause *) {
+  OS << "seq_cst";
+}
+
+void ACCClausePrinter::VisitACCThreadsClause(ACCThreadsClause *) {
+  OS << "threads";
+}
+
+void ACCClausePrinter::VisitACCSIMDClause(ACCSIMDClause *) { OS << "simd"; }
+
+void ACCClausePrinter::VisitACCDeviceClause(ACCDeviceClause *Node) {
+  OS << "device(";
+  Node->getDevice()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCNumTeamsClause(ACCNumTeamsClause *Node) {
+  OS << "num_teams(";
+  Node->getNumTeams()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCThreadLimitClause(ACCThreadLimitClause *Node) {
+  OS << "thread_limit(";
+  Node->getThreadLimit()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCPriorityClause(ACCPriorityClause *Node) {
+  OS << "priority(";
+  Node->getPriority()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCGrainsizeClause(ACCGrainsizeClause *Node) {
+  OS << "grainsize(";
+  Node->getGrainsize()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCNumTasksClause(ACCNumTasksClause *Node) {
+  OS << "num_tasks(";
+  Node->getNumTasks()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCHintClause(ACCHintClause *Node) {
+  OS << "hint(";
+  Node->getHint()->printPretty(OS, nullptr, Policy, 0);
+  OS << ")";
+}
+
+template<typename T>
+void ACCClausePrinter::VisitACCClauseList(T *Node, char StartSym) {
+  for (typename T::varlist_iterator I = Node->varlist_begin(),
+                                    E = Node->varlist_end();
+       I != E; ++I) {
+    assert(*I && "Expected non-null Stmt");
+    OS << (I == Node->varlist_begin() ? StartSym : ',');
+    if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(*I)) {
+      if (isa<ACCCapturedExprDecl>(DRE->getDecl()))
+        DRE->printPretty(OS, nullptr, Policy, 0);
+      else
+        DRE->getDecl()->printQualifiedName(OS);
+    } else
+      (*I)->printPretty(OS, nullptr, Policy, 0);
+  }
+}
+
+void ACCClausePrinter::VisitACCPrivateClause(ACCPrivateClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "private";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCFirstprivateClause(ACCFirstprivateClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "firstprivate";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCLastprivateClause(ACCLastprivateClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "lastprivate";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCSharedClause(ACCSharedClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "shared";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCReductionClause(ACCReductionClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "reduction(";
+    NestedNameSpecifier *QualifierLoc =
+        Node->getQualifierLoc().getNestedNameSpecifier();
+    OverloadedOperatorKind OOK =
+        Node->getNameInfo().getName().getCXXOverloadedOperator();
+    if (QualifierLoc == nullptr && OOK != OO_None) {
+      // Print reduction identifier in C format
+      OS << getOperatorSpelling(OOK);
+    } else {
+      // Use C++ format
+      if (QualifierLoc != nullptr)
+        QualifierLoc->print(OS, Policy);
+      OS << Node->getNameInfo();
+    }
+    OS << ":";
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCTaskReductionClause(
+    ACCTaskReductionClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "task_reduction(";
+    NestedNameSpecifier *QualifierLoc =
+        Node->getQualifierLoc().getNestedNameSpecifier();
+    OverloadedOperatorKind OOK =
+        Node->getNameInfo().getName().getCXXOverloadedOperator();
+    if (QualifierLoc == nullptr && OOK != OO_None) {
+      // Print reduction identifier in C format
+      OS << getOperatorSpelling(OOK);
+    } else {
+      // Use C++ format
+      if (QualifierLoc != nullptr)
+        QualifierLoc->print(OS, Policy);
+      OS << Node->getNameInfo();
+    }
+    OS << ":";
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCInReductionClause(ACCInReductionClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "in_reduction(";
+    NestedNameSpecifier *QualifierLoc =
+        Node->getQualifierLoc().getNestedNameSpecifier();
+    OverloadedOperatorKind OOK =
+        Node->getNameInfo().getName().getCXXOverloadedOperator();
+    if (QualifierLoc == nullptr && OOK != OO_None) {
+      // Print reduction identifier in C format
+      OS << getOperatorSpelling(OOK);
+    } else {
+      // Use C++ format
+      if (QualifierLoc != nullptr)
+        QualifierLoc->print(OS, Policy);
+      OS << Node->getNameInfo();
+    }
+    OS << ":";
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCLinearClause(ACCLinearClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "linear";
+    if (Node->getModifierLoc().isValid()) {
+      OS << '('
+         << getOpenACCSimpleClauseTypeName(ACCC_linear, Node->getModifier());
+    }
+    VisitACCClauseList(Node, '(');
+    if (Node->getModifierLoc().isValid())
+      OS << ')';
+    if (Node->getStep() != nullptr) {
+      OS << ": ";
+      Node->getStep()->printPretty(OS, nullptr, Policy, 0);
+    }
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCAlignedClause(ACCAlignedClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "aligned";
+    VisitACCClauseList(Node, '(');
+    if (Node->getAlignment() != nullptr) {
+      OS << ": ";
+      Node->getAlignment()->printPretty(OS, nullptr, Policy, 0);
+    }
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCCopyinClause(ACCCopyinClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "copyin";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCCopyprivateClause(ACCCopyprivateClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "copyprivate";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCFlushClause(ACCFlushClause *Node) {
+  if (!Node->varlist_empty()) {
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCDependClause(ACCDependClause *Node) {
+  OS << "depend(";
+  OS << getOpenACCSimpleClauseTypeName(Node->getClauseKind(),
+                                      Node->getDependencyKind());
+  if (!Node->varlist_empty()) {
+    OS << " :";
+    VisitACCClauseList(Node, ' ');
+  }
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCMapClause(ACCMapClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "map(";
+    if (Node->getMapType() != ACCC_MAP_unknown) {
+      if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
+        OS << getOpenACCSimpleClauseTypeName(ACCC_map, 
+                                            Node->getMapTypeModifier());
+        OS << ',';
+      }
+      OS << getOpenACCSimpleClauseTypeName(ACCC_map, Node->getMapType());
+      OS << ':';
+    }
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCToClause(ACCToClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "to";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCFromClause(ACCFromClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "from";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCDistScheduleClause(ACCDistScheduleClause *Node) {
+  OS << "dist_schedule(" << getOpenACCSimpleClauseTypeName(
+                           ACCC_dist_schedule, Node->getDistScheduleKind());
+  if (auto *E = Node->getChunkSize()) {
+    OS << ", ";
+    E->printPretty(OS, nullptr, Policy);
+  }
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCDefaultmapClause(ACCDefaultmapClause *Node) {
+  OS << "defaultmap(";
+  OS << getOpenACCSimpleClauseTypeName(ACCC_defaultmap,
+                                      Node->getDefaultmapModifier());
+  OS << ": ";
+  OS << getOpenACCSimpleClauseTypeName(ACCC_defaultmap,
+    Node->getDefaultmapKind());
+  OS << ")";
+}
+
+void ACCClausePrinter::VisitACCUseDevicePtrClause(ACCUseDevicePtrClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "use_device_ptr";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+
+void ACCClausePrinter::VisitACCIsDevicePtrClause(ACCIsDevicePtrClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "is_device_ptr";
+    VisitACCClauseList(Node, '(');
+    OS << ")";
+  }
+}
+}
+
+//===----------------------------------------------------------------------===//
+//  OpenACC directives printing methods
+//===----------------------------------------------------------------------===//
+
+void StmtPrinter::PrintACCExecutableDirective(ACCExecutableDirective *S,
+                                              bool ForceNoStmt) {
+  ACCClausePrinter Printer(OS, Policy);
+  ArrayRef<ACCClause *> Clauses = S->clauses();
+  for (ArrayRef<ACCClause *>::iterator I = Clauses.begin(), E = Clauses.end();
+       I != E; ++I)
+    if (*I && !(*I)->isImplicit()) {
+      OS << ' ';
+      Printer.Visit(*I);
+    }
+  OS << "\n";
+  if (!ForceNoStmt && S->hasAssociatedStmt())
+    PrintStmt(S->getInnermostCapturedStmt()->getCapturedStmt());
+}
+
+void StmtPrinter::VisitACCParallelDirective(ACCParallelDirective *Node) {
+  Indent() << "#pragma acc parallel";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCSimdDirective(ACCSimdDirective *Node) {
+  Indent() << "#pragma acc simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCForDirective(ACCForDirective *Node) {
+  Indent() << "#pragma acc for";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCForSimdDirective(ACCForSimdDirective *Node) {
+  Indent() << "#pragma acc for simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCSectionsDirective(ACCSectionsDirective *Node) {
+  Indent() << "#pragma acc sections";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCSectionDirective(ACCSectionDirective *Node) {
+  Indent() << "#pragma acc section";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCSingleDirective(ACCSingleDirective *Node) {
+  Indent() << "#pragma acc single";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCMasterDirective(ACCMasterDirective *Node) {
+  Indent() << "#pragma acc master";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCCriticalDirective(ACCCriticalDirective *Node) {
+  Indent() << "#pragma acc critical";
+  if (Node->getDirectiveName().getName()) {
+    OS << " (";
+    Node->getDirectiveName().printName(OS);
+    OS << ")";
+  }
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCParallelForDirective(ACCParallelForDirective *Node) {
+  Indent() << "#pragma acc parallel for";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCParallelForSimdDirective(
+    ACCParallelForSimdDirective *Node) {
+  Indent() << "#pragma acc parallel for simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCParallelSectionsDirective(
+    ACCParallelSectionsDirective *Node) {
+  Indent() << "#pragma acc parallel sections";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTaskDirective(ACCTaskDirective *Node) {
+  Indent() << "#pragma acc task";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTaskyieldDirective(ACCTaskyieldDirective *Node) {
+  Indent() << "#pragma acc taskyield";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCBarrierDirective(ACCBarrierDirective *Node) {
+  Indent() << "#pragma acc barrier";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTaskwaitDirective(ACCTaskwaitDirective *Node) {
+  Indent() << "#pragma acc taskwait";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTaskgroupDirective(ACCTaskgroupDirective *Node) {
+  Indent() << "#pragma acc taskgroup";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCFlushDirective(ACCFlushDirective *Node) {
+  Indent() << "#pragma acc flush";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCOrderedDirective(ACCOrderedDirective *Node) {
+  Indent() << "#pragma acc ordered";
+  PrintACCExecutableDirective(Node, Node->hasClausesOfKind<ACCDependClause>());
+}
+
+void StmtPrinter::VisitACCAtomicDirective(ACCAtomicDirective *Node) {
+  Indent() << "#pragma acc atomic";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetDirective(ACCTargetDirective *Node) {
+  Indent() << "#pragma acc target";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetDataDirective(ACCTargetDataDirective *Node) {
+  Indent() << "#pragma acc target data";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetEnterDataDirective(
+    ACCTargetEnterDataDirective *Node) {
+  Indent() << "#pragma acc target enter data";
+  PrintACCExecutableDirective(Node, /*ForceNoStmt=*/true);
+}
+
+void StmtPrinter::VisitACCTargetExitDataDirective(
+    ACCTargetExitDataDirective *Node) {
+  Indent() << "#pragma acc target exit data";
+  PrintACCExecutableDirective(Node, /*ForceNoStmt=*/true);
+}
+
+void StmtPrinter::VisitACCTargetParallelDirective(
+    ACCTargetParallelDirective *Node) {
+  Indent() << "#pragma acc target parallel";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetParallelForDirective(
+    ACCTargetParallelForDirective *Node) {
+  Indent() << "#pragma acc target parallel for";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTeamsDirective(ACCTeamsDirective *Node) {
+  Indent() << "#pragma acc teams";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCCancellationPointDirective(
+    ACCCancellationPointDirective *Node) {
+  Indent() << "#pragma acc cancellation point "
+           << getOpenACCDirectiveName(Node->getCancelRegion());
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCCancelDirective(ACCCancelDirective *Node) {
+  Indent() << "#pragma acc cancel "
+           << getOpenACCDirectiveName(Node->getCancelRegion());
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTaskLoopDirective(ACCTaskLoopDirective *Node) {
+  Indent() << "#pragma acc taskloop";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTaskLoopSimdDirective(
+    ACCTaskLoopSimdDirective *Node) {
+  Indent() << "#pragma acc taskloop simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCDistributeDirective(ACCDistributeDirective *Node) {
+  Indent() << "#pragma acc distribute";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetUpdateDirective(
+    ACCTargetUpdateDirective *Node) {
+  Indent() << "#pragma acc target update";
+  PrintACCExecutableDirective(Node, /*ForceNoStmt=*/true);
+}
+
+void StmtPrinter::VisitACCDistributeParallelForDirective(
+    ACCDistributeParallelForDirective *Node) {
+  Indent() << "#pragma acc distribute parallel for";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCDistributeParallelForSimdDirective(
+    ACCDistributeParallelForSimdDirective *Node) {
+  Indent() << "#pragma acc distribute parallel for simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCDistributeSimdDirective(
+    ACCDistributeSimdDirective *Node) {
+  Indent() << "#pragma acc distribute simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetParallelForSimdDirective(
+    ACCTargetParallelForSimdDirective *Node) {
+  Indent() << "#pragma acc target parallel for simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetSimdDirective(ACCTargetSimdDirective *Node) {
+  Indent() << "#pragma acc target simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTeamsDistributeDirective(
+    ACCTeamsDistributeDirective *Node) {
+  Indent() << "#pragma acc teams distribute";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTeamsDistributeSimdDirective(
+    ACCTeamsDistributeSimdDirective *Node) {
+  Indent() << "#pragma acc teams distribute simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTeamsDistributeParallelForSimdDirective(
+    ACCTeamsDistributeParallelForSimdDirective *Node) {
+  Indent() << "#pragma acc teams distribute parallel for simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTeamsDistributeParallelForDirective(
+    ACCTeamsDistributeParallelForDirective *Node) {
+  Indent() << "#pragma acc teams distribute parallel for";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *Node) {
+  Indent() << "#pragma acc target teams";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetTeamsDistributeDirective(
+    ACCTargetTeamsDistributeDirective *Node) {
+  Indent() << "#pragma acc target teams distribute";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetTeamsDistributeParallelForDirective(
+    ACCTargetTeamsDistributeParallelForDirective *Node) {
+  Indent() << "#pragma acc target teams distribute parallel for";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetTeamsDistributeParallelForSimdDirective(
+    ACCTargetTeamsDistributeParallelForSimdDirective *Node) {
+  Indent() << "#pragma acc target teams distribute parallel for simd";
+  PrintACCExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitACCTargetTeamsDistributeSimdDirective(
+    ACCTargetTeamsDistributeSimdDirective *Node) {
+  Indent() << "#pragma acc target teams distribute simd";
+  PrintACCExecutableDirective(Node);
+}
+
+// -- MYHEADER
 
 //===----------------------------------------------------------------------===//
 //  OpenMP clauses printing methods
@@ -1301,12 +2019,20 @@ void StmtPrinter::VisitOMPTargetTeamsDistributeSimdDirective(
   PrintOMPExecutableDirective(Node);
 }
 
+// -- MYHEADER
+
+
+
 //===----------------------------------------------------------------------===//
 //  Expr printing methods.
 //===----------------------------------------------------------------------===//
 
 void StmtPrinter::VisitDeclRefExpr(DeclRefExpr *Node) {
   if (auto *OCED = dyn_cast<OMPCapturedExprDecl>(Node->getDecl())) {
+    OCED->getInit()->IgnoreImpCasts()->printPretty(OS, nullptr, Policy);
+    return;
+  }
+  if (auto *OCED = dyn_cast<ACCCapturedExprDecl>(Node->getDecl())) {
     OCED->getInit()->IgnoreImpCasts()->printPretty(OS, nullptr, Policy);
     return;
   }
@@ -1611,6 +2337,9 @@ void StmtPrinter::VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *Node){
   case UETT_VecStep:
     OS << "vec_step";
     break;
+  case UETT_OpenACCRequiredSimdAlign:
+    OS << "__builtin_acc_required_simd_align";
+    break;
   case UETT_OpenMPRequiredSimdAlign:
     OS << "__builtin_omp_required_simd_align";
     break;
@@ -1645,6 +2374,19 @@ void StmtPrinter::VisitArraySubscriptExpr(ArraySubscriptExpr *Node) {
   PrintExpr(Node->getLHS());
   OS << "[";
   PrintExpr(Node->getRHS());
+  OS << "]";
+}
+
+void StmtPrinter::VisitACCArraySectionExpr(ACCArraySectionExpr *Node) {
+  PrintExpr(Node->getBase());
+  OS << "[";
+  if (Node->getLowerBound())
+    PrintExpr(Node->getLowerBound());
+  if (Node->getColonLoc().isValid()) {
+    OS << ":";
+    if (Node->getLength())
+      PrintExpr(Node->getLength());
+  }
   OS << "]";
 }
 

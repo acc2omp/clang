@@ -61,10 +61,12 @@ add_clang_library(clangCodeGen
   CGObjCMac.cpp
   CGObjCRuntime.cpp
   CGOpenCLRuntime.cpp
+  CGOpenACCRuntime.cpp
   CGOpenMPRuntime.cpp
   CGOpenMPRuntimeNVPTX.cpp
   CGRecordLayoutBuilder.cpp
   CGStmt.cpp
+  CGStmtOpenACC.cpp
   CGStmtOpenMP.cpp
   CGVTT.cpp
   CGVTables.cpp

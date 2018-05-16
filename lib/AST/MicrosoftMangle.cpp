@@ -19,6 +19,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
@@ -96,7 +97,7 @@ static const DeclContext *getEffectiveDeclContext(const Decl *D) {
   }
 
   const DeclContext *DC = D->getDeclContext();
-  if (isa<CapturedDecl>(DC) || isa<OMPDeclareReductionDecl>(DC)) {
+  if (isa<CapturedDecl>(DC) || isa<OMPDeclareReductionDecl>(DC) || isa<ACCDeclareReductionDecl>(DC)) {
     return getEffectiveDeclContext(cast<Decl>(DC));
   }
 

@@ -5518,6 +5518,8 @@ def err_sizeof_alignof_incomplete_type : Error<
 def err_sizeof_alignof_function_type : Error<
   "invalid application of '%select{sizeof|alignof|vec_step|__builtin_omp_required_simd_align}0' to a "
   "function type">;
+def err_openacc_default_simd_align_expr : Error<
+  "invalid application of '__builtin_acc_required_simd_align' to an expression, only type is allowed">;
 def err_openmp_default_simd_align_expr : Error<
   "invalid application of '__builtin_omp_required_simd_align' to an expression, only type is allowed">;
 def err_sizeof_alignof_typeof_bitfield : Error<

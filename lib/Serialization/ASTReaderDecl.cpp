@@ -4222,6 +4222,11 @@ void ASTDeclReader::UpdateDecl(Decl *D,
                                                Record.readInt());
       break;
 
+    case UPD_DECL_MARKED_OPENACC_THREADPRIVATE:
+      D->addAttr(ACCThreadPrivateDeclAttr::CreateImplicit(Reader.getContext(),
+                                                          ReadSourceRange()));
+      break;
+
     case UPD_DECL_MARKED_OPENMP_THREADPRIVATE:
       D->addAttr(OMPThreadPrivateDeclAttr::CreateImplicit(Reader.getContext(),
                                                           ReadSourceRange()));
@@ -4249,6 +4254,7 @@ void ASTDeclReader::UpdateDecl(Decl *D,
       break;
     }
 
+    case UPD_DECL_MARKED_OPENACC_DECLARETARGET:
     case UPD_DECL_MARKED_OPENMP_DECLARETARGET:
     case UPD_ADDED_ATTR_TO_RECORD:
       AttrVec Attrs;

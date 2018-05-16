@@ -102,6 +102,8 @@ void CodeGenFunction::EmitDecl(const Decl &D) {
   case Decl::StaticAssert: // static_assert(X, ""); [C++0x]
   case Decl::Label:        // __label__ x;
   case Decl::Import:
+//  case Decl::ACCThreadPrivate:
+//  case Decl::ACCCapturedExpr:
   case Decl::OMPThreadPrivate:
   case Decl::OMPCapturedExpr:
   case Decl::Empty:

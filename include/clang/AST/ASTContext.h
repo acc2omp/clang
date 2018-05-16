@@ -1020,6 +1020,7 @@ public:
 #include "clang/Basic/OpenCLImageTypes.def"
   CanQualType OCLSamplerTy, OCLEventTy, OCLClkEventTy;
   CanQualType OCLQueueTy, OCLReserveIDTy;
+  CanQualType ACCArraySectionTy;
   CanQualType OMPArraySectionTy;
 
   // Types for deductions in C++0x [stmt.ranged]'s desugaring. Built on demand.
@@ -2010,6 +2011,9 @@ public:
   /// \brief Get the size and alignment of the specified complete type in bits.
   TypeInfo getTypeInfo(const Type *T) const;
   TypeInfo getTypeInfo(QualType T) const { return getTypeInfo(T.getTypePtr()); }
+  
+  /// \brief Get default simd alignment of the specified complete type in bits.
+  unsigned getOpenACCDefaultSimdAlign(QualType T) const;
 
   /// \brief Get default simd alignment of the specified complete type in bits.
   unsigned getOpenMPDefaultSimdAlign(QualType T) const;

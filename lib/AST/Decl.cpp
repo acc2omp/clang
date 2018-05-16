@@ -20,6 +20,7 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/DeclarationName.h"
@@ -1889,13 +1890,16 @@ VarDecl::TLSKind VarDecl::getTLSKind() const {
   switch (VarDeclBits.TSCSpec) {
   case TSCS_unspecified:
     if (!hasAttr<ThreadAttr>() &&
-        !(getASTContext().getLangOpts().OpenMPUseTLS &&
+        !(getASTContext().getLangOpts().OpenACCUseTLS &&
+          getASTContext().getLangOpts().OpenMPUseTLS &&
           getASTContext().getTargetInfo().isTLSSupported() &&
-          hasAttr<OMPThreadPrivateDeclAttr>()))
+          hasAttr<OMPThreadPrivateDeclAttr>() &&
+          hasAttr<ACCThreadPrivateDeclAttr>()))
       return TLS_None;
     return ((getASTContext().getLangOpts().isCompatibleWithMSVC(
                 LangOptions::MSVC2015)) ||
-            hasAttr<OMPThreadPrivateDeclAttr>())
+            hasAttr<OMPThreadPrivateDeclAttr>() ||
+            hasAttr<ACCThreadPrivateDeclAttr>())
                ? TLS_Dynamic
                : TLS_Static;
   case TSCS___thread: // Fall through.

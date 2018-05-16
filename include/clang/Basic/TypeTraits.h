@@ -98,6 +98,7 @@ namespace clang {
     UETT_SizeOf,
     UETT_AlignOf,
     UETT_VecStep,
+    UETT_OpenACCRequiredSimdAlign,
     UETT_OpenMPRequiredSimdAlign,
   };
 }

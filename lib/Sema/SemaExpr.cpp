@@ -3689,7 +3689,7 @@ bool Sema::CheckUnaryExprOrTypeTraitOperand(QualType ExprType,
   // C11 6.5.3.4/3, C++11 [expr.alignof]p3:
   //   When alignof or _Alignof is applied to an array type, the result
   //   is the alignment of the element type.
-  if (ExprKind == UETT_AlignOf || ExprKind == UETT_OpenMPRequiredSimdAlign)
+  if (ExprKind == UETT_AlignOf || ExprKind == UETT_OpenACCRequiredSimdAlign || ExprKind == UETT_OpenMPRequiredSimdAlign)
     ExprType = Context.getBaseElementType(ExprType);
 
   if (ExprKind == UETT_VecStep)
@@ -3972,6 +3972,9 @@ Sema::CreateUnaryExprOrTypeTraitExpr(Expr *E, SourceLocation OpLoc,
     isInvalid = CheckAlignOfExpr(*this, E);
   } else if (ExprKind == UETT_VecStep) {
     isInvalid = CheckVecStepExpr(E);
+  } else if (ExprKind == UETT_OpenACCRequiredSimdAlign) {
+      Diag(E->getExprLoc(), diag::err_openacc_default_simd_align_expr);
+      isInvalid = true;
   } else if (ExprKind == UETT_OpenMPRequiredSimdAlign) {
       Diag(E->getExprLoc(), diag::err_openmp_default_simd_align_expr);
       isInvalid = true;
@@ -4327,7 +4330,7 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
       ACCArraySectionExpr(Base, LowerBound, Length, Context.ACCArraySectionTy,
                           VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
 */
-  return 0;
+  return ExprError();
 }
 
 ExprResult Sema::ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,

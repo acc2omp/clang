@@ -114,6 +114,20 @@ public:
   /// \param D the declaration marked used
   virtual void DeclarationMarkedUsed(const Decl *D) {}
 
+  /// \brief A declaration is marked as OpenACC threadprivate which was not
+  /// previously marked as threadprivate.
+  ///
+  /// \param D the declaration marked OpenACC threadprivate.
+  virtual void DeclarationMarkedOpenACCThreadPrivate(const Decl *D) {}
+
+  /// \brief A declaration is marked as OpenACC declaretarget which was not
+  /// previously marked as declaretarget.
+  ///
+  /// \param D the declaration marked OpenACC declaretarget.
+  /// \param Attr the added attribute.
+  virtual void DeclarationMarkedOpenACCDeclareTarget(const Decl *D,
+                                                    const Attr *Attr) {}
+
   /// \brief A declaration is marked as OpenMP threadprivate which was not
   /// previously marked as threadprivate.
   ///

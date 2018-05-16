@@ -25,6 +25,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclContextInternals.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/DeclarationName.h"
@@ -1185,6 +1186,10 @@ void ASTContext::InitBuiltinTypes(const TargetInfo &Target,
   // Placeholder type for builtin functions.
   InitBuiltinType(BuiltinFnTy,  BuiltinType::BuiltinFn);
 
+  // Placeholder type for ACC array sections.
+  if (LangOpts.OpenACC)
+    InitBuiltinType(ACCArraySectionTy, BuiltinType::ACCArraySection);
+  
   // Placeholder type for OMP array sections.
   if (LangOpts.OpenMP)
     InitBuiltinType(OMPArraySectionTy, BuiltinType::OMPArraySection);
@@ -1974,6 +1979,17 @@ TypeInfo ASTContext::getTypeInfoImpl(const Type *T) const {
 
   assert(llvm::isPowerOf2_32(Align) && "Alignment must be power of 2");
   return TypeInfo(Width, Align, AlignIsRequired);
+}
+
+unsigned ASTContext::getOpenACCDefaultSimdAlign(QualType T) const {
+  unsigned SimdAlign = getTargetInfo().getSimdDefaultAlign();
+  // Target ppc64 with QPX: simd default alignment for pointer to double is 32.
+  if ((getTargetInfo().getTriple().getArch() == llvm::Triple::ppc64 ||
+       getTargetInfo().getTriple().getArch() == llvm::Triple::ppc64le) &&
+      getTargetInfo().getABI() == "elfv1-qpx" &&
+      T->isSpecificBuiltinType(BuiltinType::Double))
+    SimdAlign = 256;
+  return SimdAlign;
 }
 
 unsigned ASTContext::getOpenMPDefaultSimdAlign(QualType T) const {
@@ -9395,6 +9411,20 @@ bool ASTContext::DeclMustBeEmitted(const Decl *D) {
       return false;
   } else if (isa<PragmaCommentDecl>(D))
     return true;
+
+// OpenACC copy
+  else if (isa<ACCThreadPrivateDecl>(D) ||
+           D->hasAttr<ACCDeclareTargetDeclAttr>())
+    return true;
+// TODO acc2mp
+// Probably do something about this construct. It doesn't make much sense two replicate else if
+  else if (isa<PragmaDetectMismatchDecl>(D))
+    return true;
+  else if (isa<ACCThreadPrivateDecl>(D))
+    return !D->getDeclContext()->isDependentContext();
+  else if (isa<ACCDeclareReductionDecl>(D))
+    return !D->getDeclContext()->isDependentContext();
+
   else if (isa<OMPThreadPrivateDecl>(D) ||
            D->hasAttr<OMPDeclareTargetDeclAttr>())
     return true;

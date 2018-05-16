@@ -17,6 +17,7 @@
 
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/Basic/ABI.h"
 #include "clang/Basic/LLVM.h"
@@ -49,6 +50,7 @@ public:
   GlobalDecl(const BlockDecl *D) { Init(D); }
   GlobalDecl(const CapturedDecl *D) { Init(D); }
   GlobalDecl(const ObjCMethodDecl *D) { Init(D); }
+  GlobalDecl(const ACCDeclareReductionDecl *D) { Init(D); }
   GlobalDecl(const OMPDeclareReductionDecl *D) { Init(D); }
   GlobalDecl(const CXXConstructorDecl *D, CXXCtorType Type) : Value(D, Type) {}
   GlobalDecl(const CXXDestructorDecl *D, CXXDtorType Type) : Value(D, Type) {}

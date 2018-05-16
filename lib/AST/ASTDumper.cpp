@@ -18,6 +18,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclLookups.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/LocInfoType.h"
@@ -447,6 +448,11 @@ namespace  {
     void VisitPragmaDetectMismatchDecl(const PragmaDetectMismatchDecl *D);
     void VisitCapturedDecl(const CapturedDecl *D);
 
+    // OpenACC decls
+    void VisitACCThreadPrivateDecl(const ACCThreadPrivateDecl *D);
+    void VisitACCDeclareReductionDecl(const ACCDeclareReductionDecl *D);
+    void VisitACCCapturedExprDecl(const ACCCapturedExprDecl *D);
+    
     // OpenMP decls
     void VisitOMPThreadPrivateDecl(const OMPThreadPrivateDecl *D);
     void VisitOMPDeclareReductionDecl(const OMPDeclareReductionDecl *D);
@@ -515,6 +521,9 @@ namespace  {
     void VisitCXXCatchStmt(const CXXCatchStmt *Node);
     void VisitCapturedStmt(const CapturedStmt *Node);
 
+    // OpenACC
+    void VisitACCExecutableDirective(const ACCExecutableDirective *Node);
+    
     // OpenMP
     void VisitOMPExecutableDirective(const OMPExecutableDirective *Node);
 
@@ -1309,6 +1318,42 @@ void ASTDumper::VisitCapturedDecl(const CapturedDecl *D) {
 }
 
 //===----------------------------------------------------------------------===//
+// OpenACC Declarations
+//===----------------------------------------------------------------------===//
+
+void ASTDumper::VisitACCThreadPrivateDecl(const ACCThreadPrivateDecl *D) {
+  for (auto *E : D->varlists())
+    dumpStmt(E);
+}
+
+void ASTDumper::VisitACCDeclareReductionDecl(const ACCDeclareReductionDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+  OS << " combiner";
+  dumpStmt(D->getCombiner());
+  if (auto *Initializer = D->getInitializer()) {
+    OS << " initializer";
+    switch (D->getInitializerKind()) {
+    case ACCDeclareReductionDecl::DirectInit:
+      OS << " acc_priv = ";
+      break;
+    case ACCDeclareReductionDecl::CopyInit:
+      OS << " acc_priv ()";
+      break;
+    case ACCDeclareReductionDecl::CallInit:
+      break;
+    }
+    dumpStmt(Initializer);
+  }
+}
+
+void ASTDumper::VisitACCCapturedExprDecl(const ACCCapturedExprDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+  dumpStmt(D->getInit());
+}
+
+//===----------------------------------------------------------------------===//
 // OpenMP Declarations
 //===----------------------------------------------------------------------===//
 
@@ -2010,6 +2055,37 @@ void ASTDumper::VisitCapturedStmt(const CapturedStmt *Node) {
 }
 
 //===----------------------------------------------------------------------===//
+//  OpenACC dumping methods.
+//===----------------------------------------------------------------------===//
+
+void ASTDumper::VisitACCExecutableDirective(
+    const ACCExecutableDirective *Node) {
+  VisitStmt(Node);
+  for (auto *C : Node->clauses()) {
+    dumpChild([=] {
+      if (!C) {
+        ColorScope Color(*this, NullColor);
+        OS << "<<<NULL>>> ACCClause";
+        return;
+      }
+      {
+        ColorScope Color(*this, AttrColor);
+        StringRef ClauseName(getOpenACCClauseName(C->getClauseKind()));
+        OS << "ACC" << ClauseName.substr(/*Start=*/0, /*N=*/1).upper()
+           << ClauseName.drop_front() << "Clause";
+      }
+      dumpPointer(C);
+      dumpSourceRange(SourceRange(C->getLocStart(), C->getLocEnd()));
+      if (C->isImplicit())
+        OS << " <implicit>";
+      for (auto *S : C->children())
+        dumpStmt(S);
+    });
+  }
+}
+
+
+//===----------------------------------------------------------------------===//
 //  OpenMP dumping methods.
 //===----------------------------------------------------------------------===//
 
@@ -2232,6 +2308,9 @@ void ASTDumper::VisitUnaryExprOrTypeTraitExpr(
     break;
   case UETT_VecStep:
     OS << " vec_step";
+    break;
+  case UETT_OpenACCRequiredSimdAlign:
+    OS << " __builtin_acc_required_simd_align";
     break;
   case UETT_OpenMPRequiredSimdAlign:
     OS << " __builtin_omp_required_simd_align";

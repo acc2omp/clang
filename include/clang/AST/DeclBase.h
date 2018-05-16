@@ -175,7 +175,11 @@ public:
     IDNS_LocalExtern         = 0x0800,
 
     /// This declaration is an OpenMP user defined reduction construction.
-    IDNS_OMPReduction        = 0x1000
+    IDNS_OMPReduction        = 0x1000,
+
+    /// This declaration is an OpenACC user defined reduction construction.
+    IDNS_ACCReduction        = 0x2000
+
   };
 
   /// ObjCDeclQualifier - 'Qualifiers' written next to the return and
