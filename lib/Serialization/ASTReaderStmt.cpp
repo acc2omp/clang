@@ -2630,6 +2630,372 @@ void OMPClauseReader::VisitOMPIsDevicePtrClause(OMPIsDevicePtrClause *C) {
   C->setComponents(Components, ListSizes);
 }
 
+// -- MYHEADER -- 
+
+//===----------------------------------------------------------------------===//
+// OpenACC Directives.
+//===----------------------------------------------------------------------===//
+void ASTStmtReader::VisitACCExecutableDirective(ACCExecutableDirective *E) {
+  E->setLocStart(ReadSourceLocation());
+  E->setLocEnd(ReadSourceLocation());
+  ACCClauseReader ClauseReader(this, Record);
+  SmallVector<ACCClause *, 5> Clauses;
+  for (unsigned i = 0; i < E->getNumClauses(); ++i)
+    Clauses.push_back(ClauseReader.readClause());
+  E->setClauses(Clauses);
+  if (E->hasAssociatedStmt())
+    E->setAssociatedStmt(Record.readSubStmt());
+}
+
+void ASTStmtReader::VisitACCLoopDirective(ACCLoopDirective *D) {
+  VisitStmt(D);
+  // Two fields (NumClauses and CollapsedNum) were read in ReadStmtFromStream.
+  Record.skipInts(2);
+  VisitACCExecutableDirective(D);
+  D->setIterationVariable(Record.readSubExpr());
+  D->setLastIteration(Record.readSubExpr());
+  D->setCalcLastIteration(Record.readSubExpr());
+  D->setPreCond(Record.readSubExpr());
+  D->setCond(Record.readSubExpr());
+  D->setInit(Record.readSubExpr());
+  D->setInc(Record.readSubExpr());
+  D->setPreInits(Record.readSubStmt());
+  if (isOpenACCWorksharingDirective(D->getDirectiveKind()) ||
+      isOpenACCTaskLoopDirective(D->getDirectiveKind()) ||
+      isOpenACCDistributeDirective(D->getDirectiveKind())) {
+    D->setIsLastIterVariable(Record.readSubExpr());
+    D->setLowerBoundVariable(Record.readSubExpr());
+    D->setUpperBoundVariable(Record.readSubExpr());
+    D->setStrideVariable(Record.readSubExpr());
+    D->setEnsureUpperBound(Record.readSubExpr());
+    D->setNextLowerBound(Record.readSubExpr());
+    D->setNextUpperBound(Record.readSubExpr());
+    D->setNumIterations(Record.readSubExpr());
+  }
+  if (isOpenACCLoopBoundSharingDirective(D->getDirectiveKind())) {
+    D->setPrevLowerBoundVariable(Record.readSubExpr());
+    D->setPrevUpperBoundVariable(Record.readSubExpr());
+    D->setDistInc(Record.readSubExpr());
+    D->setPrevEnsureUpperBound(Record.readSubExpr());
+    D->setCombinedLowerBoundVariable(Record.readSubExpr());
+    D->setCombinedUpperBoundVariable(Record.readSubExpr());
+    D->setCombinedEnsureUpperBound(Record.readSubExpr());
+    D->setCombinedInit(Record.readSubExpr());
+    D->setCombinedCond(Record.readSubExpr());
+    D->setCombinedNextLowerBound(Record.readSubExpr());
+    D->setCombinedNextUpperBound(Record.readSubExpr());
+  }
+  SmallVector<Expr *, 4> Sub;
+  unsigned CollapsedNum = D->getCollapsedNumber();
+  Sub.reserve(CollapsedNum);
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setCounters(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setPrivateCounters(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setInits(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setUpdates(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setFinals(Sub);
+}
+
+void ASTStmtReader::VisitACCParallelDirective(ACCParallelDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCSimdDirective(ACCSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCForDirective(ACCForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCForSimdDirective(ACCForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCSectionsDirective(ACCSectionsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCSectionDirective(ACCSectionDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCSingleDirective(ACCSingleDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCMasterDirective(ACCMasterDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCCriticalDirective(ACCCriticalDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  ReadDeclarationNameInfo(D->DirName);
+}
+
+void ASTStmtReader::VisitACCParallelForDirective(ACCParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCParallelForSimdDirective(
+    ACCParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCParallelSectionsDirective(
+    ACCParallelSectionsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTaskDirective(ACCTaskDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTaskyieldDirective(ACCTaskyieldDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCBarrierDirective(ACCBarrierDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTaskwaitDirective(ACCTaskwaitDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTaskgroupDirective(ACCTaskgroupDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setReductionRef(Record.readSubExpr());
+}
+
+void ASTStmtReader::VisitACCFlushDirective(ACCFlushDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCOrderedDirective(ACCOrderedDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCAtomicDirective(ACCAtomicDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setX(Record.readSubExpr());
+  D->setV(Record.readSubExpr());
+  D->setExpr(Record.readSubExpr());
+  D->setUpdateExpr(Record.readSubExpr());
+  D->IsXLHSInRHSPart = Record.readInt() != 0;
+  D->IsPostfixUpdate = Record.readInt() != 0;
+}
+
+void ASTStmtReader::VisitACCTargetDirective(ACCTargetDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetDataDirective(ACCTargetDataDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetEnterDataDirective(
+    ACCTargetEnterDataDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetExitDataDirective(
+    ACCTargetExitDataDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetParallelDirective(
+    ACCTargetParallelDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetParallelForDirective(
+    ACCTargetParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTeamsDirective(ACCTeamsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCCancellationPointDirective(
+    ACCCancellationPointDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  D->setCancelRegion(static_cast<OpenACCDirectiveKind>(Record.readInt()));
+}
+
+void ASTStmtReader::VisitACCCancelDirective(ACCCancelDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setCancelRegion(static_cast<OpenACCDirectiveKind>(Record.readInt()));
+}
+
+void ASTStmtReader::VisitACCTaskLoopDirective(ACCTaskLoopDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTaskLoopSimdDirective(ACCTaskLoopSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCDistributeDirective(ACCDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetUpdateDirective(ACCTargetUpdateDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+void ASTStmtReader::VisitACCDistributeParallelForDirective(
+    ACCDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCDistributeParallelForSimdDirective(
+    ACCDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCDistributeSimdDirective(
+    ACCDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetParallelForSimdDirective(
+    ACCTargetParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetSimdDirective(ACCTargetSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeDirective(
+    ACCTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeSimdDirective(
+    ACCTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeParallelForSimdDirective(
+    ACCTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeParallelForDirective(
+    ACCTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeDirective(
+    ACCTargetTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForDirective(
+    ACCTargetTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForSimdDirective(
+    ACCTargetTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeSimdDirective(
+    ACCTargetTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+// -- MYHEADER -- 
+
 //===----------------------------------------------------------------------===//
 // OpenMP Directives.
 //===----------------------------------------------------------------------===//
@@ -2992,6 +3358,7 @@ void ASTStmtReader::VisitOMPTargetTeamsDistributeSimdDirective(
   VisitOMPLoopDirective(D);
 }
 
+// -- MYHEADER -- 
 //===----------------------------------------------------------------------===//
 // ASTReader Implementation
 //===----------------------------------------------------------------------===//

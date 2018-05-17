@@ -570,6 +570,16 @@ void ASTStmtWriter::VisitArraySubscriptExpr(ArraySubscriptExpr *E) {
   Code = serialization::EXPR_ARRAY_SUBSCRIPT;
 }
 
+void ASTStmtWriter::VisitACCArraySectionExpr(ACCArraySectionExpr *E) {
+  VisitExpr(E);
+  Record.AddStmt(E->getBase());
+  Record.AddStmt(E->getLowerBound());
+  Record.AddStmt(E->getLength());
+  Record.AddSourceLocation(E->getColonLoc());
+  Record.AddSourceLocation(E->getRBracketLoc());
+  Code = serialization::EXPR_ACC_ARRAY_SECTION;
+}
+
 void ASTStmtWriter::VisitOMPArraySectionExpr(OMPArraySectionExpr *E) {
   VisitExpr(E);
   Record.AddStmt(E->getBase());
@@ -1793,6 +1803,872 @@ void ASTStmtWriter::VisitSEHLeaveStmt(SEHLeaveStmt *S) {
   Code = serialization::STMT_SEH_LEAVE;
 }
 
+// -- MYHEADER -- 
+
+//===----------------------------------------------------------------------===//
+// OpenACC Clauses.
+//===----------------------------------------------------------------------===//
+
+namespace clang {
+class ACCClauseWriter : public ACCClauseVisitor<ACCClauseWriter> {
+  ASTRecordWriter &Record;
+public:
+  ACCClauseWriter(ASTRecordWriter &Record) : Record(Record) {}
+#define OPENACC_CLAUSE(Name, Class)    \
+  void Visit##Class(Class *S);
+#include "clang/Basic/OpenACCKinds.def"
+  void writeClause(ACCClause *C);
+  void VisitACCClauseWithPreInit(ACCClauseWithPreInit *C);
+  void VisitACCClauseWithPostUpdate(ACCClauseWithPostUpdate *C);
+};
+}
+
+void ACCClauseWriter::writeClause(ACCClause *C) {
+  Record.push_back(C->getClauseKind());
+  Visit(C);
+  Record.AddSourceLocation(C->getLocStart());
+  Record.AddSourceLocation(C->getLocEnd());
+}
+
+void ACCClauseWriter::VisitACCClauseWithPreInit(ACCClauseWithPreInit *C) {
+  Record.push_back(C->getCaptureRegion());
+  Record.AddStmt(C->getPreInitStmt());
+}
+
+void ACCClauseWriter::VisitACCClauseWithPostUpdate(ACCClauseWithPostUpdate *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.AddStmt(C->getPostUpdateExpr());
+}
+
+void ACCClauseWriter::VisitACCIfClause(ACCIfClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.push_back(C->getNameModifier());
+  Record.AddSourceLocation(C->getNameModifierLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  Record.AddStmt(C->getCondition());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCFinalClause(ACCFinalClause *C) {
+  Record.AddStmt(C->getCondition());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCNumThreadsClause(ACCNumThreadsClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.AddStmt(C->getNumThreads());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCSafelenClause(ACCSafelenClause *C) {
+  Record.AddStmt(C->getSafelen());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCSimdlenClause(ACCSimdlenClause *C) {
+  Record.AddStmt(C->getSimdlen());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCCollapseClause(ACCCollapseClause *C) {
+  Record.AddStmt(C->getNumForLoops());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCDefaultClause(ACCDefaultClause *C) {
+  Record.push_back(C->getDefaultKind());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getDefaultKindKwLoc());
+}
+
+void ACCClauseWriter::VisitACCProcBindClause(ACCProcBindClause *C) {
+  Record.push_back(C->getProcBindKind());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getProcBindKindKwLoc());
+}
+
+void ACCClauseWriter::VisitACCScheduleClause(ACCScheduleClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.push_back(C->getScheduleKind());
+  Record.push_back(C->getFirstScheduleModifier());
+  Record.push_back(C->getSecondScheduleModifier());
+  Record.AddStmt(C->getChunkSize());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getFirstScheduleModifierLoc());
+  Record.AddSourceLocation(C->getSecondScheduleModifierLoc());
+  Record.AddSourceLocation(C->getScheduleKindLoc());
+  Record.AddSourceLocation(C->getCommaLoc());
+}
+
+void ACCClauseWriter::VisitACCOrderedClause(ACCOrderedClause *C) {
+  Record.AddStmt(C->getNumForLoops());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCNowaitClause(ACCNowaitClause *) {}
+
+void ACCClauseWriter::VisitACCUntiedClause(ACCUntiedClause *) {}
+
+void ACCClauseWriter::VisitACCMergeableClause(ACCMergeableClause *) {}
+
+void ACCClauseWriter::VisitACCReadClause(ACCReadClause *) {}
+
+void ACCClauseWriter::VisitACCWriteClause(ACCWriteClause *) {}
+
+void ACCClauseWriter::VisitACCUpdateClause(ACCUpdateClause *) {}
+
+void ACCClauseWriter::VisitACCCaptureClause(ACCCaptureClause *) {}
+
+void ACCClauseWriter::VisitACCSeqCstClause(ACCSeqCstClause *) {}
+
+void ACCClauseWriter::VisitACCThreadsClause(ACCThreadsClause *) {}
+
+void ACCClauseWriter::VisitACCSIMDClause(ACCSIMDClause *) {}
+
+void ACCClauseWriter::VisitACCNogroupClause(ACCNogroupClause *) {}
+
+void ACCClauseWriter::VisitACCPrivateClause(ACCPrivateClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *VE : C->varlists()) {
+    Record.AddStmt(VE);
+  }
+  for (auto *VE : C->private_copies()) {
+    Record.AddStmt(VE);
+  }
+}
+
+void ACCClauseWriter::VisitACCFirstprivateClause(ACCFirstprivateClause *C) {
+  Record.push_back(C->varlist_size());
+  VisitACCClauseWithPreInit(C);
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *VE : C->varlists()) {
+    Record.AddStmt(VE);
+  }
+  for (auto *VE : C->private_copies()) {
+    Record.AddStmt(VE);
+  }
+  for (auto *VE : C->inits()) {
+    Record.AddStmt(VE);
+  }
+}
+
+void ACCClauseWriter::VisitACCLastprivateClause(ACCLastprivateClause *C) {
+  Record.push_back(C->varlist_size());
+  VisitACCClauseWithPostUpdate(C);
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  for (auto *E : C->private_copies())
+    Record.AddStmt(E);
+  for (auto *E : C->source_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->destination_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->assignment_ops())
+    Record.AddStmt(E);
+}
+
+void ACCClauseWriter::VisitACCSharedClause(ACCSharedClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+}
+
+void ACCClauseWriter::VisitACCReductionClause(ACCReductionClause *C) {
+  Record.push_back(C->varlist_size());
+  VisitACCClauseWithPostUpdate(C);
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  Record.AddNestedNameSpecifierLoc(C->getQualifierLoc());
+  Record.AddDeclarationNameInfo(C->getNameInfo());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  for (auto *VE : C->privates())
+    Record.AddStmt(VE);
+  for (auto *E : C->lhs_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->rhs_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->reduction_ops())
+    Record.AddStmt(E);
+}
+
+void ACCClauseWriter::VisitACCTaskReductionClause(ACCTaskReductionClause *C) {
+  Record.push_back(C->varlist_size());
+  VisitACCClauseWithPostUpdate(C);
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  Record.AddNestedNameSpecifierLoc(C->getQualifierLoc());
+  Record.AddDeclarationNameInfo(C->getNameInfo());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  for (auto *VE : C->privates())
+    Record.AddStmt(VE);
+  for (auto *E : C->lhs_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->rhs_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->reduction_ops())
+    Record.AddStmt(E);
+}
+
+void ACCClauseWriter::VisitACCInReductionClause(ACCInReductionClause *C) {
+  Record.push_back(C->varlist_size());
+  VisitACCClauseWithPostUpdate(C);
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  Record.AddNestedNameSpecifierLoc(C->getQualifierLoc());
+  Record.AddDeclarationNameInfo(C->getNameInfo());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  for (auto *VE : C->privates())
+    Record.AddStmt(VE);
+  for (auto *E : C->lhs_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->rhs_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->reduction_ops())
+    Record.AddStmt(E);
+  for (auto *E : C->taskgroup_descriptors())
+    Record.AddStmt(E);
+}
+
+void ACCClauseWriter::VisitACCLinearClause(ACCLinearClause *C) {
+  Record.push_back(C->varlist_size());
+  VisitACCClauseWithPostUpdate(C);
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  Record.push_back(C->getModifier());
+  Record.AddSourceLocation(C->getModifierLoc());
+  for (auto *VE : C->varlists()) {
+    Record.AddStmt(VE);
+  }
+  for (auto *VE : C->privates()) {
+    Record.AddStmt(VE);
+  }
+  for (auto *VE : C->inits()) {
+    Record.AddStmt(VE);
+  }
+  for (auto *VE : C->updates()) {
+    Record.AddStmt(VE);
+  }
+  for (auto *VE : C->finals()) {
+    Record.AddStmt(VE);
+  }
+  Record.AddStmt(C->getStep());
+  Record.AddStmt(C->getCalcStep());
+}
+
+void ACCClauseWriter::VisitACCAlignedClause(ACCAlignedClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  Record.AddStmt(C->getAlignment());
+}
+
+void ACCClauseWriter::VisitACCCopyinClause(ACCCopyinClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  for (auto *E : C->source_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->destination_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->assignment_ops())
+    Record.AddStmt(E);
+}
+
+void ACCClauseWriter::VisitACCCopyprivateClause(ACCCopyprivateClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  for (auto *E : C->source_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->destination_exprs())
+    Record.AddStmt(E);
+  for (auto *E : C->assignment_ops())
+    Record.AddStmt(E);
+}
+
+void ACCClauseWriter::VisitACCFlushClause(ACCFlushClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+}
+
+void ACCClauseWriter::VisitACCDependClause(ACCDependClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.push_back(C->getDependencyKind());
+  Record.AddSourceLocation(C->getDependencyLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *VE : C->varlists())
+    Record.AddStmt(VE);
+  Record.AddStmt(C->getCounterValue());
+}
+
+void ACCClauseWriter::VisitACCDeviceClause(ACCDeviceClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.AddStmt(C->getDevice());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCMapClause(ACCMapClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.push_back(C->getMapTypeModifier());
+  Record.push_back(C->getMapType());
+  Record.AddSourceLocation(C->getMapLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+
+void ACCClauseWriter::VisitACCNumTeamsClause(ACCNumTeamsClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.AddStmt(C->getNumTeams());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCThreadLimitClause(ACCThreadLimitClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.AddStmt(C->getThreadLimit());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCPriorityClause(ACCPriorityClause *C) {
+  Record.AddStmt(C->getPriority());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCGrainsizeClause(ACCGrainsizeClause *C) {
+  Record.AddStmt(C->getGrainsize());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCNumTasksClause(ACCNumTasksClause *C) {
+  Record.AddStmt(C->getNumTasks());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCHintClause(ACCHintClause *C) {
+  Record.AddStmt(C->getHint());
+  Record.AddSourceLocation(C->getLParenLoc());
+}
+
+void ACCClauseWriter::VisitACCDistScheduleClause(ACCDistScheduleClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Record.push_back(C->getDistScheduleKind());
+  Record.AddStmt(C->getChunkSize());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getDistScheduleKindLoc());
+  Record.AddSourceLocation(C->getCommaLoc());
+}
+
+void ACCClauseWriter::VisitACCDefaultmapClause(ACCDefaultmapClause *C) {
+  Record.push_back(C->getDefaultmapKind());
+  Record.push_back(C->getDefaultmapModifier());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.AddSourceLocation(C->getDefaultmapModifierLoc());
+  Record.AddSourceLocation(C->getDefaultmapKindLoc());
+}
+
+void ACCClauseWriter::VisitACCToClause(ACCToClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+
+void ACCClauseWriter::VisitACCFromClause(ACCFromClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+
+void ACCClauseWriter::VisitACCUseDevicePtrClause(ACCUseDevicePtrClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *VE : C->private_copies())
+    Record.AddStmt(VE);
+  for (auto *VE : C->inits())
+    Record.AddStmt(VE);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+
+void ACCClauseWriter::VisitACCIsDevicePtrClause(ACCIsDevicePtrClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+
+//===----------------------------------------------------------------------===//
+// OpenACC Directives.
+//===----------------------------------------------------------------------===//
+void ASTStmtWriter::VisitACCExecutableDirective(ACCExecutableDirective *E) {
+  Record.AddSourceLocation(E->getLocStart());
+  Record.AddSourceLocation(E->getLocEnd());
+  ACCClauseWriter ClauseWriter(Record);
+  for (unsigned i = 0; i < E->getNumClauses(); ++i) {
+    ClauseWriter.writeClause(E->getClause(i));
+  }
+  if (E->hasAssociatedStmt())
+    Record.AddStmt(E->getAssociatedStmt());
+}
+
+void ASTStmtWriter::VisitACCLoopDirective(ACCLoopDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  Record.push_back(D->getCollapsedNumber());
+  VisitACCExecutableDirective(D);
+  Record.AddStmt(D->getIterationVariable());
+  Record.AddStmt(D->getLastIteration());
+  Record.AddStmt(D->getCalcLastIteration());
+  Record.AddStmt(D->getPreCond());
+  Record.AddStmt(D->getCond());
+  Record.AddStmt(D->getInit());
+  Record.AddStmt(D->getInc());
+  Record.AddStmt(D->getPreInits());
+  if (isOpenACCWorksharingDirective(D->getDirectiveKind()) ||
+      isOpenACCTaskLoopDirective(D->getDirectiveKind()) ||
+      isOpenACCDistributeDirective(D->getDirectiveKind())) {
+    Record.AddStmt(D->getIsLastIterVariable());
+    Record.AddStmt(D->getLowerBoundVariable());
+    Record.AddStmt(D->getUpperBoundVariable());
+    Record.AddStmt(D->getStrideVariable());
+    Record.AddStmt(D->getEnsureUpperBound());
+    Record.AddStmt(D->getNextLowerBound());
+    Record.AddStmt(D->getNextUpperBound());
+    Record.AddStmt(D->getNumIterations());
+  }
+  if (isOpenACCLoopBoundSharingDirective(D->getDirectiveKind())) {
+    Record.AddStmt(D->getPrevLowerBoundVariable());
+    Record.AddStmt(D->getPrevUpperBoundVariable());
+    Record.AddStmt(D->getDistInc());
+    Record.AddStmt(D->getPrevEnsureUpperBound());
+    Record.AddStmt(D->getCombinedLowerBoundVariable());
+    Record.AddStmt(D->getCombinedUpperBoundVariable());
+    Record.AddStmt(D->getCombinedEnsureUpperBound());
+    Record.AddStmt(D->getCombinedInit());
+    Record.AddStmt(D->getCombinedCond());
+    Record.AddStmt(D->getCombinedNextLowerBound());
+    Record.AddStmt(D->getCombinedNextUpperBound());
+  }
+  for (auto I : D->counters()) {
+    Record.AddStmt(I);
+  }
+  for (auto I : D->private_counters()) {
+    Record.AddStmt(I);
+  }
+  for (auto I : D->inits()) {
+    Record.AddStmt(I);
+  }
+  for (auto I : D->updates()) {
+    Record.AddStmt(I);
+  }
+  for (auto I : D->finals()) {
+    Record.AddStmt(I);
+  }
+}
+
+void ASTStmtWriter::VisitACCParallelDirective(ACCParallelDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_PARALLEL_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCSimdDirective(ACCSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCForDirective(ACCForDirective *D) {
+  VisitACCLoopDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_FOR_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCForSimdDirective(ACCForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_FOR_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCSectionsDirective(ACCSectionsDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_SECTIONS_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCSectionDirective(ACCSectionDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_SECTION_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCSingleDirective(ACCSingleDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_SINGLE_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCMasterDirective(ACCMasterDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_MASTER_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCCriticalDirective(ACCCriticalDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.AddDeclarationNameInfo(D->getDirectiveName());
+  Code = serialization::STMT_ACC_CRITICAL_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCParallelForDirective(ACCParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_PARALLEL_FOR_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCParallelForSimdDirective(
+    ACCParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_PARALLEL_FOR_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCParallelSectionsDirective(
+    ACCParallelSectionsDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_PARALLEL_SECTIONS_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTaskDirective(ACCTaskDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_TASK_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCAtomicDirective(ACCAtomicDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.AddStmt(D->getX());
+  Record.AddStmt(D->getV());
+  Record.AddStmt(D->getExpr());
+  Record.AddStmt(D->getUpdateExpr());
+  Record.push_back(D->isXLHSInRHSPart() ? 1 : 0);
+  Record.push_back(D->isPostfixUpdate() ? 1 : 0);
+  Code = serialization::STMT_ACC_ATOMIC_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetDirective(ACCTargetDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TARGET_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetDataDirective(ACCTargetDataDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TARGET_DATA_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetEnterDataDirective(
+    ACCTargetEnterDataDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TARGET_ENTER_DATA_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetExitDataDirective(
+    ACCTargetExitDataDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TARGET_EXIT_DATA_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetParallelDirective(
+    ACCTargetParallelDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TARGET_PARALLEL_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetParallelForDirective(
+    ACCTargetParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_TARGET_PARALLEL_FOR_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTaskyieldDirective(ACCTaskyieldDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TASKYIELD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCBarrierDirective(ACCBarrierDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_BARRIER_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTaskwaitDirective(ACCTaskwaitDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TASKWAIT_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTaskgroupDirective(ACCTaskgroupDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.AddStmt(D->getReductionRef());
+  Code = serialization::STMT_ACC_TASKGROUP_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCFlushDirective(ACCFlushDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_FLUSH_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCOrderedDirective(ACCOrderedDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_ORDERED_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTeamsDirective(ACCTeamsDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TEAMS_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCCancellationPointDirective(
+    ACCCancellationPointDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  Record.push_back(D->getCancelRegion());
+  Code = serialization::STMT_ACC_CANCELLATION_POINT_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCCancelDirective(ACCCancelDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Record.push_back(D->getCancelRegion());
+  Code = serialization::STMT_ACC_CANCEL_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTaskLoopDirective(ACCTaskLoopDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TASKLOOP_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTaskLoopSimdDirective(ACCTaskLoopSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TASKLOOP_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCDistributeDirective(ACCDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_DISTRIBUTE_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetUpdateDirective(ACCTargetUpdateDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TARGET_UPDATE_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCDistributeParallelForDirective(
+    ACCDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCDistributeParallelForSimdDirective(
+    ACCDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCDistributeSimdDirective(
+    ACCDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_DISTRIBUTE_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetParallelForSimdDirective(
+    ACCTargetParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetSimdDirective(ACCTargetSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TARGET_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTeamsDistributeDirective(
+    ACCTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTeamsDistributeSimdDirective(
+    ACCTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTeamsDistributeParallelForSimdDirective(
+    ACCTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTeamsDistributeParallelForDirective(
+    ACCTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *D) {
+  VisitStmt(D);
+  Record.push_back(D->getNumClauses());
+  VisitACCExecutableDirective(D);
+  Code = serialization::STMT_ACC_TARGET_TEAMS_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetTeamsDistributeDirective(
+    ACCTargetTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelForDirective(
+    ACCTargetTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  Record.push_back(D->hasCancel() ? 1 : 0);
+  Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelForSimdDirective(
+    ACCTargetTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::
+      STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
+}
+
+void ASTStmtWriter::VisitACCTargetTeamsDistributeSimdDirective(
+    ACCTargetTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+  Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE;
+}
+
+// -- MYHEADER -- 
+// -- MYHEADER -- 
+
 //===----------------------------------------------------------------------===//
 // OpenMP Clauses.
 //===----------------------------------------------------------------------===//
@@ -2654,6 +3530,7 @@ void ASTStmtWriter::VisitOMPTargetTeamsDistributeSimdDirective(
   Code = serialization::STMT_OMP_TARGET_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE;
 }
 
+// -- MYHEADER -- 
 //===----------------------------------------------------------------------===//
 // ASTWriter Implementation
 //===----------------------------------------------------------------------===//

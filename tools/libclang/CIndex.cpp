@@ -1921,6 +1921,8 @@ public:
       return cast<CXXDependentScopeMemberExpr>(S)->getMemberNameInfo();
     case Stmt::DependentScopeDeclRefExprClass:
       return cast<DependentScopeDeclRefExpr>(S)->getNameInfo();
+    case Stmt::ACCCriticalDirectiveClass:
+      return cast<ACCCriticalDirective>(S)->getDirectiveName();
     case Stmt::OMPCriticalDirectiveClass:
       return cast<OMPCriticalDirective>(S)->getDirectiveName();
     }
@@ -1941,6 +1943,9 @@ public:
     return SourceLocation::getFromRawEncoding((unsigned)(uintptr_t) data[1]);
   }
 };
+
+// TODO acc2mp
+// Should I replicate OMPClauseEnqueue?
 class EnqueueVisitor : public ConstStmtVisitor<EnqueueVisitor, void> {
   friend class OMPClauseEnqueue;
   VisitorWorkList &WL;
@@ -1993,6 +1998,69 @@ public:
   void VisitPseudoObjectExpr(const PseudoObjectExpr *E);
   void VisitOpaqueValueExpr(const OpaqueValueExpr *E);
   void VisitLambdaExpr(const LambdaExpr *E);
+  // -- MYHEADER --
+  void VisitACCExecutableDirective(const ACCExecutableDirective *D);
+  void VisitACCLoopDirective(const ACCLoopDirective *D);
+  void VisitACCParallelDirective(const ACCParallelDirective *D);
+  void VisitACCSimdDirective(const ACCSimdDirective *D);
+  void VisitACCForDirective(const ACCForDirective *D);
+  void VisitACCForSimdDirective(const ACCForSimdDirective *D);
+  void VisitACCSectionsDirective(const ACCSectionsDirective *D);
+  void VisitACCSectionDirective(const ACCSectionDirective *D);
+  void VisitACCSingleDirective(const ACCSingleDirective *D);
+  void VisitACCMasterDirective(const ACCMasterDirective *D);
+  void VisitACCCriticalDirective(const ACCCriticalDirective *D);
+  void VisitACCParallelForDirective(const ACCParallelForDirective *D);
+  void VisitACCParallelForSimdDirective(const ACCParallelForSimdDirective *D);
+  void VisitACCParallelSectionsDirective(const ACCParallelSectionsDirective *D);
+  void VisitACCTaskDirective(const ACCTaskDirective *D);
+  void VisitACCTaskyieldDirective(const ACCTaskyieldDirective *D);
+  void VisitACCBarrierDirective(const ACCBarrierDirective *D);
+  void VisitACCTaskwaitDirective(const ACCTaskwaitDirective *D);
+  void VisitACCTaskgroupDirective(const ACCTaskgroupDirective *D);
+  void
+  VisitACCCancellationPointDirective(const ACCCancellationPointDirective *D);
+  void VisitACCCancelDirective(const ACCCancelDirective *D);
+  void VisitACCFlushDirective(const ACCFlushDirective *D);
+  void VisitACCOrderedDirective(const ACCOrderedDirective *D);
+  void VisitACCAtomicDirective(const ACCAtomicDirective *D);
+  void VisitACCTargetDirective(const ACCTargetDirective *D);
+  void VisitACCTargetDataDirective(const ACCTargetDataDirective *D);
+  void VisitACCTargetEnterDataDirective(const ACCTargetEnterDataDirective *D);
+  void VisitACCTargetExitDataDirective(const ACCTargetExitDataDirective *D);
+  void VisitACCTargetParallelDirective(const ACCTargetParallelDirective *D);
+  void
+  VisitACCTargetParallelForDirective(const ACCTargetParallelForDirective *D);
+  void VisitACCTeamsDirective(const ACCTeamsDirective *D);
+  void VisitACCTaskLoopDirective(const ACCTaskLoopDirective *D);
+  void VisitACCTaskLoopSimdDirective(const ACCTaskLoopSimdDirective *D);
+  void VisitACCDistributeDirective(const ACCDistributeDirective *D);
+  void VisitACCDistributeParallelForDirective(
+      const ACCDistributeParallelForDirective *D);
+  void VisitACCDistributeParallelForSimdDirective(
+      const ACCDistributeParallelForSimdDirective *D);
+  void VisitACCDistributeSimdDirective(const ACCDistributeSimdDirective *D);
+  void VisitACCTargetParallelForSimdDirective(
+      const ACCTargetParallelForSimdDirective *D);
+  void VisitACCTargetSimdDirective(const ACCTargetSimdDirective *D);
+  void VisitACCTeamsDistributeDirective(const ACCTeamsDistributeDirective *D);
+  void VisitACCTeamsDistributeSimdDirective(
+      const ACCTeamsDistributeSimdDirective *D);
+  void VisitACCTeamsDistributeParallelForSimdDirective(
+      const ACCTeamsDistributeParallelForSimdDirective *D);
+  void VisitACCTeamsDistributeParallelForDirective(
+      const ACCTeamsDistributeParallelForDirective *D);
+  void VisitACCTargetTeamsDirective(const ACCTargetTeamsDirective *D);
+  void VisitACCTargetTeamsDistributeDirective(
+      const ACCTargetTeamsDistributeDirective *D);
+  void VisitACCTargetTeamsDistributeParallelForDirective(
+      const ACCTargetTeamsDistributeParallelForDirective *D);
+  void VisitACCTargetTeamsDistributeParallelForSimdDirective(
+      const ACCTargetTeamsDistributeParallelForSimdDirective *D);
+  void VisitACCTargetTeamsDistributeSimdDirective(
+      const ACCTargetTeamsDistributeSimdDirective *D);
+  // -- MYHEADER --
+  // -- MYHEADER --
   void VisitOMPExecutableDirective(const OMPExecutableDirective *D);
   void VisitOMPLoopDirective(const OMPLoopDirective *D);
   void VisitOMPParallelDirective(const OMPParallelDirective *D);
@@ -2053,7 +2121,7 @@ public:
       const OMPTargetTeamsDistributeParallelForSimdDirective *D);
   void VisitOMPTargetTeamsDistributeSimdDirective(
       const OMPTargetTeamsDistributeSimdDirective *D);
-
+  // -- MYHEADER --
 private:
   void AddDeclarationNameInfo(const Stmt *S);
   void AddNestedNameSpecifierLoc(NestedNameSpecifierLoc Qualifier);
@@ -2112,6 +2180,299 @@ void EnqueueVisitor::EnqueueChildren(const Stmt *S) {
   VisitorWorkList::iterator I = WL.begin() + size, E = WL.end();
   std::reverse(I, E);
 }
+// -- MYHEADER --
+namespace {
+class ACCClauseEnqueue : public ConstACCClauseVisitor<ACCClauseEnqueue> {
+  EnqueueVisitor *Visitor;
+  /// \brief Process clauses with list of variables.
+  template <typename T>
+  void VisitACCClauseList(T *Node);
+public:
+  ACCClauseEnqueue(EnqueueVisitor *Visitor) : Visitor(Visitor) { }
+#define OPENACC_CLAUSE(Name, Class)                                             \
+  void Visit##Class(const Class *C);
+#include "clang/Basic/OpenACCKinds.def"
+  void VisitACCClauseWithPreInit(const ACCClauseWithPreInit *C);
+  void VisitACCClauseWithPostUpdate(const ACCClauseWithPostUpdate *C);
+};
+
+void ACCClauseEnqueue::VisitACCClauseWithPreInit(
+    const ACCClauseWithPreInit *C) {
+  Visitor->AddStmt(C->getPreInitStmt());
+}
+
+void ACCClauseEnqueue::VisitACCClauseWithPostUpdate(
+    const ACCClauseWithPostUpdate *C) {
+  VisitACCClauseWithPreInit(C);
+  Visitor->AddStmt(C->getPostUpdateExpr());
+}
+
+void ACCClauseEnqueue::VisitACCIfClause(const ACCIfClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Visitor->AddStmt(C->getCondition());
+}
+
+void ACCClauseEnqueue::VisitACCFinalClause(const ACCFinalClause *C) {
+  Visitor->AddStmt(C->getCondition());
+}
+
+void ACCClauseEnqueue::VisitACCNumThreadsClause(const ACCNumThreadsClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Visitor->AddStmt(C->getNumThreads());
+}
+
+void ACCClauseEnqueue::VisitACCSafelenClause(const ACCSafelenClause *C) {
+  Visitor->AddStmt(C->getSafelen());
+}
+
+void ACCClauseEnqueue::VisitACCSimdlenClause(const ACCSimdlenClause *C) {
+  Visitor->AddStmt(C->getSimdlen());
+}
+
+void ACCClauseEnqueue::VisitACCCollapseClause(const ACCCollapseClause *C) {
+  Visitor->AddStmt(C->getNumForLoops());
+}
+
+void ACCClauseEnqueue::VisitACCDefaultClause(const ACCDefaultClause *C) { }
+
+void ACCClauseEnqueue::VisitACCProcBindClause(const ACCProcBindClause *C) { }
+
+void ACCClauseEnqueue::VisitACCScheduleClause(const ACCScheduleClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Visitor->AddStmt(C->getChunkSize());
+}
+
+void ACCClauseEnqueue::VisitACCOrderedClause(const ACCOrderedClause *C) {
+  Visitor->AddStmt(C->getNumForLoops());
+}
+
+void ACCClauseEnqueue::VisitACCNowaitClause(const ACCNowaitClause *) {}
+
+void ACCClauseEnqueue::VisitACCUntiedClause(const ACCUntiedClause *) {}
+
+void ACCClauseEnqueue::VisitACCMergeableClause(const ACCMergeableClause *) {}
+
+void ACCClauseEnqueue::VisitACCReadClause(const ACCReadClause *) {}
+
+void ACCClauseEnqueue::VisitACCWriteClause(const ACCWriteClause *) {}
+
+void ACCClauseEnqueue::VisitACCUpdateClause(const ACCUpdateClause *) {}
+
+void ACCClauseEnqueue::VisitACCCaptureClause(const ACCCaptureClause *) {}
+
+void ACCClauseEnqueue::VisitACCSeqCstClause(const ACCSeqCstClause *) {}
+
+void ACCClauseEnqueue::VisitACCThreadsClause(const ACCThreadsClause *) {}
+
+void ACCClauseEnqueue::VisitACCSIMDClause(const ACCSIMDClause *) {}
+
+void ACCClauseEnqueue::VisitACCNogroupClause(const ACCNogroupClause *) {}
+
+void ACCClauseEnqueue::VisitACCDeviceClause(const ACCDeviceClause *C) {
+  Visitor->AddStmt(C->getDevice());
+}
+
+void ACCClauseEnqueue::VisitACCNumTeamsClause(const ACCNumTeamsClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Visitor->AddStmt(C->getNumTeams());
+}
+
+void ACCClauseEnqueue::VisitACCThreadLimitClause(const ACCThreadLimitClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Visitor->AddStmt(C->getThreadLimit());
+}
+
+void ACCClauseEnqueue::VisitACCPriorityClause(const ACCPriorityClause *C) {
+  Visitor->AddStmt(C->getPriority());
+}
+
+void ACCClauseEnqueue::VisitACCGrainsizeClause(const ACCGrainsizeClause *C) {
+  Visitor->AddStmt(C->getGrainsize());
+}
+
+void ACCClauseEnqueue::VisitACCNumTasksClause(const ACCNumTasksClause *C) {
+  Visitor->AddStmt(C->getNumTasks());
+}
+
+void ACCClauseEnqueue::VisitACCHintClause(const ACCHintClause *C) {
+  Visitor->AddStmt(C->getHint());
+}
+
+template<typename T>
+void ACCClauseEnqueue::VisitACCClauseList(T *Node) {
+  for (const auto *I : Node->varlists()) {
+    Visitor->AddStmt(I);
+  }
+}
+
+void ACCClauseEnqueue::VisitACCPrivateClause(const ACCPrivateClause *C) {
+  VisitACCClauseList(C);
+  for (const auto *E : C->private_copies()) {
+    Visitor->AddStmt(E);
+  }
+}
+void ACCClauseEnqueue::VisitACCFirstprivateClause(
+                                        const ACCFirstprivateClause *C) {
+  VisitACCClauseList(C);
+  VisitACCClauseWithPreInit(C);
+  for (const auto *E : C->private_copies()) {
+    Visitor->AddStmt(E);
+  }
+  for (const auto *E : C->inits()) {
+    Visitor->AddStmt(E);
+  }
+}
+void ACCClauseEnqueue::VisitACCLastprivateClause(
+                                        const ACCLastprivateClause *C) {
+  VisitACCClauseList(C);
+  VisitACCClauseWithPostUpdate(C);
+  for (auto *E : C->private_copies()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->source_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->destination_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->assignment_ops()) {
+    Visitor->AddStmt(E);
+  }
+}
+void ACCClauseEnqueue::VisitACCSharedClause(const ACCSharedClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCReductionClause(const ACCReductionClause *C) {
+  VisitACCClauseList(C);
+  VisitACCClauseWithPostUpdate(C);
+  for (auto *E : C->privates()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->lhs_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->rhs_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->reduction_ops()) {
+    Visitor->AddStmt(E);
+  }
+}
+void ACCClauseEnqueue::VisitACCTaskReductionClause(
+    const ACCTaskReductionClause *C) {
+  VisitACCClauseList(C);
+  VisitACCClauseWithPostUpdate(C);
+  for (auto *E : C->privates()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->lhs_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->rhs_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->reduction_ops()) {
+    Visitor->AddStmt(E);
+  }
+}
+void ACCClauseEnqueue::VisitACCInReductionClause(
+    const ACCInReductionClause *C) {
+  VisitACCClauseList(C);
+  VisitACCClauseWithPostUpdate(C);
+  for (auto *E : C->privates()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->lhs_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->rhs_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->reduction_ops()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->taskgroup_descriptors())
+    Visitor->AddStmt(E);
+}
+void ACCClauseEnqueue::VisitACCLinearClause(const ACCLinearClause *C) {
+  VisitACCClauseList(C);
+  VisitACCClauseWithPostUpdate(C);
+  for (const auto *E : C->privates()) {
+    Visitor->AddStmt(E);
+  }
+  for (const auto *E : C->inits()) {
+    Visitor->AddStmt(E);
+  }
+  for (const auto *E : C->updates()) {
+    Visitor->AddStmt(E);
+  }
+  for (const auto *E : C->finals()) {
+    Visitor->AddStmt(E);
+  }
+  Visitor->AddStmt(C->getStep());
+  Visitor->AddStmt(C->getCalcStep());
+}
+void ACCClauseEnqueue::VisitACCAlignedClause(const ACCAlignedClause *C) {
+  VisitACCClauseList(C);
+  Visitor->AddStmt(C->getAlignment());
+}
+void ACCClauseEnqueue::VisitACCCopyinClause(const ACCCopyinClause *C) {
+  VisitACCClauseList(C);
+  for (auto *E : C->source_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->destination_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->assignment_ops()) {
+    Visitor->AddStmt(E);
+  }
+}
+void
+ACCClauseEnqueue::VisitACCCopyprivateClause(const ACCCopyprivateClause *C) {
+  VisitACCClauseList(C);
+  for (auto *E : C->source_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->destination_exprs()) {
+    Visitor->AddStmt(E);
+  }
+  for (auto *E : C->assignment_ops()) {
+    Visitor->AddStmt(E);
+  }
+}
+void ACCClauseEnqueue::VisitACCFlushClause(const ACCFlushClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCDependClause(const ACCDependClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCMapClause(const ACCMapClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCDistScheduleClause(
+    const ACCDistScheduleClause *C) {
+  VisitACCClauseWithPreInit(C);
+  Visitor->AddStmt(C->getChunkSize());
+}
+void ACCClauseEnqueue::VisitACCDefaultmapClause(
+    const ACCDefaultmapClause * /*C*/) {}
+void ACCClauseEnqueue::VisitACCToClause(const ACCToClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCFromClause(const ACCFromClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCUseDevicePtrClause(const ACCUseDevicePtrClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCIsDevicePtrClause(const ACCIsDevicePtrClause *C) {
+  VisitACCClauseList(C);
+}
+}
+
+// -- MYHEADER -- 
+// -- MYHEADER --
 namespace {
 class OMPClauseEnqueue : public ConstOMPClauseVisitor<OMPClauseEnqueue> {
   EnqueueVisitor *Visitor;
@@ -2402,6 +2763,10 @@ void OMPClauseEnqueue::VisitOMPIsDevicePtrClause(const OMPIsDevicePtrClause *C) 
 }
 }
 
+// -- MYHEADER -- 
+
+//TODO acc2mp
+// Study if this needs to be replicated
 void EnqueueVisitor::EnqueueChildren(const OMPClause *S) {
   unsigned size = WL.size();
   OMPClauseEnqueue Visitor(this);
@@ -2697,6 +3062,236 @@ void EnqueueVisitor::VisitPseudoObjectExpr(const PseudoObjectExpr *E) {
   Visit(E->getSyntacticForm());
 }
 
+// -- MYHEADER --
+void EnqueueVisitor::VisitACCExecutableDirective(
+  const ACCExecutableDirective *D) {
+  EnqueueChildren(D);
+  for (ArrayRef<ACCClause *>::iterator I = D->clauses().begin(),
+                                       E = D->clauses().end();
+       I != E; ++I)
+    EnqueueChildren(*I);
+}
+
+void EnqueueVisitor::VisitACCLoopDirective(const ACCLoopDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCParallelDirective(const ACCParallelDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCSimdDirective(const ACCSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCForDirective(const ACCForDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCForSimdDirective(const ACCForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCSectionsDirective(const ACCSectionsDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCSectionDirective(const ACCSectionDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCSingleDirective(const ACCSingleDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCMasterDirective(const ACCMasterDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCCriticalDirective(const ACCCriticalDirective *D) {
+  VisitACCExecutableDirective(D);
+  AddDeclarationNameInfo(D);
+}
+
+void
+EnqueueVisitor::VisitACCParallelForDirective(const ACCParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCParallelForSimdDirective(
+    const ACCParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCParallelSectionsDirective(
+    const ACCParallelSectionsDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTaskDirective(const ACCTaskDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void
+EnqueueVisitor::VisitACCTaskyieldDirective(const ACCTaskyieldDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCBarrierDirective(const ACCBarrierDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTaskwaitDirective(const ACCTaskwaitDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTaskgroupDirective(
+    const ACCTaskgroupDirective *D) {
+  VisitACCExecutableDirective(D);
+  if (const Expr *E = D->getReductionRef())
+    VisitStmt(E);
+}
+
+void EnqueueVisitor::VisitACCFlushDirective(const ACCFlushDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCOrderedDirective(const ACCOrderedDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCAtomicDirective(const ACCAtomicDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetDirective(const ACCTargetDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetDataDirective(const 
+                                                 ACCTargetDataDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetEnterDataDirective(
+    const ACCTargetEnterDataDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetExitDataDirective(
+    const ACCTargetExitDataDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetParallelDirective(
+    const ACCTargetParallelDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetParallelForDirective(
+    const ACCTargetParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTeamsDirective(const ACCTeamsDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCCancellationPointDirective(
+    const ACCCancellationPointDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCCancelDirective(const ACCCancelDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTaskLoopDirective(const ACCTaskLoopDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTaskLoopSimdDirective(
+    const ACCTaskLoopSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCDistributeDirective(
+    const ACCDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCDistributeParallelForDirective(
+    const ACCDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCDistributeParallelForSimdDirective(
+    const ACCDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCDistributeSimdDirective(
+    const ACCDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetParallelForSimdDirective(
+    const ACCTargetParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetSimdDirective(
+    const ACCTargetSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTeamsDistributeDirective(
+    const ACCTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTeamsDistributeSimdDirective(
+    const ACCTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTeamsDistributeParallelForSimdDirective(
+    const ACCTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTeamsDistributeParallelForDirective(
+    const ACCTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetTeamsDirective(
+    const ACCTargetTeamsDirective *D) {
+  VisitACCExecutableDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetTeamsDistributeDirective(
+    const ACCTargetTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelForDirective(
+    const ACCTargetTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelForSimdDirective(
+    const ACCTargetTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void EnqueueVisitor::VisitACCTargetTeamsDistributeSimdDirective(
+    const ACCTargetTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+// -- MYHEADER -- 
+// -- MYHEADER --
 void EnqueueVisitor::VisitOMPExecutableDirective(
   const OMPExecutableDirective *D) {
   EnqueueChildren(D);
@@ -2923,6 +3518,8 @@ void EnqueueVisitor::VisitOMPTargetTeamsDistributeSimdDirective(
     const OMPTargetTeamsDistributeSimdDirective *D) {
   VisitOMPLoopDirective(D);
 }
+
+// -- MYHEADER -- 
 
 void CursorVisitor::EnqueueWorkList(VisitorWorkList &WL, const Stmt *S) {
   EnqueueVisitor(WL, MakeCXCursor(S, StmtParent, TU,RegionOfInterest)).Visit(S);
@@ -5057,6 +5654,8 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
       return cxstring::createRef("UnaryOperator");
   case CXCursor_ArraySubscriptExpr:
       return cxstring::createRef("ArraySubscriptExpr");
+  case CXCursor_ACCArraySectionExpr:
+      return cxstring::createRef("ACCArraySectionExpr");
   case CXCursor_OMPArraySectionExpr:
       return cxstring::createRef("OMPArraySectionExpr");
   case CXCursor_BinaryOperator:
@@ -5303,6 +5902,104 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("CXXAccessSpecifier");
   case CXCursor_ModuleImportDecl:
     return cxstring::createRef("ModuleImport");
+  // -- MYHEADER -- 
+  case CXCursor_ACCParallelDirective:
+    return cxstring::createRef("ACCParallelDirective");
+  case CXCursor_ACCSimdDirective:
+    return cxstring::createRef("ACCSimdDirective");
+  case CXCursor_ACCForDirective:
+    return cxstring::createRef("ACCForDirective");
+  case CXCursor_ACCForSimdDirective:
+    return cxstring::createRef("ACCForSimdDirective");
+  case CXCursor_ACCSectionsDirective:
+    return cxstring::createRef("ACCSectionsDirective");
+  case CXCursor_ACCSectionDirective:
+    return cxstring::createRef("ACCSectionDirective");
+  case CXCursor_ACCSingleDirective:
+    return cxstring::createRef("ACCSingleDirective");
+  case CXCursor_ACCMasterDirective:
+    return cxstring::createRef("ACCMasterDirective");
+  case CXCursor_ACCCriticalDirective:
+    return cxstring::createRef("ACCCriticalDirective");
+  case CXCursor_ACCParallelForDirective:
+    return cxstring::createRef("ACCParallelForDirective");
+  case CXCursor_ACCParallelForSimdDirective:
+    return cxstring::createRef("ACCParallelForSimdDirective");
+  case CXCursor_ACCParallelSectionsDirective:
+    return cxstring::createRef("ACCParallelSectionsDirective");
+  case CXCursor_ACCTaskDirective:
+    return cxstring::createRef("ACCTaskDirective");
+  case CXCursor_ACCTaskyieldDirective:
+    return cxstring::createRef("ACCTaskyieldDirective");
+  case CXCursor_ACCBarrierDirective:
+    return cxstring::createRef("ACCBarrierDirective");
+  case CXCursor_ACCTaskwaitDirective:
+    return cxstring::createRef("ACCTaskwaitDirective");
+  case CXCursor_ACCTaskgroupDirective:
+    return cxstring::createRef("ACCTaskgroupDirective");
+  case CXCursor_ACCFlushDirective:
+    return cxstring::createRef("ACCFlushDirective");
+  case CXCursor_ACCOrderedDirective:
+    return cxstring::createRef("ACCOrderedDirective");
+  case CXCursor_ACCAtomicDirective:
+    return cxstring::createRef("ACCAtomicDirective");
+  case CXCursor_ACCTargetDirective:
+    return cxstring::createRef("ACCTargetDirective");
+  case CXCursor_ACCTargetDataDirective:
+    return cxstring::createRef("ACCTargetDataDirective");
+  case CXCursor_ACCTargetEnterDataDirective:
+    return cxstring::createRef("ACCTargetEnterDataDirective");
+  case CXCursor_ACCTargetExitDataDirective:
+    return cxstring::createRef("ACCTargetExitDataDirective");
+  case CXCursor_ACCTargetParallelDirective:
+    return cxstring::createRef("ACCTargetParallelDirective");
+  case CXCursor_ACCTargetParallelForDirective:
+    return cxstring::createRef("ACCTargetParallelForDirective");
+  case CXCursor_ACCTargetUpdateDirective:
+    return cxstring::createRef("ACCTargetUpdateDirective");
+  case CXCursor_ACCTeamsDirective:
+    return cxstring::createRef("ACCTeamsDirective");
+  case CXCursor_ACCCancellationPointDirective:
+    return cxstring::createRef("ACCCancellationPointDirective");
+  case CXCursor_ACCCancelDirective:
+    return cxstring::createRef("ACCCancelDirective");
+  case CXCursor_ACCTaskLoopDirective:
+    return cxstring::createRef("ACCTaskLoopDirective");
+  case CXCursor_ACCTaskLoopSimdDirective:
+    return cxstring::createRef("ACCTaskLoopSimdDirective");
+  case CXCursor_ACCDistributeDirective:
+    return cxstring::createRef("ACCDistributeDirective");
+  case CXCursor_ACCDistributeParallelForDirective:
+    return cxstring::createRef("ACCDistributeParallelForDirective");
+  case CXCursor_ACCDistributeParallelForSimdDirective:
+    return cxstring::createRef("ACCDistributeParallelForSimdDirective");
+  case CXCursor_ACCDistributeSimdDirective:
+    return cxstring::createRef("ACCDistributeSimdDirective");
+  case CXCursor_ACCTargetParallelForSimdDirective:
+    return cxstring::createRef("ACCTargetParallelForSimdDirective");
+  case CXCursor_ACCTargetSimdDirective:
+    return cxstring::createRef("ACCTargetSimdDirective");
+  case CXCursor_ACCTeamsDistributeDirective:
+    return cxstring::createRef("ACCTeamsDistributeDirective");
+  case CXCursor_ACCTeamsDistributeSimdDirective:
+    return cxstring::createRef("ACCTeamsDistributeSimdDirective");
+  case CXCursor_ACCTeamsDistributeParallelForSimdDirective:
+    return cxstring::createRef("ACCTeamsDistributeParallelForSimdDirective");
+  case CXCursor_ACCTeamsDistributeParallelForDirective:
+    return cxstring::createRef("ACCTeamsDistributeParallelForDirective");
+  case CXCursor_ACCTargetTeamsDirective:
+    return cxstring::createRef("ACCTargetTeamsDirective");
+  case CXCursor_ACCTargetTeamsDistributeDirective:
+    return cxstring::createRef("ACCTargetTeamsDistributeDirective");
+  case CXCursor_ACCTargetTeamsDistributeParallelForDirective:
+    return cxstring::createRef("ACCTargetTeamsDistributeParallelForDirective");
+  case CXCursor_ACCTargetTeamsDistributeParallelForSimdDirective:
+    return cxstring::createRef(
+        "ACCTargetTeamsDistributeParallelForSimdDirective");
+  case CXCursor_ACCTargetTeamsDistributeSimdDirective:
+    return cxstring::createRef("ACCTargetTeamsDistributeSimdDirective");
+  // -- MYHEADER -- 
+  // -- MYHEADER -- 
   case CXCursor_OMPParallelDirective:
     return cxstring::createRef("OMPParallelDirective");
   case CXCursor_OMPSimdDirective:
@@ -5398,6 +6095,7 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
         "OMPTargetTeamsDistributeParallelForSimdDirective");
   case CXCursor_OMPTargetTeamsDistributeSimdDirective:
     return cxstring::createRef("OMPTargetTeamsDistributeSimdDirective");
+  // -- MYHEADER -- 
   case CXCursor_OverloadCandidate:
       return cxstring::createRef("OverloadCandidate");
   case CXCursor_TypeAliasTemplateDecl:
@@ -6153,11 +6851,14 @@ CXCursor clang_getCursorDefinition(CXCursor C) {
   case Decl::StaticAssert:
   case Decl::Block:
   case Decl::Captured:
+  case Decl::ACCCapturedExpr:
   case Decl::OMPCapturedExpr:
   case Decl::Label:  // FIXME: Is this right??
   case Decl::ClassScopeFunctionSpecialization:
   case Decl::CXXDeductionGuide:
   case Decl::Import:
+  case Decl::ACCThreadPrivate:
+  case Decl::ACCDeclareReduction:
   case Decl::OMPThreadPrivate:
   case Decl::OMPDeclareReduction:
   case Decl::ObjCTypeParam:

@@ -1152,10 +1152,14 @@ bool DSAStackTy::hasDirective(
   return false;
 }
 
+
+//TODO acc2mp
+//Get this out 
+/*
 void Sema::InitDataSharingAttributesStack() {
   VarDataSharingAttributesStack = new DSAStackTy(*this);
 }
-
+*/
 #define DSAStack static_cast<DSAStackTy *>(VarDataSharingAttributesStack)
 
 void Sema::pushOpenACCFunctionRegion() {
@@ -1432,7 +1436,8 @@ bool Sema::isOpenACCTargetCapturedDecl(ValueDecl *D, unsigned Level) {
                                         Level);
 }
 
-void Sema::DestroyDataSharingAttributesStack() { delete DSAStack; }
+//TODO acc2mp
+//void Sema::DestroyDataSharingAttributesStack() { delete DSAStack; }
 
 void Sema::StartOpenACCDSABlock(OpenACCDirectiveKind DKind,
                                const DeclarationNameInfo &DirName,

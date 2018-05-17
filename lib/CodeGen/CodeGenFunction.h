@@ -25,10 +25,12 @@
 #include "clang/AST/CharUnits.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/ABI.h"
 #include "clang/Basic/CapturedStmt.h"
+#include "clang/Basic/OpenACCKinds.h"
 #include "clang/Basic/OpenMPKinds.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Frontend/CodeGenOptions.h"
@@ -94,6 +96,7 @@ class BlockFlags;
 class BlockFieldFlags;
 class RegionCodeGenTy;
 class TargetCodeGenInfo;
+struct ACCTaskDataTy;
 struct OMPTaskDataTy;
 struct CGCoroData;
 
@@ -182,6 +185,9 @@ public:
   // because of jumps.
   VarBypassDetector Bypasses;
 
+
+  // TODO acc2mp
+  // Study how to replicate this next 3 functions for ACC
   // CodeGen lambda for loops and support for ordered clause
   typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopDirective &,
                                   JumpDest)>
@@ -693,6 +699,107 @@ public:
 
   typedef llvm::DenseMap<const Decl *, Address> DeclMapTy;
 
+  /// \brief The scope used to remap some variables as private in the OpenACC
+  /// loop body (or other captured region emitted without outlining), and to
+  /// restore old vars back on exit.
+  class ACCPrivateScope : public RunCleanupsScope {
+    DeclMapTy SavedLocals;
+    DeclMapTy SavedPrivates;
+
+  private:
+    ACCPrivateScope(const ACCPrivateScope &) = delete;
+    void operator=(const ACCPrivateScope &) = delete;
+
+  public:
+    /// \brief Enter a new OpenACC private scope.
+    explicit ACCPrivateScope(CodeGenFunction &CGF) : RunCleanupsScope(CGF) {}
+
+    /// \brief Registers \a LocalVD variable as a private and apply \a
+    /// PrivateGen function for it to generate corresponding private variable.
+    /// \a PrivateGen returns an address of the generated private variable.
+    /// \return true if the variable is registered as private, false if it has
+    /// been privatized already.
+    bool
+    addPrivate(const VarDecl *LocalVD,
+               llvm::function_ref<Address()> PrivateGen) {
+      assert(PerformCleanup && "adding private to dead scope");
+
+      LocalVD = LocalVD->getCanonicalDecl();
+      // Only save it once.
+      if (SavedLocals.count(LocalVD)) return false;
+
+      // Copy the existing local entry to SavedLocals.
+      auto it = CGF.LocalDeclMap.find(LocalVD);
+      if (it != CGF.LocalDeclMap.end()) {
+        SavedLocals.insert({LocalVD, it->second});
+      } else {
+        SavedLocals.insert({LocalVD, Address::invalid()});
+      }
+
+      // Generate the private entry.
+      Address Addr = PrivateGen();
+      QualType VarTy = LocalVD->getType();
+      if (VarTy->isReferenceType()) {
+        Address Temp = CGF.CreateMemTemp(VarTy);
+        CGF.Builder.CreateStore(Addr.getPointer(), Temp);
+        Addr = Temp;
+      }
+      SavedPrivates.insert({LocalVD, Addr});
+
+      return true;
+    }
+
+    /// \brief Privatizes local variables previously registered as private.
+    /// Registration is separate from the actual privatization to allow
+    /// initializers use values of the original variables, not the private one.
+    /// This is important, for example, if the private variable is a class
+    /// variable initialized by a constructor that references other private
+    /// variables. But at initialization original variables must be used, not
+    /// private copies.
+    /// \return true if at least one variable was privatized, false otherwise.
+    bool Privatize() {
+      copyInto(SavedPrivates, CGF.LocalDeclMap);
+      SavedPrivates.clear();
+      return !SavedLocals.empty();
+    }
+
+    void ForceCleanup() {
+      RunCleanupsScope::ForceCleanup();
+      copyInto(SavedLocals, CGF.LocalDeclMap);
+      SavedLocals.clear();
+    }
+
+    /// \brief Exit scope - all the mapped variables are restored.
+    ~ACCPrivateScope() {
+      if (PerformCleanup)
+        ForceCleanup();
+    }
+
+    /// Checks if the global variable is captured in current function.
+    bool isGlobalVarCaptured(const VarDecl *VD) const {
+      VD = VD->getCanonicalDecl();
+      return !VD->isLocalVarDeclOrParm() && CGF.LocalDeclMap.count(VD) > 0;
+    }
+
+  private:
+    /// Copy all the entries in the source map over the corresponding
+    /// entries in the destination, which must exist.
+    static void copyInto(const DeclMapTy &src, DeclMapTy &dest) {
+      for (auto &pair : src) {
+        if (!pair.second.isValid()) {
+          dest.erase(pair.first);
+          continue;
+        }
+
+        auto it = dest.find(pair.first);
+        if (it != dest.end()) {
+          it->second = pair.second;
+        } else {
+          dest.insert(pair);
+        }
+      }
+    }
+  };
   /// \brief The scope used to remap some variables as private in the OpenMP
   /// loop body (or other captured region emitted without outlining), and to
   /// restore old vars back on exit.
@@ -1092,6 +1199,81 @@ private:
     JumpDest ContinueBlock;
   };
   SmallVector<BreakContinue, 8> BreakContinueStack;
+
+  /// Handles cancellation exit points in OpenACC-related constructs.
+  class OpenACCCancelExitStack {
+    /// Tracks cancellation exit point and join point for cancel-related exit
+    /// and normal exit.
+    struct CancelExit {
+      CancelExit() = default;
+      CancelExit(OpenACCDirectiveKind Kind, JumpDest ExitBlock,
+                 JumpDest ContBlock)
+          : Kind(Kind), ExitBlock(ExitBlock), ContBlock(ContBlock) {}
+      OpenACCDirectiveKind Kind = ACCD_unknown;
+      /// true if the exit block has been emitted already by the special
+      /// emitExit() call, false if the default codegen is used.
+      bool HasBeenEmitted = false;
+      JumpDest ExitBlock;
+      JumpDest ContBlock;
+    };
+
+    SmallVector<CancelExit, 8> Stack;
+
+  public:
+    OpenACCCancelExitStack() : Stack(1) {}
+    ~OpenACCCancelExitStack() = default;
+    /// Fetches the exit block for the current OpenACC construct.
+    JumpDest getExitBlock() const { return Stack.back().ExitBlock; }
+    /// Emits exit block with special codegen procedure specific for the related
+    /// OpenACC construct + emits code for normal construct cleanup.
+    void emitExit(CodeGenFunction &CGF, OpenACCDirectiveKind Kind,
+                  const llvm::function_ref<void(CodeGenFunction &)> &CodeGen) {
+      if (Stack.back().Kind == Kind && getExitBlock().isValid()) {
+        assert(CGF.getACCCancelDestination(Kind).isValid());
+        assert(CGF.HaveInsertPoint());
+        assert(!Stack.back().HasBeenEmitted);
+        auto IP = CGF.Builder.saveAndClearIP();
+        CGF.EmitBlock(Stack.back().ExitBlock.getBlock());
+        CodeGen(CGF);
+        CGF.EmitBranch(Stack.back().ContBlock.getBlock());
+        CGF.Builder.restoreIP(IP);
+        Stack.back().HasBeenEmitted = true;
+      }
+      CodeGen(CGF);
+    }
+    /// Enter the cancel supporting \a Kind construct.
+    /// \param Kind OpenACC directive that supports cancel constructs.
+    /// \param HasCancel true, if the construct has inner cancel directive,
+    /// false otherwise.
+    void enter(CodeGenFunction &CGF, OpenACCDirectiveKind Kind, bool HasCancel) {
+      Stack.push_back({Kind,
+                       HasCancel ? CGF.getJumpDestInCurrentScope("cancel.exit")
+                                 : JumpDest(),
+                       HasCancel ? CGF.getJumpDestInCurrentScope("cancel.cont")
+                                 : JumpDest()});
+    }
+    /// Emits default exit point for the cancel construct (if the special one
+    /// has not be used) + join point for cancel/normal exits.
+    void exit(CodeGenFunction &CGF) {
+      if (getExitBlock().isValid()) {
+        assert(CGF.getACCCancelDestination(Stack.back().Kind).isValid());
+        bool HaveIP = CGF.HaveInsertPoint();
+        if (!Stack.back().HasBeenEmitted) {
+          if (HaveIP)
+            CGF.EmitBranchThroughCleanup(Stack.back().ContBlock);
+          CGF.EmitBlock(Stack.back().ExitBlock.getBlock());
+          CGF.EmitBranchThroughCleanup(Stack.back().ContBlock);
+        }
+        CGF.EmitBlock(Stack.back().ContBlock.getBlock());
+        if (!HaveIP) {
+          CGF.Builder.CreateUnreachable();
+          CGF.Builder.ClearInsertionPoint();
+        }
+      }
+      Stack.pop_back();
+    }
+  };
+  OpenACCCancelExitStack ACCCancelStack;
 
   /// Handles cancellation exit points in OpenMP-related constructs.
   class OpenMPCancelExitStack {
@@ -2674,6 +2856,8 @@ public:
   llvm::Value *EmitSEHExceptionInfo();
   llvm::Value *EmitSEHAbnormalTermination();
 
+  /// Emit simple code for OpenACC directives in Simd-only mode.
+  void EmitSimpleACCExecutableDirective(const ACCExecutableDirective &D);
   /// Emit simple code for OpenMP directives in Simd-only mode.
   void EmitSimpleOMPExecutableDirective(const OMPExecutableDirective &D);
 
@@ -2696,6 +2880,18 @@ public:
                            ArrayRef<const Attr *> Attrs = None);
 
   /// Controls insertion of cancellation exit blocks in worksharing constructs.
+  class ACCCancelStackRAII {
+    CodeGenFunction &CGF;
+
+  public:
+    ACCCancelStackRAII(CodeGenFunction &CGF, OpenACCDirectiveKind Kind,
+                       bool HasCancel)
+        : CGF(CGF) {
+      CGF.ACCCancelStack.enter(CGF, Kind, HasCancel);
+    }
+    ~ACCCancelStackRAII() { CGF.ACCCancelStack.exit(CGF); }
+  };
+  /// Controls insertion of cancellation exit blocks in worksharing constructs.
   class OMPCancelStackRAII {
     CodeGenFunction &CGF;
 
@@ -2714,6 +2910,303 @@ public:
   llvm::Function *EmitCapturedStmt(const CapturedStmt &S, CapturedRegionKind K);
   llvm::Function *GenerateCapturedStmtFunction(const CapturedStmt &S);
   Address GenerateCapturedStmtArgument(const CapturedStmt &S);
+// -- MYHEADER --
+  llvm::Function *GenerateOpenACCCapturedStmtFunction(const CapturedStmt &S);
+  void GenerateOpenACCCapturedVars(const CapturedStmt &S,
+                                  SmallVectorImpl<llvm::Value *> &CapturedVars);
+  void emitACCSimpleStore(LValue LVal, RValue RVal, QualType RValTy,
+                          SourceLocation Loc);
+  /// \brief Perform element by element copying of arrays with type \a
+  /// OriginalType from \a SrcAddr to \a DestAddr using copying procedure
+  /// generated by \a CopyGen.
+  ///
+  /// \param DestAddr Address of the destination array.
+  /// \param SrcAddr Address of the source array.
+  /// \param OriginalType Type of destination and source arrays.
+  /// \param CopyGen Copying procedure that copies value of single array element
+  /// to another single array element.
+  void EmitACCAggregateAssign(
+      Address DestAddr, Address SrcAddr, QualType OriginalType,
+      const llvm::function_ref<void(Address, Address)> &CopyGen);
+  /// \brief Emit proper copying of data from one variable to another.
+  ///
+  /// \param OriginalType Original type of the copied variables.
+  /// \param DestAddr Destination address.
+  /// \param SrcAddr Source address.
+  /// \param DestVD Destination variable used in \a CopyExpr (for arrays, has
+  /// type of the base array element).
+  /// \param SrcVD Source variable used in \a CopyExpr (for arrays, has type of
+  /// the base array element).
+  /// \param Copy Actual copygin expression for copying data from \a SrcVD to \a
+  /// DestVD.
+  void EmitACCCopy(QualType OriginalType,
+                   Address DestAddr, Address SrcAddr,
+                   const VarDecl *DestVD, const VarDecl *SrcVD,
+                   const Expr *Copy);
+  /// \brief Emit atomic update code for constructs: \a X = \a X \a BO \a E or
+  /// \a X = \a E \a BO \a E.
+  ///
+  /// \param X Value to be updated.
+  /// \param E Update value.
+  /// \param BO Binary operation for update operation.
+  /// \param IsXLHSInRHSPart true if \a X is LHS in RHS part of the update
+  /// expression, false otherwise.
+  /// \param AO Atomic ordering of the generated atomic instructions.
+  /// \param CommonGen Code generator for complex expressions that cannot be
+  /// expressed through atomicrmw instruction.
+  /// \returns <true, OldAtomicValue> if simple 'atomicrmw' instruction was
+  /// generated, <false, RValue::get(nullptr)> otherwise.
+  std::pair<bool, RValue> EmitACCAtomicSimpleUpdateExpr(
+      LValue X, RValue E, BinaryOperatorKind BO, bool IsXLHSInRHSPart,
+      llvm::AtomicOrdering AO, SourceLocation Loc,
+      const llvm::function_ref<RValue(RValue)> &CommonGen);
+  bool EmitACCFirstprivateClause(const ACCExecutableDirective &D,
+                                 ACCPrivateScope &PrivateScope);
+  void EmitACCPrivateClause(const ACCExecutableDirective &D,
+                            ACCPrivateScope &PrivateScope);
+  void EmitACCUseDevicePtrClause(
+      const ACCClause &C, ACCPrivateScope &PrivateScope,
+      const llvm::DenseMap<const ValueDecl *, Address> &CaptureDeviceAddrMap);
+  /// \brief Emit code for copyin clause in \a D directive. The next code is
+  /// generated at the start of outlined functions for directives:
+  /// \code
+  /// threadprivate_var1 = master_threadprivate_var1;
+  /// operator=(threadprivate_var2, master_threadprivate_var2);
+  /// ...
+  /// __kmpc_barrier(&loc, global_tid);
+  /// \endcode
+  ///
+  /// \param D OpenACC directive possibly with 'copyin' clause(s).
+  /// \returns true if at least one copyin variable is found, false otherwise.
+  bool EmitACCCopyinClause(const ACCExecutableDirective &D);
+  /// \brief Emit initial code for lastprivate variables. If some variable is
+  /// not also firstprivate, then the default initialization is used. Otherwise
+  /// initialization of this variable is performed by EmitACCFirstprivateClause
+  /// method.
+  ///
+  /// \param D Directive that may have 'lastprivate' directives.
+  /// \param PrivateScope Private scope for capturing lastprivate variables for
+  /// proper codegen in internal captured statement.
+  ///
+  /// \returns true if there is at least one lastprivate variable, false
+  /// otherwise.
+  bool EmitACCLastprivateClauseInit(const ACCExecutableDirective &D,
+                                    ACCPrivateScope &PrivateScope);
+  /// \brief Emit final copying of lastprivate values to original variables at
+  /// the end of the worksharing or simd directive.
+  ///
+  /// \param D Directive that has at least one 'lastprivate' directives.
+  /// \param IsLastIterCond Boolean condition that must be set to 'i1 true' if
+  /// it is the last iteration of the loop code in associated directive, or to
+  /// 'i1 false' otherwise. If this item is nullptr, no final check is required.
+  void EmitACCLastprivateClauseFinal(const ACCExecutableDirective &D,
+                                     bool NoFinals,
+                                     llvm::Value *IsLastIterCond = nullptr);
+  /// Emit initial code for linear clauses.
+  void EmitACCLinearClause(const ACCLoopDirective &D,
+                           CodeGenFunction::ACCPrivateScope &PrivateScope);
+  /// Emit final code for linear clauses.
+  /// \param CondGen Optional conditional code for final part of codegen for
+  /// linear clause.
+  void EmitACCLinearClauseFinal(
+      const ACCLoopDirective &D,
+      const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen);
+  /// \brief Emit initial code for reduction variables. Creates reduction copies
+  /// and initializes them with the values according to OpenACC standard.
+  ///
+  /// \param D Directive (possibly) with the 'reduction' clause.
+  /// \param PrivateScope Private scope for capturing reduction variables for
+  /// proper codegen in internal captured statement.
+  ///
+  void EmitACCReductionClauseInit(const ACCExecutableDirective &D,
+                                  ACCPrivateScope &PrivateScope);
+  /// \brief Emit final update of reduction values to original variables at
+  /// the end of the directive.
+  ///
+  /// \param D Directive that has at least one 'reduction' directives.
+  /// \param ReductionKind The kind of reduction to perform.
+  void EmitACCReductionClauseFinal(const ACCExecutableDirective &D,
+                                   const OpenACCDirectiveKind ReductionKind);
+  /// \brief Emit initial code for linear variables. Creates private copies
+  /// and initializes them with the values according to OpenACC standard.
+  ///
+  /// \param D Directive (possibly) with the 'linear' clause.
+  /// \return true if at least one linear variable is found that should be
+  /// initialized with the value of the original variable, false otherwise.
+  bool EmitACCLinearClauseInit(const ACCLoopDirective &D);
+
+
+  //TODO acc2mp
+  //Figure out if we need to copy this
+  //typedef const llvm::function_ref<void(CodeGenFunction & /*CGF*/,
+  //                                      llvm::Value * /*OutlinedFn*/,
+  //                                      const ACCTaskDataTy & /*Data*/)>
+  //    TaskGenTy;
+  //void EmitACCTaskBasedDirective(const ACCExecutableDirective &S,
+  //                               const OpenACCDirectiveKind CapturedRegion,
+  //                               const RegionCodeGenTy &BodyGen,
+  //                               const TaskGenTy &TaskGen, ACCTaskDataTy &Data);
+  struct ACCTargetDataInfo {
+    Address BasePointersArray = Address::invalid();
+    Address PointersArray = Address::invalid();
+    Address SizesArray = Address::invalid();
+    unsigned NumberOfTargetItems = 0;
+    explicit ACCTargetDataInfo() = default;
+    ACCTargetDataInfo(Address BasePointersArray, Address PointersArray,
+                      Address SizesArray, unsigned NumberOfTargetItems)
+        : BasePointersArray(BasePointersArray), PointersArray(PointersArray),
+          SizesArray(SizesArray), NumberOfTargetItems(NumberOfTargetItems) {}
+  };
+  void EmitACCTargetTaskBasedDirective(const ACCExecutableDirective &S,
+                                       const RegionCodeGenTy &BodyGen,
+                                       ACCTargetDataInfo &InputInfo);
+
+  void EmitACCParallelDirective(const ACCParallelDirective &S);
+  void EmitACCSimdDirective(const ACCSimdDirective &S);
+  void EmitACCForDirective(const ACCForDirective &S);
+  void EmitACCForSimdDirective(const ACCForSimdDirective &S);
+  void EmitACCSectionsDirective(const ACCSectionsDirective &S);
+  void EmitACCSectionDirective(const ACCSectionDirective &S);
+  void EmitACCSingleDirective(const ACCSingleDirective &S);
+  void EmitACCMasterDirective(const ACCMasterDirective &S);
+  void EmitACCCriticalDirective(const ACCCriticalDirective &S);
+  void EmitACCParallelForDirective(const ACCParallelForDirective &S);
+  void EmitACCParallelForSimdDirective(const ACCParallelForSimdDirective &S);
+  void EmitACCParallelSectionsDirective(const ACCParallelSectionsDirective &S);
+  void EmitACCTaskDirective(const ACCTaskDirective &S);
+  void EmitACCTaskyieldDirective(const ACCTaskyieldDirective &S);
+  void EmitACCBarrierDirective(const ACCBarrierDirective &S);
+  void EmitACCTaskwaitDirective(const ACCTaskwaitDirective &S);
+  void EmitACCTaskgroupDirective(const ACCTaskgroupDirective &S);
+  void EmitACCFlushDirective(const ACCFlushDirective &S);
+  void EmitACCOrderedDirective(const ACCOrderedDirective &S);
+  void EmitACCAtomicDirective(const ACCAtomicDirective &S);
+  void EmitACCTargetDirective(const ACCTargetDirective &S);
+  void EmitACCTargetDataDirective(const ACCTargetDataDirective &S);
+  void EmitACCTargetEnterDataDirective(const ACCTargetEnterDataDirective &S);
+  void EmitACCTargetExitDataDirective(const ACCTargetExitDataDirective &S);
+  void EmitACCTargetUpdateDirective(const ACCTargetUpdateDirective &S);
+  void EmitACCTargetParallelDirective(const ACCTargetParallelDirective &S);
+  void
+  EmitACCTargetParallelForDirective(const ACCTargetParallelForDirective &S);
+  void EmitACCTeamsDirective(const ACCTeamsDirective &S);
+  void
+  EmitACCCancellationPointDirective(const ACCCancellationPointDirective &S);
+  void EmitACCCancelDirective(const ACCCancelDirective &S);
+  void EmitACCTaskLoopBasedDirective(const ACCLoopDirective &S);
+  void EmitACCTaskLoopDirective(const ACCTaskLoopDirective &S);
+  void EmitACCTaskLoopSimdDirective(const ACCTaskLoopSimdDirective &S);
+  void EmitACCDistributeDirective(const ACCDistributeDirective &S);
+  void EmitACCDistributeParallelForDirective(
+      const ACCDistributeParallelForDirective &S);
+  void EmitACCDistributeParallelForSimdDirective(
+      const ACCDistributeParallelForSimdDirective &S);
+  void EmitACCDistributeSimdDirective(const ACCDistributeSimdDirective &S);
+  void EmitACCTargetParallelForSimdDirective(
+      const ACCTargetParallelForSimdDirective &S);
+  void EmitACCTargetSimdDirective(const ACCTargetSimdDirective &S);
+  void EmitACCTeamsDistributeDirective(const ACCTeamsDistributeDirective &S);
+  void
+  EmitACCTeamsDistributeSimdDirective(const ACCTeamsDistributeSimdDirective &S);
+  void EmitACCTeamsDistributeParallelForSimdDirective(
+      const ACCTeamsDistributeParallelForSimdDirective &S);
+  void EmitACCTeamsDistributeParallelForDirective(
+      const ACCTeamsDistributeParallelForDirective &S);
+  void EmitACCTargetTeamsDirective(const ACCTargetTeamsDirective &S);
+  void EmitACCTargetTeamsDistributeDirective(
+      const ACCTargetTeamsDistributeDirective &S);
+  void EmitACCTargetTeamsDistributeParallelForDirective(
+      const ACCTargetTeamsDistributeParallelForDirective &S);
+  void EmitACCTargetTeamsDistributeParallelForSimdDirective(
+      const ACCTargetTeamsDistributeParallelForSimdDirective &S);
+  void EmitACCTargetTeamsDistributeSimdDirective(
+      const ACCTargetTeamsDistributeSimdDirective &S);
+
+  /// Emit device code for the target directive.
+  static void EmitACCTargetDeviceFunction(CodeGenModule &CGM,
+                                          StringRef ParentName,
+                                          const ACCTargetDirective &S);
+  static void
+  EmitACCTargetParallelDeviceFunction(CodeGenModule &CGM, StringRef ParentName,
+                                      const ACCTargetParallelDirective &S);
+  /// Emit device code for the target parallel for directive.
+  static void EmitACCTargetParallelForDeviceFunction(
+      CodeGenModule &CGM, StringRef ParentName,
+      const ACCTargetParallelForDirective &S);
+  /// Emit device code for the target parallel for simd directive.
+  static void EmitACCTargetParallelForSimdDeviceFunction(
+      CodeGenModule &CGM, StringRef ParentName,
+      const ACCTargetParallelForSimdDirective &S);
+  /// Emit device code for the target teams directive.
+  static void
+  EmitACCTargetTeamsDeviceFunction(CodeGenModule &CGM, StringRef ParentName,
+                                   const ACCTargetTeamsDirective &S);
+  /// Emit device code for the target teams distribute directive.
+  static void EmitACCTargetTeamsDistributeDeviceFunction(
+      CodeGenModule &CGM, StringRef ParentName,
+      const ACCTargetTeamsDistributeDirective &S);
+  /// Emit device code for the target teams distribute simd directive.
+  static void EmitACCTargetTeamsDistributeSimdDeviceFunction(
+      CodeGenModule &CGM, StringRef ParentName,
+      const ACCTargetTeamsDistributeSimdDirective &S);
+  /// Emit device code for the target simd directive.
+  static void EmitACCTargetSimdDeviceFunction(CodeGenModule &CGM,
+                                              StringRef ParentName,
+                                              const ACCTargetSimdDirective &S);
+  /// Emit device code for the target teams distribute parallel for simd
+  /// directive.
+  static void EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
+      CodeGenModule &CGM, StringRef ParentName,
+      const ACCTargetTeamsDistributeParallelForSimdDirective &S);
+
+  static void EmitACCTargetTeamsDistributeParallelForDeviceFunction(
+      CodeGenModule &CGM, StringRef ParentName,
+      const ACCTargetTeamsDistributeParallelForDirective &S);
+  /// \brief Emit inner loop of the worksharing/simd construct.
+  ///
+  /// \param S Directive, for which the inner loop must be emitted.
+  /// \param RequiresCleanup true, if directive has some associated private
+  /// variables.
+  /// \param LoopCond Bollean condition for loop continuation.
+  /// \param IncExpr Increment expression for loop control variable.
+  /// \param BodyGen Generator for the inner body of the inner loop.
+  /// \param PostIncGen Genrator for post-increment code (required for ordered
+  /// loop directvies).
+  void EmitACCInnerLoop(
+      const Stmt &S, bool RequiresCleanup, const Expr *LoopCond,
+      const Expr *IncExpr,
+      const llvm::function_ref<void(CodeGenFunction &)> &BodyGen,
+      const llvm::function_ref<void(CodeGenFunction &)> &PostIncGen);
+
+  JumpDest getACCCancelDestination(OpenACCDirectiveKind Kind);
+  /// Emit initial code for loop counters of loop-based directives.
+  void EmitACCPrivateLoopCounters(const ACCLoopDirective &S,
+                                  ACCPrivateScope &LoopScope);
+
+  /// Helper for the OpenACC loop directives.
+  void EmitACCLoopBody(const ACCLoopDirective &D, JumpDest LoopExit);
+
+  /// \brief Emit code for the worksharing loop-based directive.
+  /// \return true, if this construct has any lastprivate clause, false -
+  /// otherwise.
+  bool EmitACCWorksharingLoop(const ACCLoopDirective &S, Expr *EUB,
+                              const CodeGenLoopBoundsTy &CodeGenLoopBounds,
+                              const CodeGenDispatchBoundsTy &CGDispatchBounds);
+
+  /// Emit code for the distribute loop-based directive.
+  void EmitACCDistributeLoop(const ACCLoopDirective &S,
+                             const CodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
+
+  /// Helpers for the OpenACC loop directives.
+  void EmitACCSimdInit(const ACCLoopDirective &D, bool IsMonotonic = false);
+  void EmitACCSimdFinal(
+      const ACCLoopDirective &D,
+      const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen);
+
+  /// Emits the lvalue for the expression with possibly captured variable.
+  LValue EmitACCSharedLValue(const Expr *E);
+
+// -- MYHEADER --
   llvm::Function *GenerateOpenMPCapturedStmtFunction(const CapturedStmt &S);
   void GenerateOpenMPCapturedVars(const CapturedStmt &S,
                                   SmallVectorImpl<llvm::Value *> &CapturedVars);
@@ -3006,10 +3499,67 @@ public:
   /// Emits the lvalue for the expression with possibly captured variable.
   LValue EmitOMPSharedLValue(const Expr *E);
 
+// -- MYHEADER --
+
 private:
   /// Helpers for blocks.
   llvm::Value *EmitBlockLiteral(const CGBlockInfo &Info);
 
+// -- MYHEADER -- 
+
+  /// struct with the values to be passed to the OpenACC loop-related functions
+  struct ACCLoopArguments {
+    /// loop lower bound
+    Address LB = Address::invalid();
+    /// loop upper bound
+    Address UB = Address::invalid();
+    /// loop stride
+    Address ST = Address::invalid();
+    /// isLastIteration argument for runtime functions
+    Address IL = Address::invalid();
+    /// Chunk value generated by sema
+    llvm::Value *Chunk = nullptr;
+    /// EnsureUpperBound
+    Expr *EUB = nullptr;
+    /// IncrementExpression
+    Expr *IncExpr = nullptr;
+    /// Loop initialization
+    Expr *Init = nullptr;
+    /// Loop exit condition
+    Expr *Cond = nullptr;
+    /// Update of LB after a whole chunk has been executed
+    Expr *NextLB = nullptr;
+    /// Update of UB after a whole chunk has been executed
+    Expr *NextUB = nullptr;
+    ACCLoopArguments() = default;
+    ACCLoopArguments(Address LB, Address UB, Address ST, Address IL,
+                     llvm::Value *Chunk = nullptr, Expr *EUB = nullptr,
+                     Expr *IncExpr = nullptr, Expr *Init = nullptr,
+                     Expr *Cond = nullptr, Expr *NextLB = nullptr,
+                     Expr *NextUB = nullptr)
+        : LB(LB), UB(UB), ST(ST), IL(IL), Chunk(Chunk), EUB(EUB),
+          IncExpr(IncExpr), Init(Init), Cond(Cond), NextLB(NextLB),
+          NextUB(NextUB) {}
+  };
+  void EmitACCOuterLoop(bool DynamicOrOrdered, bool IsMonotonic,
+                        const ACCLoopDirective &S, ACCPrivateScope &LoopScope,
+                        const ACCLoopArguments &LoopArgs,
+                        const CodeGenLoopTy &CodeGenLoop,
+                        const CodeGenOrderedTy &CodeGenOrdered);
+  void EmitACCForOuterLoop(const OpenACCScheduleTy &ScheduleKind,
+                           bool IsMonotonic, const ACCLoopDirective &S,
+                           ACCPrivateScope &LoopScope, bool Ordered,
+                           const ACCLoopArguments &LoopArgs,
+                           const CodeGenDispatchBoundsTy &CGDispatchBounds);
+  void EmitACCDistributeOuterLoop(OpenACCDistScheduleClauseKind ScheduleKind,
+                                  const ACCLoopDirective &S,
+                                  ACCPrivateScope &LoopScope,
+                                  const ACCLoopArguments &LoopArgs,
+                                  const CodeGenLoopTy &CodeGenLoopContent);
+  /// \brief Emit code for sections directive.
+  void EmitSections(const ACCExecutableDirective &S);
+ 
+// -- MYHEADER -- 
   /// struct with the values to be passed to the OpenMP loop-related functions
   struct OMPLoopArguments {
     /// loop lower bound
@@ -3062,6 +3612,7 @@ private:
   /// \brief Emit code for sections directive.
   void EmitSections(const OMPExecutableDirective &S);
 
+// -- MYHEADER -- 
 public:
 
   //===--------------------------------------------------------------------===//
@@ -3240,6 +3791,8 @@ public:
   LValue EmitUnaryOpLValue(const UnaryOperator *E);
   LValue EmitArraySubscriptExpr(const ArraySubscriptExpr *E,
                                 bool Accessed = false);
+  LValue EmitACCArraySectionExpr(const ACCArraySectionExpr *E,
+                                 bool IsLowerBound = true);
   LValue EmitOMPArraySectionExpr(const OMPArraySectionExpr *E,
                                  bool IsLowerBound = true);
   LValue EmitExtVectorElementExpr(const ExtVectorElementExpr *E);

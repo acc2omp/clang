@@ -21,6 +21,7 @@
 #include "clang/AST/Attr.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/GlobalDecl.h"
 #include "clang/AST/Mangle.h"
@@ -88,6 +89,7 @@ class CGCXXABI;
 class CGDebugInfo;
 class CGObjCRuntime;
 class CGOpenCLRuntime;
+class CGOpenACCRuntime;
 class CGOpenMPRuntime;
 class CGCUDARuntime;
 class BlockFieldFlags;
@@ -293,6 +295,7 @@ private:
 
   std::unique_ptr<CGObjCRuntime> ObjCRuntime;
   std::unique_ptr<CGOpenCLRuntime> OpenCLRuntime;
+  std::unique_ptr<CGOpenACCRuntime> OpenACCRuntime;
   std::unique_ptr<CGOpenMPRuntime> OpenMPRuntime;
   std::unique_ptr<CGCUDARuntime> CUDARuntime;
   std::unique_ptr<CGDebugInfo> DebugInfo;
@@ -452,6 +455,7 @@ private:
   void createObjCRuntime();
 
   void createOpenCLRuntime();
+  void createOpenACCRuntime();
   void createOpenMPRuntime();
   void createCUDARuntime();
 
@@ -535,6 +539,12 @@ public:
   CGOpenCLRuntime &getOpenCLRuntime() {
     assert(OpenCLRuntime != nullptr);
     return *OpenCLRuntime;
+  }
+
+  /// Return a reference to the configured OpenACC runtime.
+  CGOpenACCRuntime &getOpenACCRuntime() {
+    assert(OpenACCRuntime != nullptr);
+    return *OpenACCRuntime;
   }
 
   /// Return a reference to the configured OpenMP runtime.
@@ -1200,6 +1210,14 @@ public:
   void addReplacement(StringRef Name, llvm::Constant *C);
 
   void addGlobalValReplacement(llvm::GlobalValue *GV, llvm::Constant *C);
+
+  /// \brief Emit a code for threadprivate directive.
+  /// \param D Threadprivate declaration.
+  void EmitACCThreadPrivateDecl(const ACCThreadPrivateDecl *D);
+
+  /// \brief Emit a code for declare reduction construct.
+  void EmitACCDeclareReduction(const ACCDeclareReductionDecl *D,
+                               CodeGenFunction *CGF = nullptr);
 
   /// \brief Emit a code for threadprivate directive.
   /// \param D Threadprivate declaration.
