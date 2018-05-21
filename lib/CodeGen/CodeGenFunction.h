@@ -187,9 +187,28 @@ public:
 
 
   // TODO acc2mp
-  // Study how to replicate this next 3 functions for ACC
-  // CodeGen lambda for loops and support for ordered clause
-  typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopDirective &,
+  // Get rid of this backup when u don't need it anymore
+
+  // typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopDirective &,
+  //                                 JumpDest)>
+  //     CodeGenLoopTy;
+  // typedef llvm::function_ref<void(CodeGenFunction &, SourceLocation,
+  //                                 const unsigned, const bool)>
+  //     CodeGenOrderedTy;
+
+  // // Codegen lambda for loop bounds in worksharing loop constructs
+  // typedef llvm::function_ref<std::pair<LValue, LValue>(
+  //     CodeGenFunction &, const OMPExecutableDirective &S)>
+  //     CodeGenLoopBoundsTy;
+
+  // // Codegen lambda for loop bounds in dispatch-based loop implementation
+  // typedef llvm::function_ref<std::pair<llvm::Value *, llvm::Value *>(
+  //     CodeGenFunction &, const OMPExecutableDirective &S, Address LB,
+  //     Address UB)>
+  //     CodeGenDispatchBoundsTy;
+
+
+  typedef llvm::function_ref<void(CodeGenFunction &, const PRAGMAExecutableDirective &,
                                   JumpDest)>
       CodeGenLoopTy;
   typedef llvm::function_ref<void(CodeGenFunction &, SourceLocation,
@@ -198,12 +217,12 @@ public:
 
   // Codegen lambda for loop bounds in worksharing loop constructs
   typedef llvm::function_ref<std::pair<LValue, LValue>(
-      CodeGenFunction &, const OMPExecutableDirective &S)>
+      CodeGenFunction &, const PRAGMAExecutableDirective &S)>
       CodeGenLoopBoundsTy;
 
   // Codegen lambda for loop bounds in dispatch-based loop implementation
   typedef llvm::function_ref<std::pair<llvm::Value *, llvm::Value *>(
-      CodeGenFunction &, const OMPExecutableDirective &S, Address LB,
+      CodeGenFunction &, const PRAGMAExecutableDirective &S, Address LB,
       Address UB)>
       CodeGenDispatchBoundsTy;
 

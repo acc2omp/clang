@@ -201,7 +201,7 @@ def AsTypeExpr : DStmt<Expr>;
 def PRAGMAExecutableDirective : Stmt<1>;
 
 // OpenMP Directives.
-def OMPExecutableDirective : DStmt<PRAGMAExecutableDirective>;
+def OMPExecutableDirective : DStmt<PRAGMAExecutableDirective,1>;
 def OMPLoopDirective : DStmt<OMPExecutableDirective, 1>;
 def OMPParallelDirective : DStmt<OMPExecutableDirective>;
 def OMPSimdDirective : DStmt<OMPLoopDirective>;
@@ -252,7 +252,7 @@ def OMPTargetTeamsDistributeParallelForSimdDirective : DStmt<OMPLoopDirective>;
 def OMPTargetTeamsDistributeSimdDirective : DStmt<OMPLoopDirective>;
 
 // OpenACC Directives.
-def ACCExecutableDirective : DStmt<PRAGMAExecutableDirective>;
+def ACCExecutableDirective : DStmt<PRAGMAExecutableDirective,1>;
 def ACCLoopDirective : DStmt<ACCExecutableDirective, 1>;
 def ACCParallelDirective : DStmt<ACCExecutableDirective>;
 def ACCSimdDirective : DStmt<ACCLoopDirective>;

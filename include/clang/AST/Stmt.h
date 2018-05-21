@@ -481,7 +481,7 @@ public:
 };
 
 class PRAGMAExecutableDirective : public Stmt {
-	public: PRAGMAExecutableDirective(StmtClass SC) : Stmt(SC);
+	public: PRAGMAExecutableDirective(StmtClass SC) : Stmt(SC) {}
 };
 
 /// DeclStmt - Adaptor class for mixing declarations with statements and
