@@ -3038,14 +3038,14 @@ public:
 
   //TODO acc2mp
   //Figure out if we need to copy this
-  //typedef const llvm::function_ref<void(CodeGenFunction & /*CGF*/,
-  //                                      llvm::Value * /*OutlinedFn*/,
-  //                                      const ACCTaskDataTy & /*Data*/)>
-  //    TaskGenTy;
-  //void EmitACCTaskBasedDirective(const ACCExecutableDirective &S,
-  //                               const OpenACCDirectiveKind CapturedRegion,
-  //                               const RegionCodeGenTy &BodyGen,
-  //                               const TaskGenTy &TaskGen, ACCTaskDataTy &Data);
+  typedef const llvm::function_ref<void(CodeGenFunction & /*CGF*/,
+                                        llvm::Value * /*OutlinedFn*/,
+                                        const ACCTaskDataTy & /*Data*/)>
+      ACCTaskGenTy;
+  void EmitACCTaskBasedDirective(const ACCExecutableDirective &S,
+                                 const OpenACCDirectiveKind CapturedRegion,
+                                 const RegionCodeGenTy &BodyGen,
+                                 const ACCTaskGenTy &TaskGen, ACCTaskDataTy &Data);
   struct ACCTargetDataInfo {
     Address BasePointersArray = Address::invalid();
     Address PointersArray = Address::invalid();

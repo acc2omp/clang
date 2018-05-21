@@ -30,7 +30,7 @@ namespace clang {
 /// \brief This is a basic class for representing single OpenACC executable
 /// directive.
 ///
-class ACCExecutableDirective : public Stmt {
+class ACCExecutableDirective : public PRAGMAExecutableDirective {
   friend class ASTStmtReader;
   /// \brief Kind of the directive.
   OpenACCDirectiveKind Kind;
@@ -67,7 +67,7 @@ protected:
   ACCExecutableDirective(const T *, StmtClass SC, OpenACCDirectiveKind K,
                          SourceLocation StartLoc, SourceLocation EndLoc,
                          unsigned NumClauses, unsigned NumChildren)
-      : Stmt(SC), Kind(K), StartLoc(std::move(StartLoc)),
+      : PRAGMAExecutableDirective(SC), Kind(K), StartLoc(std::move(StartLoc)),
         EndLoc(std::move(EndLoc)), NumClauses(NumClauses),
         NumChildren(NumChildren),
         ClausesOffset(llvm::alignTo(sizeof(T), alignof(ACCClause *))) {}

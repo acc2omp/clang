@@ -30,7 +30,7 @@ namespace clang {
 /// \brief This is a basic class for representing single OpenMP executable
 /// directive.
 ///
-class OMPExecutableDirective : public Stmt {
+class OMPExecutableDirective : public PRAGMAExecutableDirective {
   friend class ASTStmtReader;
   /// \brief Kind of the directive.
   OpenMPDirectiveKind Kind;
@@ -67,7 +67,7 @@ protected:
   OMPExecutableDirective(const T *, StmtClass SC, OpenMPDirectiveKind K,
                          SourceLocation StartLoc, SourceLocation EndLoc,
                          unsigned NumClauses, unsigned NumChildren)
-      : Stmt(SC), Kind(K), StartLoc(std::move(StartLoc)),
+      : PRAGMAExecutableDirective(SC), Kind(K), StartLoc(std::move(StartLoc)),
         EndLoc(std::move(EndLoc)), NumClauses(NumClauses),
         NumChildren(NumChildren),
         ClausesOffset(llvm::alignTo(sizeof(T), alignof(OMPClause *))) {}

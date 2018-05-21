@@ -2717,7 +2717,7 @@ void CodeGenFunction::EmitACCParallelSectionsDirective(
 
 void CodeGenFunction::EmitACCTaskBasedDirective(
     const ACCExecutableDirective &S, const OpenACCDirectiveKind CapturedRegion,
-    const RegionCodeGenTy &BodyGen, const TaskGenTy &TaskGen,
+    const RegionCodeGenTy &BodyGen, const ACCTaskGenTy &TaskGen,
     ACCTaskDataTy &Data) {
   // Emit outlined function for task construct.
   const CapturedStmt *CS = S.getCapturedStmt(CapturedRegion);

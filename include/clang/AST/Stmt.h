@@ -480,6 +480,10 @@ public:
   void ProcessODRHash(llvm::FoldingSetNodeID &ID, ODRHash& Hash) const;
 };
 
+class PRAGMAExecutableDirective : public Stmt {
+	public: PRAGMAExecutableDirective(StmtClass SC) : Stmt(SC);
+};
+
 /// DeclStmt - Adaptor class for mixing declarations with statements and
 /// expressions. For example, CompoundStmt mixes statements, expressions
 /// and declarations (variables, types). Another example is ForStmt, where

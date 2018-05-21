@@ -197,8 +197,11 @@ def MSDependentExistsStmt : Stmt;
 // OpenCL Extensions.
 def AsTypeExpr : DStmt<Expr>;
 
+// Common node for OpenMP and OpenACC
+def PRAGMAExecutableDirective : Stmt<1>;
+
 // OpenMP Directives.
-def OMPExecutableDirective : Stmt<1>;
+def OMPExecutableDirective : DStmt<PRAGMAExecutableDirective>;
 def OMPLoopDirective : DStmt<OMPExecutableDirective, 1>;
 def OMPParallelDirective : DStmt<OMPExecutableDirective>;
 def OMPSimdDirective : DStmt<OMPLoopDirective>;
@@ -249,7 +252,7 @@ def OMPTargetTeamsDistributeParallelForSimdDirective : DStmt<OMPLoopDirective>;
 def OMPTargetTeamsDistributeSimdDirective : DStmt<OMPLoopDirective>;
 
 // OpenACC Directives.
-def ACCExecutableDirective : Stmt<1>;
+def ACCExecutableDirective : DStmt<PRAGMAExecutableDirective>;
 def ACCLoopDirective : DStmt<ACCExecutableDirective, 1>;
 def ACCParallelDirective : DStmt<ACCExecutableDirective>;
 def ACCSimdDirective : DStmt<ACCLoopDirective>;
