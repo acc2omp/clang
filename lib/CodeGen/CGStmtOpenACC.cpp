@@ -1920,6 +1920,8 @@ void CodeGenFunction::EmitACCForOuterLoop(
   const bool IVSigned = IVExpr->getType()->hasSignedIntegerRepresentation();
 
   if (DynamicOrOrdered) {
+// TODO acc2mp 
+// investigate
     auto DispatchBounds = CGDispatchBounds(*this, S, LoopArgs.LB, LoopArgs.UB);
     llvm::Value *LBVal = DispatchBounds.first;
     llvm::Value *UBVal = DispatchBounds.second;
@@ -2063,7 +2065,7 @@ emitDistributeParallelForInnerBounds(CodeGenFunction &CGF,
 /// 'for_dispatch_init'
 static std::pair<llvm::Value *, llvm::Value *>
 emitDistributeParallelForDispatchBounds(CodeGenFunction &CGF,
-                                        const ACCExecutableDirective &S,
+                                        const PRAGMAExecutableDirective &S,
                                         Address LB, Address UB) {
   const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();

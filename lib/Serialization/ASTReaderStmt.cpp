@@ -1751,6 +1751,1249 @@ void ASTStmtReader::VisitAsTypeExpr(AsTypeExpr *E) {
   E->RParenLoc = ReadSourceLocation();
   E->SrcExpr = Record.readSubExpr();
 }
+// -- MYHEADER --
+
+//===----------------------------------------------------------------------===//
+// OpenACC Clauses.
+//===----------------------------------------------------------------------===//
+
+namespace clang {
+class ACCClauseReader : public ACCClauseVisitor<ACCClauseReader> {
+  ASTStmtReader *Reader;
+  ASTContext &Context;
+public:
+  ACCClauseReader(ASTStmtReader *R, ASTRecordReader &Record)
+      : Reader(R), Context(Record.getContext()) {}
+#define OPENACC_CLAUSE(Name, Class) void Visit##Class(Class *C);
+#include "clang/Basic/OpenACCKinds.def"
+  ACCClause *readClause();
+  void VisitACCClauseWithPreInit(ACCClauseWithPreInit *C);
+  void VisitACCClauseWithPostUpdate(ACCClauseWithPostUpdate *C);
+};
+}
+
+ACCClause *ACCClauseReader::readClause() {
+  ACCClause *C;
+  switch (Reader->Record.readInt()) {
+  case ACCC_if:
+    C = new (Context) ACCIfClause();
+    break;
+  case ACCC_final:
+    C = new (Context) ACCFinalClause();
+    break;
+  case ACCC_num_threads:
+    C = new (Context) ACCNumThreadsClause();
+    break;
+  case ACCC_safelen:
+    C = new (Context) ACCSafelenClause();
+    break;
+  case ACCC_simdlen:
+    C = new (Context) ACCSimdlenClause();
+    break;
+  case ACCC_collapse:
+    C = new (Context) ACCCollapseClause();
+    break;
+  case ACCC_default:
+    C = new (Context) ACCDefaultClause();
+    break;
+  case ACCC_proc_bind:
+    C = new (Context) ACCProcBindClause();
+    break;
+  case ACCC_schedule:
+    C = new (Context) ACCScheduleClause();
+    break;
+  case ACCC_ordered:
+    C = new (Context) ACCOrderedClause();
+    break;
+  case ACCC_nowait:
+    C = new (Context) ACCNowaitClause();
+    break;
+  case ACCC_untied:
+    C = new (Context) ACCUntiedClause();
+    break;
+  case ACCC_mergeable:
+    C = new (Context) ACCMergeableClause();
+    break;
+  case ACCC_read:
+    C = new (Context) ACCReadClause();
+    break;
+  case ACCC_write:
+    C = new (Context) ACCWriteClause();
+    break;
+  case ACCC_update:
+    C = new (Context) ACCUpdateClause();
+    break;
+  case ACCC_capture:
+    C = new (Context) ACCCaptureClause();
+    break;
+  case ACCC_seq_cst:
+    C = new (Context) ACCSeqCstClause();
+    break;
+  case ACCC_threads:
+    C = new (Context) ACCThreadsClause();
+    break;
+  case ACCC_simd:
+    C = new (Context) ACCSIMDClause();
+    break;
+  case ACCC_nogroup:
+    C = new (Context) ACCNogroupClause();
+    break;
+  case ACCC_private:
+    C = ACCPrivateClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_firstprivate:
+    C = ACCFirstprivateClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_lastprivate:
+    C = ACCLastprivateClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_shared:
+    C = ACCSharedClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_reduction:
+    C = ACCReductionClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_task_reduction:
+    C = ACCTaskReductionClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_in_reduction:
+    C = ACCInReductionClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_linear:
+    C = ACCLinearClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_aligned:
+    C = ACCAlignedClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_copyin:
+    C = ACCCopyinClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_copyprivate:
+    C = ACCCopyprivateClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_flush:
+    C = ACCFlushClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_depend:
+    C = ACCDependClause::CreateEmpty(Context, Reader->Record.readInt());
+    break;
+  case ACCC_device:
+    C = new (Context) ACCDeviceClause();
+    break;
+  case ACCC_map: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCMapClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                  NumComponents);
+    break;
+  }
+  case ACCC_num_teams:
+    C = new (Context) ACCNumTeamsClause();
+    break;
+  case ACCC_thread_limit:
+    C = new (Context) ACCThreadLimitClause();
+    break;
+  case ACCC_priority:
+    C = new (Context) ACCPriorityClause();
+    break;
+  case ACCC_grainsize:
+    C = new (Context) ACCGrainsizeClause();
+    break;
+  case ACCC_num_tasks:
+    C = new (Context) ACCNumTasksClause();
+    break;
+  case ACCC_hint:
+    C = new (Context) ACCHintClause();
+    break;
+  case ACCC_dist_schedule:
+    C = new (Context) ACCDistScheduleClause();
+    break;
+  case ACCC_defaultmap:
+    C = new (Context) ACCDefaultmapClause();
+    break;
+  case ACCC_to: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCToClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                 NumComponents);
+    break;
+  }
+  case ACCC_from: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCFromClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                   NumComponents);
+    break;
+  }
+  case ACCC_use_device_ptr: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCUseDevicePtrClause::CreateEmpty(Context, NumVars, NumDeclarations,
+                                           NumLists, NumComponents);
+    break;
+  }
+  case ACCC_is_device_ptr: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCIsDevicePtrClause::CreateEmpty(Context, NumVars, NumDeclarations,
+                                          NumLists, NumComponents);
+    break;
+  }
+  }
+  Visit(C);
+  C->setLocStart(Reader->ReadSourceLocation());
+  C->setLocEnd(Reader->ReadSourceLocation());
+
+  return C;
+}
+
+void ACCClauseReader::VisitACCClauseWithPreInit(ACCClauseWithPreInit *C) {
+  C->setPreInitStmt(Reader->Record.readSubStmt(),
+                    static_cast<OpenACCDirectiveKind>(Reader->Record.readInt()));
+}
+
+void ACCClauseReader::VisitACCClauseWithPostUpdate(ACCClauseWithPostUpdate *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setPostUpdateExpr(Reader->Record.readSubExpr());
+}
+
+void ACCClauseReader::VisitACCIfClause(ACCIfClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setNameModifier(static_cast<OpenACCDirectiveKind>(Reader->Record.readInt()));
+  C->setNameModifierLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  C->setCondition(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCFinalClause(ACCFinalClause *C) {
+  C->setCondition(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCNumThreadsClause(ACCNumThreadsClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setNumThreads(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCSafelenClause(ACCSafelenClause *C) {
+  C->setSafelen(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCSimdlenClause(ACCSimdlenClause *C) {
+  C->setSimdlen(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCCollapseClause(ACCCollapseClause *C) {
+  C->setNumForLoops(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCDefaultClause(ACCDefaultClause *C) {
+  C->setDefaultKind(
+       static_cast<OpenACCDefaultClauseKind>(Reader->Record.readInt()));
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setDefaultKindKwLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCProcBindClause(ACCProcBindClause *C) {
+  C->setProcBindKind(
+       static_cast<OpenACCProcBindClauseKind>(Reader->Record.readInt()));
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setProcBindKindKwLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCScheduleClause(ACCScheduleClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setScheduleKind(
+       static_cast<OpenACCScheduleClauseKind>(Reader->Record.readInt()));
+  C->setFirstScheduleModifier(
+      static_cast<OpenACCScheduleClauseModifier>(Reader->Record.readInt()));
+  C->setSecondScheduleModifier(
+      static_cast<OpenACCScheduleClauseModifier>(Reader->Record.readInt()));
+  C->setChunkSize(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setFirstScheduleModifierLoc(Reader->ReadSourceLocation());
+  C->setSecondScheduleModifierLoc(Reader->ReadSourceLocation());
+  C->setScheduleKindLoc(Reader->ReadSourceLocation());
+  C->setCommaLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCOrderedClause(ACCOrderedClause *C) {
+  C->setNumForLoops(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCNowaitClause(ACCNowaitClause *) {}
+
+void ACCClauseReader::VisitACCUntiedClause(ACCUntiedClause *) {}
+
+void ACCClauseReader::VisitACCMergeableClause(ACCMergeableClause *) {}
+
+void ACCClauseReader::VisitACCReadClause(ACCReadClause *) {}
+
+void ACCClauseReader::VisitACCWriteClause(ACCWriteClause *) {}
+
+void ACCClauseReader::VisitACCUpdateClause(ACCUpdateClause *) {}
+
+void ACCClauseReader::VisitACCCaptureClause(ACCCaptureClause *) {}
+
+void ACCClauseReader::VisitACCSeqCstClause(ACCSeqCstClause *) {}
+
+void ACCClauseReader::VisitACCThreadsClause(ACCThreadsClause *) {}
+
+void ACCClauseReader::VisitACCSIMDClause(ACCSIMDClause *) {}
+
+void ACCClauseReader::VisitACCNogroupClause(ACCNogroupClause *) {}
+
+void ACCClauseReader::VisitACCPrivateClause(ACCPrivateClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivateCopies(Vars);
+}
+
+void ACCClauseReader::VisitACCFirstprivateClause(ACCFirstprivateClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivateCopies(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setInits(Vars);
+}
+
+void ACCClauseReader::VisitACCLastprivateClause(ACCLastprivateClause *C) {
+  VisitACCClauseWithPostUpdate(C);
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivateCopies(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setSourceExprs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setDestinationExprs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setAssignmentOps(Vars);
+}
+
+void ACCClauseReader::VisitACCSharedClause(ACCSharedClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+}
+
+void ACCClauseReader::VisitACCReductionClause(ACCReductionClause *C) {
+  VisitACCClauseWithPostUpdate(C);
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  NestedNameSpecifierLoc NNSL = Reader->Record.readNestedNameSpecifierLoc();
+  DeclarationNameInfo DNI;
+  Reader->ReadDeclarationNameInfo(DNI);
+  C->setQualifierLoc(NNSL);
+  C->setNameInfo(DNI);
+
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivates(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setLHSExprs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setRHSExprs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setReductionOps(Vars);
+}
+
+void ACCClauseReader::VisitACCTaskReductionClause(ACCTaskReductionClause *C) {
+  VisitACCClauseWithPostUpdate(C);
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  NestedNameSpecifierLoc NNSL = Reader->Record.readNestedNameSpecifierLoc();
+  DeclarationNameInfo DNI;
+  Reader->ReadDeclarationNameInfo(DNI);
+  C->setQualifierLoc(NNSL);
+  C->setNameInfo(DNI);
+
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivates(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setLHSExprs(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setRHSExprs(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setReductionOps(Vars);
+}
+
+void ACCClauseReader::VisitACCInReductionClause(ACCInReductionClause *C) {
+  VisitACCClauseWithPostUpdate(C);
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  NestedNameSpecifierLoc NNSL = Reader->Record.readNestedNameSpecifierLoc();
+  DeclarationNameInfo DNI;
+  Reader->ReadDeclarationNameInfo(DNI);
+  C->setQualifierLoc(NNSL);
+  C->setNameInfo(DNI);
+
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivates(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setLHSExprs(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setRHSExprs(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setReductionOps(Vars);
+  Vars.clear();
+  for (unsigned I = 0; I != NumVars; ++I)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setTaskgroupDescriptors(Vars);
+}
+
+void ACCClauseReader::VisitACCLinearClause(ACCLinearClause *C) {
+  VisitACCClauseWithPostUpdate(C);
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  C->setModifier(static_cast<OpenACCLinearClauseKind>(Reader->Record.readInt()));
+  C->setModifierLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivates(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setInits(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setUpdates(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setFinals(Vars);
+  C->setStep(Reader->Record.readSubExpr());
+  C->setCalcStep(Reader->Record.readSubExpr());
+}
+
+void ACCClauseReader::VisitACCAlignedClause(ACCAlignedClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  C->setAlignment(Reader->Record.readSubExpr());
+}
+
+void ACCClauseReader::VisitACCCopyinClause(ACCCopyinClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Exprs;
+  Exprs.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Exprs);
+  Exprs.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setSourceExprs(Exprs);
+  Exprs.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setDestinationExprs(Exprs);
+  Exprs.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setAssignmentOps(Exprs);
+}
+
+void ACCClauseReader::VisitACCCopyprivateClause(ACCCopyprivateClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Exprs;
+  Exprs.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Exprs);
+  Exprs.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setSourceExprs(Exprs);
+  Exprs.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setDestinationExprs(Exprs);
+  Exprs.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Exprs.push_back(Reader->Record.readSubExpr());
+  C->setAssignmentOps(Exprs);
+}
+
+void ACCClauseReader::VisitACCFlushClause(ACCFlushClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+}
+
+void ACCClauseReader::VisitACCDependClause(ACCDependClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setDependencyKind(
+      static_cast<OpenACCDependClauseKind>(Reader->Record.readInt()));
+  C->setDependencyLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  unsigned NumVars = C->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  C->setCounterValue(Reader->Record.readSubExpr());
+}
+
+void ACCClauseReader::VisitACCDeviceClause(ACCDeviceClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setDevice(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCMapClause(ACCMapClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setMapTypeModifier(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapType(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+
+void ACCClauseReader::VisitACCNumTeamsClause(ACCNumTeamsClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setNumTeams(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCThreadLimitClause(ACCThreadLimitClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setThreadLimit(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCPriorityClause(ACCPriorityClause *C) {
+  C->setPriority(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCGrainsizeClause(ACCGrainsizeClause *C) {
+  C->setGrainsize(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCNumTasksClause(ACCNumTasksClause *C) {
+  C->setNumTasks(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCHintClause(ACCHintClause *C) {
+  C->setHint(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCDistScheduleClause(ACCDistScheduleClause *C) {
+  VisitACCClauseWithPreInit(C);
+  C->setDistScheduleKind(
+      static_cast<OpenACCDistScheduleClauseKind>(Reader->Record.readInt()));
+  C->setChunkSize(Reader->Record.readSubExpr());
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setDistScheduleKindLoc(Reader->ReadSourceLocation());
+  C->setCommaLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCDefaultmapClause(ACCDefaultmapClause *C) {
+  C->setDefaultmapKind(
+       static_cast<OpenACCDefaultmapClauseKind>(Reader->Record.readInt()));
+  C->setDefaultmapModifier(
+      static_cast<OpenACCDefaultmapClauseModifier>(Reader->Record.readInt()));
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setDefaultmapModifierLoc(Reader->ReadSourceLocation());
+  C->setDefaultmapKindLoc(Reader->ReadSourceLocation());
+}
+
+void ACCClauseReader::VisitACCToClause(ACCToClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+
+void ACCClauseReader::VisitACCFromClause(ACCFromClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+
+void ACCClauseReader::VisitACCUseDevicePtrClause(ACCUseDevicePtrClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setPrivateCopies(Vars);
+  Vars.clear();
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setInits(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+
+void ACCClauseReader::VisitACCIsDevicePtrClause(ACCIsDevicePtrClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+  Vars.clear();
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+
+//===----------------------------------------------------------------------===//
+// OpenACC Directives.
+//===----------------------------------------------------------------------===//
+void ASTStmtReader::VisitACCExecutableDirective(ACCExecutableDirective *E) {
+  E->setLocStart(ReadSourceLocation());
+  E->setLocEnd(ReadSourceLocation());
+  ACCClauseReader ClauseReader(this, Record);
+  SmallVector<ACCClause *, 5> Clauses;
+  for (unsigned i = 0; i < E->getNumClauses(); ++i)
+    Clauses.push_back(ClauseReader.readClause());
+  E->setClauses(Clauses);
+  if (E->hasAssociatedStmt())
+    E->setAssociatedStmt(Record.readSubStmt());
+}
+
+void ASTStmtReader::VisitACCLoopDirective(ACCLoopDirective *D) {
+  VisitStmt(D);
+  // Two fields (NumClauses and CollapsedNum) were read in ReadStmtFromStream.
+  Record.skipInts(2);
+  VisitACCExecutableDirective(D);
+  D->setIterationVariable(Record.readSubExpr());
+  D->setLastIteration(Record.readSubExpr());
+  D->setCalcLastIteration(Record.readSubExpr());
+  D->setPreCond(Record.readSubExpr());
+  D->setCond(Record.readSubExpr());
+  D->setInit(Record.readSubExpr());
+  D->setInc(Record.readSubExpr());
+  D->setPreInits(Record.readSubStmt());
+  if (isOpenACCWorksharingDirective(D->getDirectiveKind()) ||
+      isOpenACCTaskLoopDirective(D->getDirectiveKind()) ||
+      isOpenACCDistributeDirective(D->getDirectiveKind())) {
+    D->setIsLastIterVariable(Record.readSubExpr());
+    D->setLowerBoundVariable(Record.readSubExpr());
+    D->setUpperBoundVariable(Record.readSubExpr());
+    D->setStrideVariable(Record.readSubExpr());
+    D->setEnsureUpperBound(Record.readSubExpr());
+    D->setNextLowerBound(Record.readSubExpr());
+    D->setNextUpperBound(Record.readSubExpr());
+    D->setNumIterations(Record.readSubExpr());
+  }
+  if (isOpenACCLoopBoundSharingDirective(D->getDirectiveKind())) {
+    D->setPrevLowerBoundVariable(Record.readSubExpr());
+    D->setPrevUpperBoundVariable(Record.readSubExpr());
+    D->setDistInc(Record.readSubExpr());
+    D->setPrevEnsureUpperBound(Record.readSubExpr());
+    D->setCombinedLowerBoundVariable(Record.readSubExpr());
+    D->setCombinedUpperBoundVariable(Record.readSubExpr());
+    D->setCombinedEnsureUpperBound(Record.readSubExpr());
+    D->setCombinedInit(Record.readSubExpr());
+    D->setCombinedCond(Record.readSubExpr());
+    D->setCombinedNextLowerBound(Record.readSubExpr());
+    D->setCombinedNextUpperBound(Record.readSubExpr());
+  }
+  SmallVector<Expr *, 4> Sub;
+  unsigned CollapsedNum = D->getCollapsedNumber();
+  Sub.reserve(CollapsedNum);
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setCounters(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setPrivateCounters(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setInits(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setUpdates(Sub);
+  Sub.clear();
+  for (unsigned i = 0; i < CollapsedNum; ++i)
+    Sub.push_back(Record.readSubExpr());
+  D->setFinals(Sub);
+}
+
+void ASTStmtReader::VisitACCParallelDirective(ACCParallelDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCSimdDirective(ACCSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCForDirective(ACCForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCForSimdDirective(ACCForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCSectionsDirective(ACCSectionsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCSectionDirective(ACCSectionDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCSingleDirective(ACCSingleDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCMasterDirective(ACCMasterDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCCriticalDirective(ACCCriticalDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  ReadDeclarationNameInfo(D->DirName);
+}
+
+void ASTStmtReader::VisitACCParallelForDirective(ACCParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCParallelForSimdDirective(
+    ACCParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCParallelSectionsDirective(
+    ACCParallelSectionsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTaskDirective(ACCTaskDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTaskyieldDirective(ACCTaskyieldDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCBarrierDirective(ACCBarrierDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTaskwaitDirective(ACCTaskwaitDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTaskgroupDirective(ACCTaskgroupDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setReductionRef(Record.readSubExpr());
+}
+
+void ASTStmtReader::VisitACCFlushDirective(ACCFlushDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCOrderedDirective(ACCOrderedDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCAtomicDirective(ACCAtomicDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setX(Record.readSubExpr());
+  D->setV(Record.readSubExpr());
+  D->setExpr(Record.readSubExpr());
+  D->setUpdateExpr(Record.readSubExpr());
+  D->IsXLHSInRHSPart = Record.readInt() != 0;
+  D->IsPostfixUpdate = Record.readInt() != 0;
+}
+
+void ASTStmtReader::VisitACCTargetDirective(ACCTargetDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetDataDirective(ACCTargetDataDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetEnterDataDirective(
+    ACCTargetEnterDataDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetExitDataDirective(
+    ACCTargetExitDataDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetParallelDirective(
+    ACCTargetParallelDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetParallelForDirective(
+    ACCTargetParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTeamsDirective(ACCTeamsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCCancellationPointDirective(
+    ACCCancellationPointDirective *D) {
+  VisitStmt(D);
+  VisitACCExecutableDirective(D);
+  D->setCancelRegion(static_cast<OpenACCDirectiveKind>(Record.readInt()));
+}
+
+void ASTStmtReader::VisitACCCancelDirective(ACCCancelDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+  D->setCancelRegion(static_cast<OpenACCDirectiveKind>(Record.readInt()));
+}
+
+void ASTStmtReader::VisitACCTaskLoopDirective(ACCTaskLoopDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTaskLoopSimdDirective(ACCTaskLoopSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCDistributeDirective(ACCDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetUpdateDirective(ACCTargetUpdateDirective *D) {
+  VisitStmt(D);
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+void ASTStmtReader::VisitACCDistributeParallelForDirective(
+    ACCDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCDistributeParallelForSimdDirective(
+    ACCDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCDistributeSimdDirective(
+    ACCDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetParallelForSimdDirective(
+    ACCTargetParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetSimdDirective(ACCTargetSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeDirective(
+    ACCTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeSimdDirective(
+    ACCTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeParallelForSimdDirective(
+    ACCTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTeamsDistributeParallelForDirective(
+    ACCTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *D) {
+  VisitStmt(D);
+  // The NumClauses field was read in ReadStmtFromStream.
+  Record.skipInts(1);
+  VisitACCExecutableDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeDirective(
+    ACCTargetTeamsDistributeDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForDirective(
+    ACCTargetTeamsDistributeParallelForDirective *D) {
+  VisitACCLoopDirective(D);
+  D->setHasCancel(Record.readInt());
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForSimdDirective(
+    ACCTargetTeamsDistributeParallelForSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+void ASTStmtReader::VisitACCTargetTeamsDistributeSimdDirective(
+    ACCTargetTeamsDistributeSimdDirective *D) {
+  VisitACCLoopDirective(D);
+}
+
+// -- MYHEADER --
 
 //===----------------------------------------------------------------------===//
 // OpenMP Clauses.
@@ -2629,372 +3872,6 @@ void OMPClauseReader::VisitOMPIsDevicePtrClause(OMPIsDevicePtrClause *C) {
   }
   C->setComponents(Components, ListSizes);
 }
-
-// -- MYHEADER -- 
-
-//===----------------------------------------------------------------------===//
-// OpenACC Directives.
-//===----------------------------------------------------------------------===//
-void ASTStmtReader::VisitACCExecutableDirective(ACCExecutableDirective *E) {
-  E->setLocStart(ReadSourceLocation());
-  E->setLocEnd(ReadSourceLocation());
-  ACCClauseReader ClauseReader(this, Record);
-  SmallVector<ACCClause *, 5> Clauses;
-  for (unsigned i = 0; i < E->getNumClauses(); ++i)
-    Clauses.push_back(ClauseReader.readClause());
-  E->setClauses(Clauses);
-  if (E->hasAssociatedStmt())
-    E->setAssociatedStmt(Record.readSubStmt());
-}
-
-void ASTStmtReader::VisitACCLoopDirective(ACCLoopDirective *D) {
-  VisitStmt(D);
-  // Two fields (NumClauses and CollapsedNum) were read in ReadStmtFromStream.
-  Record.skipInts(2);
-  VisitACCExecutableDirective(D);
-  D->setIterationVariable(Record.readSubExpr());
-  D->setLastIteration(Record.readSubExpr());
-  D->setCalcLastIteration(Record.readSubExpr());
-  D->setPreCond(Record.readSubExpr());
-  D->setCond(Record.readSubExpr());
-  D->setInit(Record.readSubExpr());
-  D->setInc(Record.readSubExpr());
-  D->setPreInits(Record.readSubStmt());
-  if (isOpenACCWorksharingDirective(D->getDirectiveKind()) ||
-      isOpenACCTaskLoopDirective(D->getDirectiveKind()) ||
-      isOpenACCDistributeDirective(D->getDirectiveKind())) {
-    D->setIsLastIterVariable(Record.readSubExpr());
-    D->setLowerBoundVariable(Record.readSubExpr());
-    D->setUpperBoundVariable(Record.readSubExpr());
-    D->setStrideVariable(Record.readSubExpr());
-    D->setEnsureUpperBound(Record.readSubExpr());
-    D->setNextLowerBound(Record.readSubExpr());
-    D->setNextUpperBound(Record.readSubExpr());
-    D->setNumIterations(Record.readSubExpr());
-  }
-  if (isOpenACCLoopBoundSharingDirective(D->getDirectiveKind())) {
-    D->setPrevLowerBoundVariable(Record.readSubExpr());
-    D->setPrevUpperBoundVariable(Record.readSubExpr());
-    D->setDistInc(Record.readSubExpr());
-    D->setPrevEnsureUpperBound(Record.readSubExpr());
-    D->setCombinedLowerBoundVariable(Record.readSubExpr());
-    D->setCombinedUpperBoundVariable(Record.readSubExpr());
-    D->setCombinedEnsureUpperBound(Record.readSubExpr());
-    D->setCombinedInit(Record.readSubExpr());
-    D->setCombinedCond(Record.readSubExpr());
-    D->setCombinedNextLowerBound(Record.readSubExpr());
-    D->setCombinedNextUpperBound(Record.readSubExpr());
-  }
-  SmallVector<Expr *, 4> Sub;
-  unsigned CollapsedNum = D->getCollapsedNumber();
-  Sub.reserve(CollapsedNum);
-  for (unsigned i = 0; i < CollapsedNum; ++i)
-    Sub.push_back(Record.readSubExpr());
-  D->setCounters(Sub);
-  Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
-    Sub.push_back(Record.readSubExpr());
-  D->setPrivateCounters(Sub);
-  Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
-    Sub.push_back(Record.readSubExpr());
-  D->setInits(Sub);
-  Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
-    Sub.push_back(Record.readSubExpr());
-  D->setUpdates(Sub);
-  Sub.clear();
-  for (unsigned i = 0; i < CollapsedNum; ++i)
-    Sub.push_back(Record.readSubExpr());
-  D->setFinals(Sub);
-}
-
-void ASTStmtReader::VisitACCParallelDirective(ACCParallelDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCSimdDirective(ACCSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCForDirective(ACCForDirective *D) {
-  VisitACCLoopDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCForSimdDirective(ACCForSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCSectionsDirective(ACCSectionsDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCSectionDirective(ACCSectionDirective *D) {
-  VisitStmt(D);
-  VisitACCExecutableDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCSingleDirective(ACCSingleDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCMasterDirective(ACCMasterDirective *D) {
-  VisitStmt(D);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCCriticalDirective(ACCCriticalDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  ReadDeclarationNameInfo(D->DirName);
-}
-
-void ASTStmtReader::VisitACCParallelForDirective(ACCParallelForDirective *D) {
-  VisitACCLoopDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCParallelForSimdDirective(
-    ACCParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCParallelSectionsDirective(
-    ACCParallelSectionsDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCTaskDirective(ACCTaskDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCTaskyieldDirective(ACCTaskyieldDirective *D) {
-  VisitStmt(D);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCBarrierDirective(ACCBarrierDirective *D) {
-  VisitStmt(D);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTaskwaitDirective(ACCTaskwaitDirective *D) {
-  VisitStmt(D);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTaskgroupDirective(ACCTaskgroupDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  D->setReductionRef(Record.readSubExpr());
-}
-
-void ASTStmtReader::VisitACCFlushDirective(ACCFlushDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCOrderedDirective(ACCOrderedDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCAtomicDirective(ACCAtomicDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  D->setX(Record.readSubExpr());
-  D->setV(Record.readSubExpr());
-  D->setExpr(Record.readSubExpr());
-  D->setUpdateExpr(Record.readSubExpr());
-  D->IsXLHSInRHSPart = Record.readInt() != 0;
-  D->IsPostfixUpdate = Record.readInt() != 0;
-}
-
-void ASTStmtReader::VisitACCTargetDirective(ACCTargetDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetDataDirective(ACCTargetDataDirective *D) {
-  VisitStmt(D);
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetEnterDataDirective(
-    ACCTargetEnterDataDirective *D) {
-  VisitStmt(D);
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetExitDataDirective(
-    ACCTargetExitDataDirective *D) {
-  VisitStmt(D);
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetParallelDirective(
-    ACCTargetParallelDirective *D) {
-  VisitStmt(D);
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetParallelForDirective(
-    ACCTargetParallelForDirective *D) {
-  VisitACCLoopDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCTeamsDirective(ACCTeamsDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCCancellationPointDirective(
-    ACCCancellationPointDirective *D) {
-  VisitStmt(D);
-  VisitACCExecutableDirective(D);
-  D->setCancelRegion(static_cast<OpenACCDirectiveKind>(Record.readInt()));
-}
-
-void ASTStmtReader::VisitACCCancelDirective(ACCCancelDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-  D->setCancelRegion(static_cast<OpenACCDirectiveKind>(Record.readInt()));
-}
-
-void ASTStmtReader::VisitACCTaskLoopDirective(ACCTaskLoopDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTaskLoopSimdDirective(ACCTaskLoopSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCDistributeDirective(ACCDistributeDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetUpdateDirective(ACCTargetUpdateDirective *D) {
-  VisitStmt(D);
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-void ASTStmtReader::VisitACCDistributeParallelForDirective(
-    ACCDistributeParallelForDirective *D) {
-  VisitACCLoopDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCDistributeParallelForSimdDirective(
-    ACCDistributeParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCDistributeSimdDirective(
-    ACCDistributeSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetParallelForSimdDirective(
-    ACCTargetParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetSimdDirective(ACCTargetSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTeamsDistributeDirective(
-    ACCTeamsDistributeDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTeamsDistributeSimdDirective(
-    ACCTeamsDistributeSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTeamsDistributeParallelForSimdDirective(
-    ACCTeamsDistributeParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTeamsDistributeParallelForDirective(
-    ACCTeamsDistributeParallelForDirective *D) {
-  VisitACCLoopDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *D) {
-  VisitStmt(D);
-  // The NumClauses field was read in ReadStmtFromStream.
-  Record.skipInts(1);
-  VisitACCExecutableDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetTeamsDistributeDirective(
-    ACCTargetTeamsDistributeDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForDirective(
-    ACCTargetTeamsDistributeParallelForDirective *D) {
-  VisitACCLoopDirective(D);
-  D->setHasCancel(Record.readInt());
-}
-
-void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForSimdDirective(
-    ACCTargetTeamsDistributeParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-void ASTStmtReader::VisitACCTargetTeamsDistributeSimdDirective(
-    ACCTargetTeamsDistributeSimdDirective *D) {
-  VisitACCLoopDirective(D);
-}
-
-// -- MYHEADER -- 
 
 //===----------------------------------------------------------------------===//
 // OpenMP Directives.

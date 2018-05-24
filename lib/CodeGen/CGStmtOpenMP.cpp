@@ -2063,7 +2063,7 @@ emitDistributeParallelForInnerBounds(CodeGenFunction &CGF,
 /// 'for_dispatch_init'
 static std::pair<llvm::Value *, llvm::Value *>
 emitDistributeParallelForDispatchBounds(CodeGenFunction &CGF,
-                                        const OMPExecutableDirective &S,
+                                        const PRAGMAExecutableDirective &S,
                                         Address LB, Address UB) {
   const OMPLoopDirective &LS = cast<OMPLoopDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();
