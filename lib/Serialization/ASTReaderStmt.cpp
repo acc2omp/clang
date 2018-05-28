@@ -27,6 +27,7 @@ namespace clang {
   class ASTStmtReader : public StmtVisitor<ASTStmtReader> {
     friend class OMPClauseReader;
 
+    // TODO acc2mp investigate if this modification makes sense. Moving Record from here to public
     ASTRecordReader &Record;
     llvm::BitstreamCursor &DeclsCursor;
 
