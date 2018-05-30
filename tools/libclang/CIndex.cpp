@@ -1947,6 +1947,7 @@ public:
 // TODO acc2mp
 // Should I replicate OMPClauseEnqueue?
 class EnqueueVisitor : public ConstStmtVisitor<EnqueueVisitor, void> {
+  friend class ACCClauseEnqueue;
   friend class OMPClauseEnqueue;
   VisitorWorkList &WL;
   CXCursor Parent;

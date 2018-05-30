@@ -273,6 +273,78 @@ instantiateDependentModeAttr(Sema &S,
 }
 
 /// Instantiation of 'declare simd' attribute and its arguments.
+static void instantiateACCDeclareSimdDeclAttr(
+    Sema &S, const MultiLevelTemplateArgumentList &TemplateArgs,
+    const ACCDeclareSimdDeclAttr &Attr, Decl *New) {
+  // Allow 'this' in clauses with varlists.
+  if (auto *FTD = dyn_cast<FunctionTemplateDecl>(New))
+    New = FTD->getTemplatedDecl();
+  auto *FD = cast<FunctionDecl>(New);
+  auto *ThisContext = dyn_cast_or_null<CXXRecordDecl>(FD->getDeclContext());
+  SmallVector<Expr *, 4> Uniforms, Aligneds, Alignments, Linears, Steps;
+  SmallVector<unsigned, 4> LinModifiers;
+
+  auto &&Subst = [&](Expr *E) -> ExprResult {
+    if (auto *DRE = dyn_cast<DeclRefExpr>(E->IgnoreParenImpCasts()))
+      if (auto *PVD = dyn_cast<ParmVarDecl>(DRE->getDecl())) {
+        Sema::ContextRAII SavedContext(S, FD);
+        LocalInstantiationScope Local(S);
+        if (FD->getNumParams() > PVD->getFunctionScopeIndex())
+          Local.InstantiatedLocal(
+              PVD, FD->getParamDecl(PVD->getFunctionScopeIndex()));
+        return S.SubstExpr(E, TemplateArgs);
+      }
+    Sema::CXXThisScopeRAII ThisScope(S, ThisContext, /*TypeQuals=*/0,
+                                     FD->isCXXInstanceMember());
+    return S.SubstExpr(E, TemplateArgs);
+  };
+
+  ExprResult Simdlen;
+  if (auto *E = Attr.getSimdlen())
+    Simdlen = Subst(E);
+
+  if (Attr.uniforms_size() > 0) {
+    for(auto *E : Attr.uniforms()) {
+      ExprResult Inst = Subst(E);
+      if (Inst.isInvalid())
+        continue;
+      Uniforms.push_back(Inst.get());
+    }
+  }
+
+  auto AI = Attr.alignments_begin();
+  for (auto *E : Attr.aligneds()) {
+    ExprResult Inst = Subst(E);
+    if (Inst.isInvalid())
+      continue;
+    Aligneds.push_back(Inst.get());
+    Inst = ExprEmpty();
+    if (*AI)
+      Inst = S.SubstExpr(*AI, TemplateArgs);
+    Alignments.push_back(Inst.get());
+    ++AI;
+  }
+
+  auto SI = Attr.steps_begin();
+  for (auto *E : Attr.linears()) {
+    ExprResult Inst = Subst(E);
+    if (Inst.isInvalid())
+      continue;
+    Linears.push_back(Inst.get());
+    Inst = ExprEmpty();
+    if (*SI)
+      Inst = S.SubstExpr(*SI, TemplateArgs);
+    Steps.push_back(Inst.get());
+    ++SI;
+  }
+  LinModifiers.append(Attr.modifiers_begin(), Attr.modifiers_end());
+  (void)S.ActOnOpenACCDeclareSimdDirective(
+      S.ConvertDeclToDeclGroup(New), Attr.getBranchState(), Simdlen.get(),
+      Uniforms, Aligneds, Alignments, Linears, LinModifiers, Steps,
+      Attr.getRange());
+}
+
+/// Instantiation of 'declare simd' attribute and its arguments.
 static void instantiateOMPDeclareSimdDeclAttr(
     Sema &S, const MultiLevelTemplateArgumentList &TemplateArgs,
     const OMPDeclareSimdDeclAttr &Attr, Decl *New) {
@@ -415,6 +487,11 @@ void Sema::InstantiateAttrs(const MultiLevelTemplateArgumentList &TemplateArgs,
 
     if (const ModeAttr *Mode = dyn_cast<ModeAttr>(TmplAttr)) {
       instantiateDependentModeAttr(*this, TemplateArgs, *Mode, New);
+      continue;
+    }
+
+    if (const auto *ACCAttr = dyn_cast<ACCDeclareSimdDeclAttr>(TmplAttr)) {
+      instantiateACCDeclareSimdDeclAttr(*this, TemplateArgs, *ACCAttr, New);
       continue;
     }
 
@@ -2734,8 +2811,9 @@ Decl *TemplateDeclInstantiator::VisitClassScopeFunctionSpecializationDecl(
   return NewFD;
 }
 
-Decl *TemplateDeclInstantiator::VisitOMPThreadPrivateDecl(
-                                     OMPThreadPrivateDecl *D) {
+// -- MYHEADER --
+Decl *TemplateDeclInstantiator::VisitACCThreadPrivateDecl(
+                                     ACCThreadPrivateDecl *D) {
   SmallVector<Expr *, 5> Vars;
   for (auto *I : D->varlists()) {
     Expr *Var = SemaRef.SubstExpr(I, TemplateArgs).get();
@@ -2743,8 +2821,8 @@ Decl *TemplateDeclInstantiator::VisitOMPThreadPrivateDecl(
     Vars.push_back(Var);
   }
 
-  OMPThreadPrivateDecl *TD =
-    SemaRef.CheckOMPThreadPrivateDecl(D->getLocation(), Vars);
+  ACCThreadPrivateDecl *TD =
+    SemaRef.CheckACCThreadPrivateDecl(D->getLocation(), Vars);
 
   TD->setAccess(AS_public);
   Owner->addDecl(TD);
@@ -2752,10 +2830,10 @@ Decl *TemplateDeclInstantiator::VisitOMPThreadPrivateDecl(
   return TD;
 }
 
-Decl *TemplateDeclInstantiator::VisitOMPDeclareReductionDecl(
-    OMPDeclareReductionDecl *D) {
+Decl *TemplateDeclInstantiator::VisitACCDeclareReductionDecl(
+    ACCDeclareReductionDecl *D) {
   // Instantiate type and check if it is allowed.
-  QualType SubstReductionType = SemaRef.ActOnOpenMPDeclareReductionType(
+  QualType SubstReductionType = SemaRef.ActOnOpenACCDeclareReductionType(
       D->getLocation(),
       ParsedType::make(SemaRef.SubstType(D->getType(), TemplateArgs,
                                          D->getLocation(), DeclarationName())));
@@ -2767,21 +2845,21 @@ Decl *TemplateDeclInstantiator::VisitOMPDeclareReductionDecl(
       std::make_pair(SubstReductionType, D->getLocation())};
   auto *PrevDeclInScope = D->getPrevDeclInScope();
   if (PrevDeclInScope && !PrevDeclInScope->isInvalidDecl()) {
-    PrevDeclInScope = cast<OMPDeclareReductionDecl>(
+    PrevDeclInScope = cast<ACCDeclareReductionDecl>(
         SemaRef.CurrentInstantiationScope->findInstantiationOf(PrevDeclInScope)
             ->get<Decl *>());
   }
-  auto DRD = SemaRef.ActOnOpenMPDeclareReductionDirectiveStart(
+  auto DRD = SemaRef.ActOnOpenACCDeclareReductionDirectiveStart(
       /*S=*/nullptr, Owner, D->getDeclName(), ReductionTypes, D->getAccess(),
       PrevDeclInScope);
-  auto *NewDRD = cast<OMPDeclareReductionDecl>(DRD.get().getSingleDecl());
+  auto *NewDRD = cast<ACCDeclareReductionDecl>(DRD.get().getSingleDecl());
   if (isDeclWithinFunction(NewDRD))
     SemaRef.CurrentInstantiationScope->InstantiatedLocal(D, NewDRD);
   Expr *SubstCombiner = nullptr;
   Expr *SubstInitializer = nullptr;
   // Combiners instantiation sequence.
   if (D->getCombiner()) {
-    SemaRef.ActOnOpenMPDeclareReductionCombinerStart(
+    SemaRef.ActOnOpenACCDeclareReductionCombinerStart(
         /*S=*/nullptr, NewDRD);
     const char *Names[] = {"omp_in", "omp_out"};
     for (auto &Name : Names) {
@@ -2795,11 +2873,11 @@ Decl *TemplateDeclInstantiator::VisitOMPDeclareReductionDecl(
       }
     }
     SubstCombiner = SemaRef.SubstExpr(D->getCombiner(), TemplateArgs).get();
-    SemaRef.ActOnOpenMPDeclareReductionCombinerEnd(NewDRD, SubstCombiner);
+    SemaRef.ActOnOpenACCDeclareReductionCombinerEnd(NewDRD, SubstCombiner);
     // Initializers instantiation sequence.
     if (D->getInitializer()) {
       VarDecl *OmpPrivParm =
-          SemaRef.ActOnOpenMPDeclareReductionInitializerStart(
+          SemaRef.ActOnOpenACCDeclareReductionInitializerStart(
               /*S=*/nullptr, NewDRD);
       const char *Names[] = {"omp_orig", "omp_priv"};
       for (auto &Name : Names) {
@@ -2814,35 +2892,36 @@ Decl *TemplateDeclInstantiator::VisitOMPDeclareReductionDecl(
           SemaRef.CurrentInstantiationScope->InstantiatedLocal(OldVD, NewVD);
         }
       }
-      if (D->getInitializerKind() == OMPDeclareReductionDecl::CallInit) {
+      if (D->getInitializerKind() == ACCDeclareReductionDecl::CallInit) {
         SubstInitializer =
             SemaRef.SubstExpr(D->getInitializer(), TemplateArgs).get();
       } else {
         IsCorrect = IsCorrect && OmpPrivParm->hasInit();
       }
-      SemaRef.ActOnOpenMPDeclareReductionInitializerEnd(
+      SemaRef.ActOnOpenACCDeclareReductionInitializerEnd(
           NewDRD, SubstInitializer, OmpPrivParm);
     }
     IsCorrect =
         IsCorrect && SubstCombiner &&
         (!D->getInitializer() ||
-         (D->getInitializerKind() == OMPDeclareReductionDecl::CallInit &&
+         (D->getInitializerKind() == ACCDeclareReductionDecl::CallInit &&
           SubstInitializer) ||
-         (D->getInitializerKind() != OMPDeclareReductionDecl::CallInit &&
+         (D->getInitializerKind() != ACCDeclareReductionDecl::CallInit &&
           !SubstInitializer && !SubstInitializer));
   } else
     IsCorrect = false;
 
-  (void)SemaRef.ActOnOpenMPDeclareReductionDirectiveEnd(/*S=*/nullptr, DRD,
+  (void)SemaRef.ActOnOpenACCDeclareReductionDirectiveEnd(/*S=*/nullptr, DRD,
                                                         IsCorrect);
 
   return NewDRD;
 }
 
-Decl *TemplateDeclInstantiator::VisitOMPCapturedExprDecl(
-    OMPCapturedExprDecl * /*D*/) {
+Decl *TemplateDeclInstantiator::VisitACCCapturedExprDecl(
+    ACCCapturedExprDecl * /*D*/) {
   llvm_unreachable("Should not be met in templates");
 }
+// -- MYHEADER -- 
 
 Decl *TemplateDeclInstantiator::VisitFunctionDecl(FunctionDecl *D) {
   return VisitFunctionDecl(D, nullptr);

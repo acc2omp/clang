@@ -18,6 +18,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/ODRHash.h"
 #include "clang/AST/StmtVisitor.h"
@@ -378,6 +379,589 @@ void
 StmtProfiler::VisitObjCAutoreleasePoolStmt(const ObjCAutoreleasePoolStmt *S) {
   VisitStmt(S);
 }
+
+// -- MYHEADER --
+
+namespace {
+class ACCClauseProfiler : public ConstACCClauseVisitor<ACCClauseProfiler> {
+  StmtProfiler *Profiler;
+  /// \brief Process clauses with list of variables.
+  template <typename T>
+  void VisitACCClauseList(T *Node);
+
+public:
+  ACCClauseProfiler(StmtProfiler *P) : Profiler(P) { }
+#define OPENACC_CLAUSE(Name, Class)                                             \
+  void Visit##Class(const Class *C);
+#include "clang/Basic/OpenACCKinds.def"
+  void VistACCClauseWithPreInit(const ACCClauseWithPreInit *C);
+  void VistACCClauseWithPostUpdate(const ACCClauseWithPostUpdate *C);
+};
+
+void ACCClauseProfiler::VistACCClauseWithPreInit(
+    const ACCClauseWithPreInit *C) {
+  if (auto *S = C->getPreInitStmt())
+    Profiler->VisitStmt(S);
+}
+
+void ACCClauseProfiler::VistACCClauseWithPostUpdate(
+    const ACCClauseWithPostUpdate *C) {
+  VistACCClauseWithPreInit(C);
+  if (auto *E = C->getPostUpdateExpr())
+    Profiler->VisitStmt(E);
+}
+
+void ACCClauseProfiler::VisitACCIfClause(const ACCIfClause *C) {
+  VistACCClauseWithPreInit(C);
+  if (C->getCondition())
+    Profiler->VisitStmt(C->getCondition());
+}
+
+void ACCClauseProfiler::VisitACCFinalClause(const ACCFinalClause *C) {
+  if (C->getCondition())
+    Profiler->VisitStmt(C->getCondition());
+}
+
+void ACCClauseProfiler::VisitACCNumThreadsClause(const ACCNumThreadsClause *C) {
+  VistACCClauseWithPreInit(C);
+  if (C->getNumThreads())
+    Profiler->VisitStmt(C->getNumThreads());
+}
+
+void ACCClauseProfiler::VisitACCSafelenClause(const ACCSafelenClause *C) {
+  if (C->getSafelen())
+    Profiler->VisitStmt(C->getSafelen());
+}
+
+void ACCClauseProfiler::VisitACCSimdlenClause(const ACCSimdlenClause *C) {
+  if (C->getSimdlen())
+    Profiler->VisitStmt(C->getSimdlen());
+}
+
+void ACCClauseProfiler::VisitACCCollapseClause(const ACCCollapseClause *C) {
+  if (C->getNumForLoops())
+    Profiler->VisitStmt(C->getNumForLoops());
+}
+
+void ACCClauseProfiler::VisitACCDefaultClause(const ACCDefaultClause *C) { }
+
+void ACCClauseProfiler::VisitACCProcBindClause(const ACCProcBindClause *C) { }
+
+void ACCClauseProfiler::VisitACCScheduleClause(const ACCScheduleClause *C) {
+  VistACCClauseWithPreInit(C);
+  if (auto *S = C->getChunkSize())
+    Profiler->VisitStmt(S);
+}
+
+void ACCClauseProfiler::VisitACCOrderedClause(const ACCOrderedClause *C) {
+  if (auto *Num = C->getNumForLoops())
+    Profiler->VisitStmt(Num);
+}
+
+void ACCClauseProfiler::VisitACCNowaitClause(const ACCNowaitClause *) {}
+
+void ACCClauseProfiler::VisitACCUntiedClause(const ACCUntiedClause *) {}
+
+void ACCClauseProfiler::VisitACCMergeableClause(const ACCMergeableClause *) {}
+
+void ACCClauseProfiler::VisitACCReadClause(const ACCReadClause *) {}
+
+void ACCClauseProfiler::VisitACCWriteClause(const ACCWriteClause *) {}
+
+void ACCClauseProfiler::VisitACCUpdateClause(const ACCUpdateClause *) {}
+
+void ACCClauseProfiler::VisitACCCaptureClause(const ACCCaptureClause *) {}
+
+void ACCClauseProfiler::VisitACCSeqCstClause(const ACCSeqCstClause *) {}
+
+void ACCClauseProfiler::VisitACCThreadsClause(const ACCThreadsClause *) {}
+
+void ACCClauseProfiler::VisitACCSIMDClause(const ACCSIMDClause *) {}
+
+void ACCClauseProfiler::VisitACCNogroupClause(const ACCNogroupClause *) {}
+
+template<typename T>
+void ACCClauseProfiler::VisitACCClauseList(T *Node) {
+  for (auto *E : Node->varlists()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+
+void ACCClauseProfiler::VisitACCPrivateClause(const ACCPrivateClause *C) {
+  VisitACCClauseList(C);
+  for (auto *E : C->private_copies()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void
+ACCClauseProfiler::VisitACCFirstprivateClause(const ACCFirstprivateClause *C) {
+  VisitACCClauseList(C);
+  VistACCClauseWithPreInit(C);
+  for (auto *E : C->private_copies()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->inits()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void
+ACCClauseProfiler::VisitACCLastprivateClause(const ACCLastprivateClause *C) {
+  VisitACCClauseList(C);
+  VistACCClauseWithPostUpdate(C);
+  for (auto *E : C->source_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->destination_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->assignment_ops()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void ACCClauseProfiler::VisitACCSharedClause(const ACCSharedClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCReductionClause(
+                                         const ACCReductionClause *C) {
+  Profiler->VisitNestedNameSpecifier(
+      C->getQualifierLoc().getNestedNameSpecifier());
+  Profiler->VisitName(C->getNameInfo().getName());
+  VisitACCClauseList(C);
+  VistACCClauseWithPostUpdate(C);
+  for (auto *E : C->privates()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->lhs_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->rhs_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->reduction_ops()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void ACCClauseProfiler::VisitACCTaskReductionClause(
+    const ACCTaskReductionClause *C) {
+  Profiler->VisitNestedNameSpecifier(
+      C->getQualifierLoc().getNestedNameSpecifier());
+  Profiler->VisitName(C->getNameInfo().getName());
+  VisitACCClauseList(C);
+  VistACCClauseWithPostUpdate(C);
+  for (auto *E : C->privates()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->lhs_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->rhs_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->reduction_ops()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void ACCClauseProfiler::VisitACCInReductionClause(
+    const ACCInReductionClause *C) {
+  Profiler->VisitNestedNameSpecifier(
+      C->getQualifierLoc().getNestedNameSpecifier());
+  Profiler->VisitName(C->getNameInfo().getName());
+  VisitACCClauseList(C);
+  VistACCClauseWithPostUpdate(C);
+  for (auto *E : C->privates()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->lhs_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->rhs_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->reduction_ops()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->taskgroup_descriptors()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void ACCClauseProfiler::VisitACCLinearClause(const ACCLinearClause *C) {
+  VisitACCClauseList(C);
+  VistACCClauseWithPostUpdate(C);
+  for (auto *E : C->privates()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->inits()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->updates()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->finals()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  if (C->getStep())
+    Profiler->VisitStmt(C->getStep());
+  if (C->getCalcStep())
+    Profiler->VisitStmt(C->getCalcStep());
+}
+void ACCClauseProfiler::VisitACCAlignedClause(const ACCAlignedClause *C) {
+  VisitACCClauseList(C);
+  if (C->getAlignment())
+    Profiler->VisitStmt(C->getAlignment());
+}
+void ACCClauseProfiler::VisitACCCopyinClause(const ACCCopyinClause *C) {
+  VisitACCClauseList(C);
+  for (auto *E : C->source_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->destination_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->assignment_ops()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void
+ACCClauseProfiler::VisitACCCopyprivateClause(const ACCCopyprivateClause *C) {
+  VisitACCClauseList(C);
+  for (auto *E : C->source_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->destination_exprs()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+  for (auto *E : C->assignment_ops()) {
+    if (E)
+      Profiler->VisitStmt(E);
+  }
+}
+void ACCClauseProfiler::VisitACCFlushClause(const ACCFlushClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCDependClause(const ACCDependClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCDeviceClause(const ACCDeviceClause *C) {
+  if (C->getDevice())
+    Profiler->VisitStmt(C->getDevice());
+}
+void ACCClauseProfiler::VisitACCMapClause(const ACCMapClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCNumTeamsClause(const ACCNumTeamsClause *C) {
+  VistACCClauseWithPreInit(C);
+  if (C->getNumTeams())
+    Profiler->VisitStmt(C->getNumTeams());
+}
+void ACCClauseProfiler::VisitACCThreadLimitClause(
+    const ACCThreadLimitClause *C) {
+  VistACCClauseWithPreInit(C);
+  if (C->getThreadLimit())
+    Profiler->VisitStmt(C->getThreadLimit());
+}
+void ACCClauseProfiler::VisitACCPriorityClause(const ACCPriorityClause *C) {
+  if (C->getPriority())
+    Profiler->VisitStmt(C->getPriority());
+}
+void ACCClauseProfiler::VisitACCGrainsizeClause(const ACCGrainsizeClause *C) {
+  if (C->getGrainsize())
+    Profiler->VisitStmt(C->getGrainsize());
+}
+void ACCClauseProfiler::VisitACCNumTasksClause(const ACCNumTasksClause *C) {
+  if (C->getNumTasks())
+    Profiler->VisitStmt(C->getNumTasks());
+}
+void ACCClauseProfiler::VisitACCHintClause(const ACCHintClause *C) {
+  if (C->getHint())
+    Profiler->VisitStmt(C->getHint());
+}
+void ACCClauseProfiler::VisitACCToClause(const ACCToClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCFromClause(const ACCFromClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCUseDevicePtrClause(
+    const ACCUseDevicePtrClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCIsDevicePtrClause(
+    const ACCIsDevicePtrClause *C) {
+  VisitACCClauseList(C);
+}
+}
+
+void
+StmtProfiler::VisitACCExecutableDirective(const ACCExecutableDirective *S) {
+  VisitStmt(S);
+  ACCClauseProfiler P(this);
+  ArrayRef<ACCClause *> Clauses = S->clauses();
+  for (ArrayRef<ACCClause *>::iterator I = Clauses.begin(), E = Clauses.end();
+       I != E; ++I)
+    if (*I)
+      P.Visit(*I);
+}
+
+void StmtProfiler::VisitACCLoopDirective(const ACCLoopDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCParallelDirective(const ACCParallelDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCSimdDirective(const ACCSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCForDirective(const ACCForDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCForSimdDirective(const ACCForSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCSectionsDirective(const ACCSectionsDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCSectionDirective(const ACCSectionDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCSingleDirective(const ACCSingleDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCMasterDirective(const ACCMasterDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCCriticalDirective(const ACCCriticalDirective *S) {
+  VisitACCExecutableDirective(S);
+  VisitName(S->getDirectiveName().getName());
+}
+
+void
+StmtProfiler::VisitACCParallelForDirective(const ACCParallelForDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCParallelForSimdDirective(
+    const ACCParallelForSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCParallelSectionsDirective(
+    const ACCParallelSectionsDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTaskDirective(const ACCTaskDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTaskyieldDirective(const ACCTaskyieldDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCBarrierDirective(const ACCBarrierDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTaskwaitDirective(const ACCTaskwaitDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTaskgroupDirective(const ACCTaskgroupDirective *S) {
+  VisitACCExecutableDirective(S);
+  if (const Expr *E = S->getReductionRef())
+    VisitStmt(E);
+}
+
+void StmtProfiler::VisitACCFlushDirective(const ACCFlushDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCOrderedDirective(const ACCOrderedDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCAtomicDirective(const ACCAtomicDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetDirective(const ACCTargetDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetDataDirective(const ACCTargetDataDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetEnterDataDirective(
+    const ACCTargetEnterDataDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetExitDataDirective(
+    const ACCTargetExitDataDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetParallelDirective(
+    const ACCTargetParallelDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetParallelForDirective(
+    const ACCTargetParallelForDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTeamsDirective(const ACCTeamsDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCCancellationPointDirective(
+    const ACCCancellationPointDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCCancelDirective(const ACCCancelDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTaskLoopDirective(const ACCTaskLoopDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTaskLoopSimdDirective(
+    const ACCTaskLoopSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCDistributeDirective(
+    const ACCDistributeDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void ACCClauseProfiler::VisitACCDistScheduleClause(
+    const ACCDistScheduleClause *C) {
+  VistACCClauseWithPreInit(C);
+  if (auto *S = C->getChunkSize())
+    Profiler->VisitStmt(S);
+}
+
+void ACCClauseProfiler::VisitACCDefaultmapClause(const ACCDefaultmapClause *) {}
+
+void StmtProfiler::VisitACCTargetUpdateDirective(
+    const ACCTargetUpdateDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCDistributeParallelForDirective(
+    const ACCDistributeParallelForDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCDistributeParallelForSimdDirective(
+    const ACCDistributeParallelForSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCDistributeSimdDirective(
+    const ACCDistributeSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetParallelForSimdDirective(
+    const ACCTargetParallelForSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetSimdDirective(
+    const ACCTargetSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTeamsDistributeDirective(
+    const ACCTeamsDistributeDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTeamsDistributeSimdDirective(
+    const ACCTeamsDistributeSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTeamsDistributeParallelForSimdDirective(
+    const ACCTeamsDistributeParallelForSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTeamsDistributeParallelForDirective(
+    const ACCTeamsDistributeParallelForDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetTeamsDirective(
+    const ACCTargetTeamsDirective *S) {
+  VisitACCExecutableDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetTeamsDistributeDirective(
+    const ACCTargetTeamsDistributeDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetTeamsDistributeParallelForDirective(
+    const ACCTargetTeamsDistributeParallelForDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetTeamsDistributeParallelForSimdDirective(
+    const ACCTargetTeamsDistributeParallelForSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+void StmtProfiler::VisitACCTargetTeamsDistributeSimdDirective(
+    const ACCTargetTeamsDistributeSimdDirective *S) {
+  VisitACCLoopDirective(S);
+}
+
+// -- MYHEADER -- 
+// -- MYHEADER --
 
 namespace {
 class OMPClauseProfiler : public ConstOMPClauseVisitor<OMPClauseProfiler> {
@@ -957,6 +1541,8 @@ void StmtProfiler::VisitOMPTargetTeamsDistributeSimdDirective(
   VisitOMPLoopDirective(S);
 }
 
+// -- MYHEADER -- 
+
 void StmtProfiler::VisitExpr(const Expr *S) {
   VisitStmt(S);
 }
@@ -1057,6 +1643,10 @@ StmtProfiler::VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *S) {
 }
 
 void StmtProfiler::VisitArraySubscriptExpr(const ArraySubscriptExpr *S) {
+  VisitExpr(S);
+}
+
+void StmtProfiler::VisitACCArraySectionExpr(const ACCArraySectionExpr *S) {
   VisitExpr(S);
 }
 

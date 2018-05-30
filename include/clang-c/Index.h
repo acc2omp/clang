@@ -2309,198 +2309,391 @@ enum CXCursorKind {
    * expressions.
    */
   CXCursor_DeclStmt                      = 231,
-
-  /** \brief OpenMP parallel directive.
+// -- MYHEADER --
+  /** \brief OpenACC parallel directive.
    */
-  CXCursor_OMPParallelDirective          = 232,
+  CXCursor_ACCParallelDirective          = 232,
 
-  /** \brief OpenMP SIMD directive.
+  /** \brief OpenACC SIMD directive.
    */
-  CXCursor_OMPSimdDirective              = 233,
+  CXCursor_ACCSimdDirective              = 233,
 
-  /** \brief OpenMP for directive.
+  /** \brief OpenACC for directive.
    */
-  CXCursor_OMPForDirective               = 234,
+  CXCursor_ACCForDirective               = 234,
 
-  /** \brief OpenMP sections directive.
+  /** \brief OpenACC sections directive.
    */
-  CXCursor_OMPSectionsDirective          = 235,
+  CXCursor_ACCSectionsDirective          = 235,
 
-  /** \brief OpenMP section directive.
+  /** \brief OpenACC section directive.
    */
-  CXCursor_OMPSectionDirective           = 236,
+  CXCursor_ACCSectionDirective           = 236,
 
-  /** \brief OpenMP single directive.
+  /** \brief OpenACC single directive.
    */
-  CXCursor_OMPSingleDirective            = 237,
+  CXCursor_ACCSingleDirective            = 237,
 
-  /** \brief OpenMP parallel for directive.
+  /** \brief OpenACC parallel for directive.
    */
-  CXCursor_OMPParallelForDirective       = 238,
+  CXCursor_ACCParallelForDirective       = 238,
 
-  /** \brief OpenMP parallel sections directive.
+  /** \brief OpenACC parallel sections directive.
    */
-  CXCursor_OMPParallelSectionsDirective  = 239,
+  CXCursor_ACCParallelSectionsDirective  = 239,
 
-  /** \brief OpenMP task directive.
+  /** \brief OpenACC task directive.
    */
-  CXCursor_OMPTaskDirective              = 240,
+  CXCursor_ACCTaskDirective              = 240,
 
-  /** \brief OpenMP master directive.
+  /** \brief OpenACC master directive.
    */
-  CXCursor_OMPMasterDirective            = 241,
+  CXCursor_ACCMasterDirective            = 241,
 
-  /** \brief OpenMP critical directive.
+  /** \brief OpenACC critical directive.
    */
-  CXCursor_OMPCriticalDirective          = 242,
+  CXCursor_ACCCriticalDirective          = 242,
 
-  /** \brief OpenMP taskyield directive.
+  /** \brief OpenACC taskyield directive.
    */
-  CXCursor_OMPTaskyieldDirective         = 243,
+  CXCursor_ACCTaskyieldDirective         = 243,
 
-  /** \brief OpenMP barrier directive.
+  /** \brief OpenACC barrier directive.
    */
-  CXCursor_OMPBarrierDirective           = 244,
+  CXCursor_ACCBarrierDirective           = 244,
 
-  /** \brief OpenMP taskwait directive.
+  /** \brief OpenACC taskwait directive.
    */
-  CXCursor_OMPTaskwaitDirective          = 245,
+  CXCursor_ACCTaskwaitDirective          = 245,
 
-  /** \brief OpenMP flush directive.
+  /** \brief OpenACC flush directive.
    */
-  CXCursor_OMPFlushDirective             = 246,
+  CXCursor_ACCFlushDirective             = 246,
 
   /** \brief Windows Structured Exception Handling's leave statement.
    */
   CXCursor_SEHLeaveStmt                  = 247,
 
+  /** \brief OpenACC ordered directive.
+   */
+  CXCursor_ACCOrderedDirective           = 248,
+
+  /** \brief OpenACC atomic directive.
+   */
+  CXCursor_ACCAtomicDirective            = 249,
+
+  /** \brief OpenACC for SIMD directive.
+   */
+  CXCursor_ACCForSimdDirective           = 250,
+
+  /** \brief OpenACC parallel for SIMD directive.
+   */
+  CXCursor_ACCParallelForSimdDirective   = 251,
+
+  /** \brief OpenACC target directive.
+   */
+  CXCursor_ACCTargetDirective            = 252,
+
+  /** \brief OpenACC teams directive.
+   */
+  CXCursor_ACCTeamsDirective             = 253,
+
+  /** \brief OpenACC taskgroup directive.
+   */
+  CXCursor_ACCTaskgroupDirective         = 254,
+
+  /** \brief OpenACC cancellation point directive.
+   */
+  CXCursor_ACCCancellationPointDirective = 255,
+
+  /** \brief OpenACC cancel directive.
+   */
+  CXCursor_ACCCancelDirective            = 256,
+
+  /** \brief OpenACC target data directive.
+   */
+  CXCursor_ACCTargetDataDirective        = 257,
+
+  /** \brief OpenACC taskloop directive.
+   */
+  CXCursor_ACCTaskLoopDirective          = 258,
+
+  /** \brief OpenACC taskloop simd directive.
+   */
+  CXCursor_ACCTaskLoopSimdDirective      = 259,
+
+  /** \brief OpenACC distribute directive.
+   */
+  CXCursor_ACCDistributeDirective        = 260,
+
+  /** \brief OpenACC target enter data directive.
+   */
+  CXCursor_ACCTargetEnterDataDirective   = 261,
+
+  /** \brief OpenACC target exit data directive.
+   */
+  CXCursor_ACCTargetExitDataDirective    = 262,
+
+  /** \brief OpenACC target parallel directive.
+   */
+  CXCursor_ACCTargetParallelDirective    = 263,
+
+  /** \brief OpenACC target parallel for directive.
+   */
+  CXCursor_ACCTargetParallelForDirective = 264,
+
+  /** \brief OpenACC target update directive.
+   */
+  CXCursor_ACCTargetUpdateDirective      = 265,
+
+  /** \brief OpenACC distribute parallel for directive.
+   */
+  CXCursor_ACCDistributeParallelForDirective = 266,
+
+  /** \brief OpenACC distribute parallel for simd directive.
+   */
+  CXCursor_ACCDistributeParallelForSimdDirective = 267,
+
+  /** \brief OpenACC distribute simd directive.
+   */
+  CXCursor_ACCDistributeSimdDirective = 268,
+
+  /** \brief OpenACC target parallel for simd directive.
+   */
+  CXCursor_ACCTargetParallelForSimdDirective = 269,
+
+  /** \brief OpenACC target simd directive.
+   */
+  CXCursor_ACCTargetSimdDirective = 270,
+
+  /** \brief OpenACC teams distribute directive.
+   */
+  CXCursor_ACCTeamsDistributeDirective = 271,
+
+  /** \brief OpenACC teams distribute simd directive.
+   */
+  CXCursor_ACCTeamsDistributeSimdDirective = 272,
+
+  /** \brief OpenACC teams distribute parallel for simd directive.
+   */
+  CXCursor_ACCTeamsDistributeParallelForSimdDirective = 273,
+
+  /** \brief OpenACC teams distribute parallel for directive.
+   */
+  CXCursor_ACCTeamsDistributeParallelForDirective = 274,
+
+  /** \brief OpenACC target teams directive.
+   */
+  CXCursor_ACCTargetTeamsDirective = 275,
+
+  /** \brief OpenACC target teams distribute directive.
+   */
+  CXCursor_ACCTargetTeamsDistributeDirective = 276,
+
+  /** \brief OpenACC target teams distribute parallel for directive.
+   */
+  CXCursor_ACCTargetTeamsDistributeParallelForDirective = 277,
+
+  /** \brief OpenACC target teams distribute parallel for simd directive.
+   */
+  CXCursor_ACCTargetTeamsDistributeParallelForSimdDirective = 278,
+
+  /** \brief OpenACC target teams distribute simd directive.
+   */
+  CXCursor_ACCTargetTeamsDistributeSimdDirective = 279,
+
+// -- MYHEADER -- 
+// -- MYHEADER --
+
+  /** \brief OpenMP parallel directive.
+   */
+  CXCursor_OMPParallelDirective          = 280,
+
+  /** \brief OpenMP SIMD directive.
+   */
+  CXCursor_OMPSimdDirective              = 281,
+
+  /** \brief OpenMP for directive.
+   */
+  CXCursor_OMPForDirective               = 282,
+
+  /** \brief OpenMP sections directive.
+   */
+  CXCursor_OMPSectionsDirective          = 283,
+
+  /** \brief OpenMP section directive.
+   */
+  CXCursor_OMPSectionDirective           = 284,
+
+  /** \brief OpenMP single directive.
+   */
+  CXCursor_OMPSingleDirective            = 285,
+
+  /** \brief OpenMP parallel for directive.
+   */
+  CXCursor_OMPParallelForDirective       = 286,
+
+  /** \brief OpenMP parallel sections directive.
+   */
+  CXCursor_OMPParallelSectionsDirective  = 287,
+
+  /** \brief OpenMP task directive.
+   */
+  CXCursor_OMPTaskDirective              = 288,
+
+  /** \brief OpenMP master directive.
+   */
+  CXCursor_OMPMasterDirective            = 289,
+
+  /** \brief OpenMP critical directive.
+   */
+  CXCursor_OMPCriticalDirective          = 290,
+
+  /** \brief OpenMP taskyield directive.
+   */
+  CXCursor_OMPTaskyieldDirective         = 291,
+
+  /** \brief OpenMP barrier directive.
+   */
+  CXCursor_OMPBarrierDirective           = 292,
+
+  /** \brief OpenMP taskwait directive.
+   */
+  CXCursor_OMPTaskwaitDirective          = 293,
+
+  /** \brief OpenMP flush directive.
+   */
+  CXCursor_OMPFlushDirective             = 294,
+
   /** \brief OpenMP ordered directive.
    */
-  CXCursor_OMPOrderedDirective           = 248,
+  CXCursor_OMPOrderedDirective           = 295,
 
   /** \brief OpenMP atomic directive.
    */
-  CXCursor_OMPAtomicDirective            = 249,
+  CXCursor_OMPAtomicDirective            = 296,
 
   /** \brief OpenMP for SIMD directive.
    */
-  CXCursor_OMPForSimdDirective           = 250,
+  CXCursor_OMPForSimdDirective           = 297,
 
   /** \brief OpenMP parallel for SIMD directive.
    */
-  CXCursor_OMPParallelForSimdDirective   = 251,
+  CXCursor_OMPParallelForSimdDirective   = 298,
 
   /** \brief OpenMP target directive.
    */
-  CXCursor_OMPTargetDirective            = 252,
+  CXCursor_OMPTargetDirective            = 299,
 
   /** \brief OpenMP teams directive.
    */
-  CXCursor_OMPTeamsDirective             = 253,
+  CXCursor_OMPTeamsDirective             = 300,
 
   /** \brief OpenMP taskgroup directive.
    */
-  CXCursor_OMPTaskgroupDirective         = 254,
+  CXCursor_OMPTaskgroupDirective         = 301,
 
   /** \brief OpenMP cancellation point directive.
    */
-  CXCursor_OMPCancellationPointDirective = 255,
+  CXCursor_OMPCancellationPointDirective = 302,
 
   /** \brief OpenMP cancel directive.
    */
-  CXCursor_OMPCancelDirective            = 256,
+  CXCursor_OMPCancelDirective            = 303,
 
   /** \brief OpenMP target data directive.
    */
-  CXCursor_OMPTargetDataDirective        = 257,
+  CXCursor_OMPTargetDataDirective        = 304,
 
   /** \brief OpenMP taskloop directive.
    */
-  CXCursor_OMPTaskLoopDirective          = 258,
+  CXCursor_OMPTaskLoopDirective          = 305,
 
   /** \brief OpenMP taskloop simd directive.
    */
-  CXCursor_OMPTaskLoopSimdDirective      = 259,
+  CXCursor_OMPTaskLoopSimdDirective      = 306,
 
   /** \brief OpenMP distribute directive.
    */
-  CXCursor_OMPDistributeDirective        = 260,
+  CXCursor_OMPDistributeDirective        = 307,
 
   /** \brief OpenMP target enter data directive.
    */
-  CXCursor_OMPTargetEnterDataDirective   = 261,
+  CXCursor_OMPTargetEnterDataDirective   = 308,
 
   /** \brief OpenMP target exit data directive.
    */
-  CXCursor_OMPTargetExitDataDirective    = 262,
+  CXCursor_OMPTargetExitDataDirective    = 309,
 
   /** \brief OpenMP target parallel directive.
    */
-  CXCursor_OMPTargetParallelDirective    = 263,
+  CXCursor_OMPTargetParallelDirective    = 310,
 
   /** \brief OpenMP target parallel for directive.
    */
-  CXCursor_OMPTargetParallelForDirective = 264,
+  CXCursor_OMPTargetParallelForDirective = 311,
 
   /** \brief OpenMP target update directive.
    */
-  CXCursor_OMPTargetUpdateDirective      = 265,
+  CXCursor_OMPTargetUpdateDirective      = 312,
 
   /** \brief OpenMP distribute parallel for directive.
    */
-  CXCursor_OMPDistributeParallelForDirective = 266,
+  CXCursor_OMPDistributeParallelForDirective = 313,
 
   /** \brief OpenMP distribute parallel for simd directive.
    */
-  CXCursor_OMPDistributeParallelForSimdDirective = 267,
+  CXCursor_OMPDistributeParallelForSimdDirective = 314,
 
   /** \brief OpenMP distribute simd directive.
    */
-  CXCursor_OMPDistributeSimdDirective = 268,
+  CXCursor_OMPDistributeSimdDirective = 315,
 
   /** \brief OpenMP target parallel for simd directive.
    */
-  CXCursor_OMPTargetParallelForSimdDirective = 269,
+  CXCursor_OMPTargetParallelForSimdDirective = 316,
 
   /** \brief OpenMP target simd directive.
    */
-  CXCursor_OMPTargetSimdDirective = 270,
+  CXCursor_OMPTargetSimdDirective = 317,
 
   /** \brief OpenMP teams distribute directive.
    */
-  CXCursor_OMPTeamsDistributeDirective = 271,
+  CXCursor_OMPTeamsDistributeDirective = 318,
 
   /** \brief OpenMP teams distribute simd directive.
    */
-  CXCursor_OMPTeamsDistributeSimdDirective = 272,
+  CXCursor_OMPTeamsDistributeSimdDirective = 319,
 
   /** \brief OpenMP teams distribute parallel for simd directive.
    */
-  CXCursor_OMPTeamsDistributeParallelForSimdDirective = 273,
+  CXCursor_OMPTeamsDistributeParallelForSimdDirective = 320,
 
   /** \brief OpenMP teams distribute parallel for directive.
    */
-  CXCursor_OMPTeamsDistributeParallelForDirective = 274,
+  CXCursor_OMPTeamsDistributeParallelForDirective = 321,
 
   /** \brief OpenMP target teams directive.
    */
-  CXCursor_OMPTargetTeamsDirective = 275,
+  CXCursor_OMPTargetTeamsDirective = 322,
 
   /** \brief OpenMP target teams distribute directive.
    */
-  CXCursor_OMPTargetTeamsDistributeDirective = 276,
+  CXCursor_OMPTargetTeamsDistributeDirective = 323,
 
   /** \brief OpenMP target teams distribute parallel for directive.
    */
-  CXCursor_OMPTargetTeamsDistributeParallelForDirective = 277,
+  CXCursor_OMPTargetTeamsDistributeParallelForDirective = 324,
 
   /** \brief OpenMP target teams distribute parallel for simd directive.
    */
-  CXCursor_OMPTargetTeamsDistributeParallelForSimdDirective = 278,
+  CXCursor_OMPTargetTeamsDistributeParallelForSimdDirective = 325,
 
   /** \brief OpenMP target teams distribute simd directive.
    */
-  CXCursor_OMPTargetTeamsDistributeSimdDirective = 279,
+  CXCursor_OMPTargetTeamsDistributeSimdDirective = 326,
+
+// -- MYHEADER -- 
 
   CXCursor_LastStmt = CXCursor_OMPTargetTeamsDistributeSimdDirective,
 
@@ -2510,43 +2703,43 @@ enum CXCursorKind {
    * The translation unit cursor exists primarily to act as the root
    * cursor for traversing the contents of a translation unit.
    */
-  CXCursor_TranslationUnit               = 300,
+  CXCursor_TranslationUnit               = 400,
 
   /* Attributes */
-  CXCursor_FirstAttr                     = 400,
+  CXCursor_FirstAttr                     = 500,
   /**
    * \brief An attribute whose specific kind is not exposed via this
    * interface.
    */
-  CXCursor_UnexposedAttr                 = 400,
+  CXCursor_UnexposedAttr                 = 600,
 
-  CXCursor_IBActionAttr                  = 401,
-  CXCursor_IBOutletAttr                  = 402,
-  CXCursor_IBOutletCollectionAttr        = 403,
-  CXCursor_CXXFinalAttr                  = 404,
-  CXCursor_CXXOverrideAttr               = 405,
-  CXCursor_AnnotateAttr                  = 406,
-  CXCursor_AsmLabelAttr                  = 407,
-  CXCursor_PackedAttr                    = 408,
-  CXCursor_PureAttr                      = 409,
-  CXCursor_ConstAttr                     = 410,
-  CXCursor_NoDuplicateAttr               = 411,
-  CXCursor_CUDAConstantAttr              = 412,
-  CXCursor_CUDADeviceAttr                = 413,
-  CXCursor_CUDAGlobalAttr                = 414,
-  CXCursor_CUDAHostAttr                  = 415,
-  CXCursor_CUDASharedAttr                = 416,
-  CXCursor_VisibilityAttr                = 417,
-  CXCursor_DLLExport                     = 418,
-  CXCursor_DLLImport                     = 419,
+  CXCursor_IBActionAttr                  = 601,
+  CXCursor_IBOutletAttr                  = 602,
+  CXCursor_IBOutletCollectionAttr        = 603,
+  CXCursor_CXXFinalAttr                  = 604,
+  CXCursor_CXXOverrideAttr               = 605,
+  CXCursor_AnnotateAttr                  = 606,
+  CXCursor_AsmLabelAttr                  = 607,
+  CXCursor_PackedAttr                    = 608,
+  CXCursor_PureAttr                      = 609,
+  CXCursor_ConstAttr                     = 610,
+  CXCursor_NoDuplicateAttr               = 611,
+  CXCursor_CUDAConstantAttr              = 612,
+  CXCursor_CUDADeviceAttr                = 613,
+  CXCursor_CUDAGlobalAttr                = 614,
+  CXCursor_CUDAHostAttr                  = 615,
+  CXCursor_CUDASharedAttr                = 616,
+  CXCursor_VisibilityAttr                = 617,
+  CXCursor_DLLExport                     = 618,
+  CXCursor_DLLImport                     = 619,
   CXCursor_LastAttr                      = CXCursor_DLLImport,
 
   /* Preprocessing */
-  CXCursor_PreprocessingDirective        = 500,
-  CXCursor_MacroDefinition               = 501,
-  CXCursor_MacroExpansion                = 502,
+  CXCursor_PreprocessingDirective        = 700,
+  CXCursor_MacroDefinition               = 701,
+  CXCursor_MacroExpansion                = 702,
   CXCursor_MacroInstantiation            = CXCursor_MacroExpansion,
-  CXCursor_InclusionDirective            = 503,
+  CXCursor_InclusionDirective            = 703,
   CXCursor_FirstPreprocessing            = CXCursor_PreprocessingDirective,
   CXCursor_LastPreprocessing             = CXCursor_InclusionDirective,
 
@@ -2554,23 +2747,23 @@ enum CXCursorKind {
   /**
    * \brief A module import declaration.
    */
-  CXCursor_ModuleImportDecl              = 600,
-  CXCursor_TypeAliasTemplateDecl         = 601,
+  CXCursor_ModuleImportDecl              = 800,
+  CXCursor_TypeAliasTemplateDecl         = 801,
   /**
    * \brief A static_assert or _Static_assert node
    */
-  CXCursor_StaticAssert                  = 602,
+  CXCursor_StaticAssert                  = 802,
   /**
    * \brief a friend declaration.
    */
-  CXCursor_FriendDecl                    = 603,
+  CXCursor_FriendDecl                    = 803,
   CXCursor_FirstExtraDecl                = CXCursor_ModuleImportDecl,
   CXCursor_LastExtraDecl                 = CXCursor_FriendDecl,
 
   /**
    * \brief A code completion overload candidate.
    */
-  CXCursor_OverloadCandidate             = 700
+  CXCursor_OverloadCandidate             = 900
 };
 
 /**

@@ -1289,19 +1289,20 @@ void CodeGenFunction::EmitACCParallelDirective(const ACCParallelDirective &S) {
 
 
 // MARK acc2mp marking modification PRAGMAExecutableDirective
-//void CodeGenFunction::EmitACCLoopBody(const ACCLoopDirective &D,
+// void CodeGenFunction::EmitACCLoopBody(const ACCLoopDirective &D,
 void CodeGenFunction::EmitACCLoopBody(const PRAGMAExecutableDirective &D,
                                       JumpDest LoopExit) {
+  const ACCLoopDirective &AD = static_cast<const ACCLoopDirective &>(D);
   RunCleanupsScope BodyScope(*this);
   // Update counters values on current iteration.
-  for (auto I : D.updates()) {
+  for (auto I : AD.updates()) {
     EmitIgnoredExpr(I);
   }
   // Update the linear variables.
   // In distribute directives only loop counters may be marked as linear, no
   // need to generate the code for them.
-  if (!isOpenACCDistributeDirective(D.getDirectiveKind())) {
-    for (const auto *C : D.getClausesOfKind<ACCLinearClause>()) {
+  if (!isOpenACCDistributeDirective(AD.getDirectiveKind())) {
+    for (const auto *C : AD.getClausesOfKind<ACCLinearClause>()) {
       for (auto *U : C->updates())
         EmitIgnoredExpr(U);
     }
@@ -1311,7 +1312,7 @@ void CodeGenFunction::EmitACCLoopBody(const PRAGMAExecutableDirective &D,
   auto Continue = getJumpDestInCurrentScope("acc.body.continue");
   BreakContinueStack.push_back(BreakContinue(LoopExit, Continue));
   // Emit loop body.
-  EmitStmt(D.getBody());
+  EmitStmt(AD.getBody());
   // The end (updates/cleanups).
   EmitBlock(Continue.getBlock());
   BreakContinueStack.pop_back();
@@ -1642,7 +1643,7 @@ static void emitACCLoopBodyWithStopPoint(CodeGenFunction &CGF,
                                          const PRAGMAExecutableDirective &S,
                                          CodeGenFunction::JumpDest LoopExit) {
   //We know for sure S is an ACCLoopDirective
-  ACCLoopDirective &AS = S;
+  const ACCLoopDirective &AS = static_cast<const ACCLoopDirective &>(S);
   CGF.EmitACCLoopBody(AS, LoopExit);
   CGF.EmitStopPoint(&AS);
 }
@@ -2112,7 +2113,7 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
                                          PrePostActionTy &) {
 
     // We know S is a ACCLoopDirective
-    ACCLoopDirective &AS = (ACCLoopDirective) S;
+    const ACCLoopDirective &AS = static_cast<const ACCLoopDirective &>(S);
 
     bool HasCancel = false;
     if (!isOpenACCSimdDirective(AS.getDirectiveKind())) {
@@ -2126,13 +2127,14 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
     }
     CodeGenFunction::ACCCancelStackRAII CancelRegion(CGF, AS.getDirectiveKind(),
                                                      HasCancel);
-    CGF.EmitACCWorksharingLoop(S, AS.getPrevEnsureUpperBound(),
+    CGF.EmitACCWorksharingLoop(AS, AS.getPrevEnsureUpperBound(),
                                emitDistributeParallelForInnerBounds,
                                emitDistributeParallelForDispatchBounds);
   };
 
+  const ACCLoopDirective &AS = static_cast<const ACCLoopDirective &>(S);
   emitCommonACCParallelDirective(
-      CGF, S,
+      CGF, AS,
       isOpenACCSimdDirective(AS.getDirectiveKind()) ? ACCD_for_simd : ACCD_for,
       CGInlinedWorksharingLoop,
       emitDistributeParallelForDistributeInnerBoundParams);

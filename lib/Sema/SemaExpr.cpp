@@ -23,6 +23,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/TypeLoc.h"
@@ -275,6 +276,8 @@ bool Sema::DiagnoseUseOfDecl(NamedDecl *D, SourceLocation Loc,
       return true;
   }
 
+
+// TODO acc2mp Figure out if we need to copy this
   // [OpenMP 4.0], 2.15 declare reduction Directive, Restrictions
   // Only the variables omp_in and omp_out are allowed in the combiner.
   // Only the variables omp_priv and omp_orig are allowed in the
@@ -4108,10 +4111,10 @@ Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
   
 // TODO acc2mp
 // Figure out the need of the following copy
-//  if (base && !base->getType().isNull() &&
-//      base->getType()->isSpecificPlaceholderType(BuiltinType::ACCArraySection))
-//    return ActOnACCArraySectionExpr(base, lbLoc, idx, SourceLocation(),
-//                                    /*Length=*/nullptr, rbLoc);
+  if (base && !base->getType().isNull() &&
+      base->getType()->isSpecificPlaceholderType(BuiltinType::ACCArraySection))
+    return ActOnACCArraySectionExpr(base, lbLoc, idx, SourceLocation(),
+                                    /*Length=*/nullptr, rbLoc);
 
   // Since this might be a postfix expression, get rid of ParenListExprs.
   if (isa<ParenListExpr>(base)) {
@@ -4187,9 +4190,8 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                           SourceLocation RBLoc) {
   
   /*
- *  TODO acc2mp
- *  Figure out what to do with semantics on our OpenACC mod
- *
+ *  TODO acc2mp Figure out what to do with semantics on our OpenACC mod
+ *   *
   if (Base->getType()->isPlaceholderType() &&
       !Base->g0etType()->isSpecificPlaceholderType(
           BuiltinType::ACCArraySection)) {

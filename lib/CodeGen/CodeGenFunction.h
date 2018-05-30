@@ -3203,7 +3203,7 @@ public:
                                   ACCPrivateScope &LoopScope);
 
   /// Helper for the OpenACC loop directives.
-  void EmitACCLoopBody(const ACCLoopDirective &D, JumpDest LoopExit);
+  void EmitACCLoopBody(const PRAGMAExecutableDirective &D, JumpDest LoopExit);
 
   /// \brief Emit code for the worksharing loop-based directive.
   /// \return true, if this construct has any lastprivate clause, false -

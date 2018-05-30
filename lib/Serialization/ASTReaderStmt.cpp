@@ -25,9 +25,10 @@ using namespace clang::serialization;
 namespace clang {
 
   class ASTStmtReader : public StmtVisitor<ASTStmtReader> {
+    friend class ACCClauseReader;
     friend class OMPClauseReader;
 
-    // TODO acc2mp investigate if this modification makes sense. Moving Record from here to public
+  public:
     ASTRecordReader &Record;
     llvm::BitstreamCursor &DeclsCursor;
 
@@ -65,7 +66,7 @@ namespace clang {
       Record.readDeclarationNameInfo(NameInfo);
     }
 
-  public:
+    // TODO acc2mp investigate if this modification makes sense. Moved "public" from here to the top of class
     ASTStmtReader(ASTRecordReader &Record, llvm::BitstreamCursor &Cursor)
         : Record(Record), DeclsCursor(Cursor) {}
 
@@ -4467,6 +4468,10 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       S = new (Context) ArraySubscriptExpr(Empty);
       break;
 
+    case EXPR_ACC_ARRAY_SECTION:
+      S = new (Context) ACCArraySectionExpr(Empty);
+      break;
+
     case EXPR_OMP_ARRAY_SECTION:
       S = new (Context) OMPArraySectionExpr(Empty);
       break;
@@ -4734,6 +4739,311 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
                                               DeclarationNameInfo(),
                                               nullptr);
       break;
+
+// -- MYHEADER --
+
+    case STMT_ACC_PARALLEL_DIRECTIVE:
+      S =
+        ACCParallelDirective::CreateEmpty(Context,
+                                          Record[ASTStmtReader::NumStmtFields],
+                                          Empty);
+      break;
+
+    case STMT_ACC_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCSimdDirective::CreateEmpty(Context, NumClauses,
+                                        CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_FOR_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCForDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+                                       Empty);
+      break;
+    }
+
+    case STMT_ACC_FOR_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCForSimdDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+                                           Empty);
+      break;
+    }
+
+    case STMT_ACC_SECTIONS_DIRECTIVE:
+      S = ACCSectionsDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_SECTION_DIRECTIVE:
+      S = ACCSectionDirective::CreateEmpty(Context, Empty);
+      break;
+
+    case STMT_ACC_SINGLE_DIRECTIVE:
+      S = ACCSingleDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_MASTER_DIRECTIVE:
+      S = ACCMasterDirective::CreateEmpty(Context, Empty);
+      break;
+
+    case STMT_ACC_CRITICAL_DIRECTIVE:
+      S = ACCCriticalDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_PARALLEL_FOR_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCParallelForDirective::CreateEmpty(Context, NumClauses,
+                                               CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_PARALLEL_FOR_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCParallelForSimdDirective::CreateEmpty(Context, NumClauses,
+                                                   CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_PARALLEL_SECTIONS_DIRECTIVE:
+      S = ACCParallelSectionsDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TASK_DIRECTIVE:
+      S = ACCTaskDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TASKYIELD_DIRECTIVE:
+      S = ACCTaskyieldDirective::CreateEmpty(Context, Empty);
+      break;
+
+    case STMT_ACC_BARRIER_DIRECTIVE:
+      S = ACCBarrierDirective::CreateEmpty(Context, Empty);
+      break;
+
+    case STMT_ACC_TASKWAIT_DIRECTIVE:
+      S = ACCTaskwaitDirective::CreateEmpty(Context, Empty);
+      break;
+
+    case STMT_ACC_TASKGROUP_DIRECTIVE:
+      S = ACCTaskgroupDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_FLUSH_DIRECTIVE:
+      S = ACCFlushDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_ORDERED_DIRECTIVE:
+      S = ACCOrderedDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_ATOMIC_DIRECTIVE:
+      S = ACCAtomicDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TARGET_DIRECTIVE:
+      S = ACCTargetDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TARGET_DATA_DIRECTIVE:
+      S = ACCTargetDataDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TARGET_ENTER_DATA_DIRECTIVE:
+      S = ACCTargetEnterDataDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TARGET_EXIT_DATA_DIRECTIVE:
+      S = ACCTargetExitDataDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TARGET_PARALLEL_DIRECTIVE:
+      S = ACCTargetParallelDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TARGET_PARALLEL_FOR_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTargetParallelForDirective::CreateEmpty(Context, NumClauses,
+                                                     CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_UPDATE_DIRECTIVE:
+      S = ACCTargetUpdateDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TEAMS_DIRECTIVE:
+      S = ACCTeamsDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_CANCELLATION_POINT_DIRECTIVE:
+      S = ACCCancellationPointDirective::CreateEmpty(Context, Empty);
+      break;
+
+    case STMT_ACC_CANCEL_DIRECTIVE:
+      S = ACCCancelDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+
+    case STMT_ACC_TASKLOOP_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTaskLoopDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+                                            Empty);
+      break;
+    }
+
+    case STMT_ACC_TASKLOOP_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTaskLoopSimdDirective::CreateEmpty(Context, NumClauses,
+                                                CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_DISTRIBUTE_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCDistributeDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+                                              Empty);
+      break;
+    }
+
+    case STMT_ACC_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCDistributeParallelForDirective::CreateEmpty(Context, NumClauses,
+                                                         CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCDistributeParallelForSimdDirective::CreateEmpty(Context, NumClauses,
+                                                             CollapsedNum,
+                                                             Empty);
+      break;
+    }
+
+    case STMT_ACC_DISTRIBUTE_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCDistributeSimdDirective::CreateEmpty(Context, NumClauses,
+                                                  CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTargetParallelForSimdDirective::CreateEmpty(Context, NumClauses,
+                                                         CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_SIMD_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTargetSimdDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+                                              Empty);
+      break;
+    }
+
+     case STMT_ACC_TEAMS_DISTRIBUTE_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTeamsDistributeDirective::CreateEmpty(Context, NumClauses,
+                                                   CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE: {
+      unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
+      unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTeamsDistributeSimdDirective::CreateEmpty(Context, NumClauses,
+                                                       CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTeamsDistributeParallelForSimdDirective::CreateEmpty(
+          Context, NumClauses, CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTeamsDistributeParallelForDirective::CreateEmpty(
+          Context, NumClauses, CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_TEAMS_DIRECTIVE: {
+      S = ACCTargetTeamsDirective::CreateEmpty(
+          Context, Record[ASTStmtReader::NumStmtFields], Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTargetTeamsDistributeDirective::CreateEmpty(Context, NumClauses,
+                                                         CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTargetTeamsDistributeParallelForDirective::CreateEmpty(
+          Context, NumClauses, CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTargetTeamsDistributeParallelForSimdDirective::CreateEmpty(
+          Context, NumClauses, CollapsedNum, Empty);
+      break;
+    }
+
+    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE: {
+      auto NumClauses = Record[ASTStmtReader::NumStmtFields];
+      auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
+      S = ACCTargetTeamsDistributeSimdDirective::CreateEmpty(
+          Context, NumClauses, CollapsedNum, Empty);
+      break;
+    }
+
+// -- MYHEADER -- 
+
+// -- MYHEADER --
 
     case STMT_OMP_PARALLEL_DIRECTIVE:
       S =
@@ -5033,6 +5343,8 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
+
+// -- MYHEADER -- 
 
     case EXPR_CXX_OPERATOR_CALL:
       S = new (Context) CXXOperatorCallExpr(Context, Empty);
