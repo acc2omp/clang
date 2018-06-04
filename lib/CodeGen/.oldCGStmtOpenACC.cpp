@@ -1287,12 +1287,16 @@ void CodeGenFunction::EmitACCParallelDirective(const ACCParallelDirective &S) {
       *this, S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
 }
 
+
+// MARK acc2mp marking modification PRAGMAExecutableDirective
+// void CodeGenFunction::EmitACCLoopBody(const ACCLoopDirective &D,
 void CodeGenFunction::EmitACCLoopBody(const ACCLoopDirective &D,
                                       JumpDest LoopExit) {
+  //const ACCLoopDirective &AD = static_cast<const ACCLoopDirective &>(D);
   RunCleanupsScope BodyScope(*this);
   // Update counters values on current iteration.
-  for (auto I : D.updates()) {
-    EmitIgnoredExpr(I);
+  for (const Expr *UE : D.updates()){
+    EmitIgnoredExpr(UE);
   }
   // Update the linear variables.
   // In distribute directives only loop counters may be marked as linear, no
@@ -1635,10 +1639,13 @@ void CodeGenFunction::EmitACCSimdFinal(
 }
 
 static void emitACCLoopBodyWithStopPoint(CodeGenFunction &CGF,
-                                         const ACCLoopDirective &S,
+//                                         const ACCLoopDirective &S,
+                                         const PRAGMAExecutableDirective &S,
                                          CodeGenFunction::JumpDest LoopExit) {
-  CGF.EmitACCLoopBody(S, LoopExit);
-  CGF.EmitStopPoint(&S);
+  //We know for sure S is an ACCLoopDirective
+  const ACCLoopDirective &AS = static_cast<const ACCLoopDirective &>(S);
+  CGF.EmitACCLoopBody(AS, LoopExit);
+  CGF.EmitStopPoint(&AS);
 }
 
 /// Emit a helper variable and return corresponding lvalue.
@@ -1920,6 +1927,7 @@ void CodeGenFunction::EmitACCForOuterLoop(
   const bool IVSigned = IVExpr->getType()->hasSignedIntegerRepresentation();
 
   if (DynamicOrOrdered) {
+// TODO acc2mp investigate
     auto DispatchBounds = CGDispatchBounds(*this, S, LoopArgs.LB, LoopArgs.UB);
     llvm::Value *LBVal = DispatchBounds.first;
     llvm::Value *UBVal = DispatchBounds.second;
@@ -2063,7 +2071,7 @@ emitDistributeParallelForInnerBounds(CodeGenFunction &CGF,
 /// 'for_dispatch_init'
 static std::pair<llvm::Value *, llvm::Value *>
 emitDistributeParallelForDispatchBounds(CodeGenFunction &CGF,
-                                        const ACCExecutableDirective &S,
+                                        const PRAGMAExecutableDirective &S,
                                         Address LB, Address UB) {
   const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();
@@ -2098,30 +2106,36 @@ static void emitDistributeParallelForDistributeInnerBoundParams(
 
 static void
 emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
-                                 const ACCLoopDirective &S,
+//                                 const ACCLoopDirective &S,
+                                 const PRAGMAExecutableDirective &S,
                                  CodeGenFunction::JumpDest LoopExit) {
   auto &&CGInlinedWorksharingLoop = [&S](CodeGenFunction &CGF,
                                          PrePostActionTy &) {
+
+    // We know S is a ACCLoopDirective
+    const ACCLoopDirective &AS = static_cast<const ACCLoopDirective &>(S);
+
     bool HasCancel = false;
-    if (!isOpenACCSimdDirective(S.getDirectiveKind())) {
-      if (const auto *D = dyn_cast<ACCTeamsDistributeParallelForDirective>(&S))
+    if (!isOpenACCSimdDirective(AS.getDirectiveKind())) {
+      if (const auto *D = dyn_cast<ACCTeamsDistributeParallelForDirective>(&AS))
         HasCancel = D->hasCancel();
-      else if (const auto *D = dyn_cast<ACCDistributeParallelForDirective>(&S))
+      else if (const auto *D = dyn_cast<ACCDistributeParallelForDirective>(&AS))
         HasCancel = D->hasCancel();
       else if (const auto *D =
-                   dyn_cast<ACCTargetTeamsDistributeParallelForDirective>(&S))
+                   dyn_cast<ACCTargetTeamsDistributeParallelForDirective>(&AS))
         HasCancel = D->hasCancel();
     }
-    CodeGenFunction::ACCCancelStackRAII CancelRegion(CGF, S.getDirectiveKind(),
+    CodeGenFunction::ACCCancelStackRAII CancelRegion(CGF, AS.getDirectiveKind(),
                                                      HasCancel);
-    CGF.EmitACCWorksharingLoop(S, S.getPrevEnsureUpperBound(),
+    CGF.EmitACCWorksharingLoop(  AS, AS.getPrevEnsureUpperBound(),
                                emitDistributeParallelForInnerBounds,
                                emitDistributeParallelForDispatchBounds);
   };
 
+  const ACCLoopDirective &AS = static_cast<const ACCLoopDirective &>(S);
   emitCommonACCParallelDirective(
-      CGF, S,
-      isOpenACCSimdDirective(S.getDirectiveKind()) ? ACCD_for_simd : ACCD_for,
+      CGF, AS,
+      isOpenACCSimdDirective(AS.getDirectiveKind()) ? ACCD_for_simd : ACCD_for,
       CGInlinedWorksharingLoop,
       emitDistributeParallelForDistributeInnerBoundParams);
 }
@@ -2381,7 +2395,8 @@ bool CodeGenFunction::EmitACCWorksharingLoop(
 /// and upper bounds in case of static and dynamic (dispatch) schedule
 /// of the associated 'for' or 'distribute' loop.
 static std::pair<LValue, LValue>
-emitForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S) {
+//emitForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S) {
+emitForLoopBounds(CodeGenFunction &CGF, const PRAGMAExecutableDirective &S) {
   const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
   LValue LB =
       EmitACCHelperVar(CGF, cast<DeclRefExpr>(LS.getLowerBoundVariable()));
@@ -2395,7 +2410,8 @@ emitForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S) {
 /// worksharing loop support, but we use 0 and the iteration space size as
 /// constants
 static std::pair<llvm::Value *, llvm::Value *>
-emitDispatchForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S,
+//emitDispatchForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S,
+emitDispatchForLoopBounds(CodeGenFunction &CGF, const PRAGMAExecutableDirective &S,
                           Address LB, Address UB) {
   const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();
@@ -2717,7 +2733,7 @@ void CodeGenFunction::EmitACCParallelSectionsDirective(
 
 void CodeGenFunction::EmitACCTaskBasedDirective(
     const ACCExecutableDirective &S, const OpenACCDirectiveKind CapturedRegion,
-    const RegionCodeGenTy &BodyGen, const TaskGenTy &TaskGen,
+    const RegionCodeGenTy &BodyGen, const ACCTaskGenTy &TaskGen,
     ACCTaskDataTy &Data) {
   // Emit outlined function for task construct.
   const CapturedStmt *CS = S.getCapturedStmt(CapturedRegion);

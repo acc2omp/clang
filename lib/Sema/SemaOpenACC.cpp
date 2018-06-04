@@ -19,6 +19,8 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclOpenACC.h"
+// TODO acc2mp maybe this will fix a linkage error
+//#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/StmtCXX.h"
 #include "clang/AST/StmtOpenACC.h"
 #include "clang/AST/StmtVisitor.h"

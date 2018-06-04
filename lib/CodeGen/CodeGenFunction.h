@@ -718,6 +718,160 @@ public:
 
   typedef llvm::DenseMap<const Decl *, Address> DeclMapTy;
 
+  /// The class used to assign some variables some temporarily addresses.
+  class ACCMapVars {
+    DeclMapTy SavedLocals;
+    DeclMapTy SavedTempAddresses;
+    ACCMapVars(const ACCMapVars &) = delete;
+    void operator=(const ACCMapVars &) = delete;
+
+  public:
+    explicit ACCMapVars() = default;
+    ~ACCMapVars() {
+      assert(SavedLocals.empty() && "Did not restored original addresses.");
+    };
+
+    /// Sets the address of the variable \p LocalVD to be \p TempAddr in
+    /// function \p CGF.
+    /// \return true if at least one variable was set already, false otherwise.
+    bool setVarAddr(CodeGenFunction &CGF, const VarDecl *LocalVD,
+                    Address TempAddr) {
+      LocalVD = LocalVD->getCanonicalDecl();
+      // Only save it once.
+      if (SavedLocals.count(LocalVD)) return false;
+
+      // Copy the existing local entry to SavedLocals.
+      auto it = CGF.LocalDeclMap.find(LocalVD);
+      if (it != CGF.LocalDeclMap.end())
+        SavedLocals.try_emplace(LocalVD, it->second);
+      else
+        SavedLocals.try_emplace(LocalVD, Address::invalid());
+
+      // Generate the private entry.
+      QualType VarTy = LocalVD->getType();
+      if (VarTy->isReferenceType()) {
+        Address Temp = CGF.CreateMemTemp(VarTy);
+        CGF.Builder.CreateStore(TempAddr.getPointer(), Temp);
+        TempAddr = Temp;
+      }
+      SavedTempAddresses.try_emplace(LocalVD, TempAddr);
+
+      return true;
+    }
+
+    /// Applies new addresses to the list of the variables.
+    /// \return true if at least one variable is using new address, false
+    /// otherwise.
+    bool apply(CodeGenFunction &CGF) {
+      copyInto(SavedTempAddresses, CGF.LocalDeclMap);
+      SavedTempAddresses.clear();
+      return !SavedLocals.empty();
+    }
+
+    /// Restores original addresses of the variables.
+    void restore(CodeGenFunction &CGF) {
+      if (!SavedLocals.empty()) {
+        copyInto(SavedLocals, CGF.LocalDeclMap);
+        SavedLocals.clear();
+      }
+    }
+
+  private:
+    /// Copy all the entries in the source map over the corresponding
+    /// entries in the destination, which must exist.
+    static void copyInto(const DeclMapTy &Src, DeclMapTy &Dest) {
+      for (auto &Pair : Src) {
+        if (!Pair.second.isValid()) {
+          Dest.erase(Pair.first);
+          continue;
+        }
+
+        auto I = Dest.find(Pair.first);
+        if (I != Dest.end())
+          I->second = Pair.second;
+        else
+          Dest.insert(Pair);
+      }
+    }
+ };
+
+  /// The class used to assign some variables some temporarily addresses.
+  class OMPMapVars {
+    DeclMapTy SavedLocals;
+    DeclMapTy SavedTempAddresses;
+    OMPMapVars(const OMPMapVars &) = delete;
+    void operator=(const OMPMapVars &) = delete;
+
+  public:
+    explicit OMPMapVars() = default;
+    ~OMPMapVars() {
+      assert(SavedLocals.empty() && "Did not restored original addresses.");
+    };
+
+    /// Sets the address of the variable \p LocalVD to be \p TempAddr in
+    /// function \p CGF.
+    /// \return true if at least one variable was set already, false otherwise.
+    bool setVarAddr(CodeGenFunction &CGF, const VarDecl *LocalVD,
+                    Address TempAddr) {
+      LocalVD = LocalVD->getCanonicalDecl();
+      // Only save it once.
+      if (SavedLocals.count(LocalVD)) return false;
+
+      // Copy the existing local entry to SavedLocals.
+      auto it = CGF.LocalDeclMap.find(LocalVD);
+      if (it != CGF.LocalDeclMap.end())
+        SavedLocals.try_emplace(LocalVD, it->second);
+      else
+        SavedLocals.try_emplace(LocalVD, Address::invalid());
+
+      // Generate the private entry.
+      QualType VarTy = LocalVD->getType();
+      if (VarTy->isReferenceType()) {
+        Address Temp = CGF.CreateMemTemp(VarTy);
+        CGF.Builder.CreateStore(TempAddr.getPointer(), Temp);
+        TempAddr = Temp;
+      }
+      SavedTempAddresses.try_emplace(LocalVD, TempAddr);
+
+      return true;
+    }
+
+    /// Applies new addresses to the list of the variables.
+    /// \return true if at least one variable is using new address, false
+    /// otherwise.
+    bool apply(CodeGenFunction &CGF) {
+      copyInto(SavedTempAddresses, CGF.LocalDeclMap);
+      SavedTempAddresses.clear();
+      return !SavedLocals.empty();
+    }
+
+    /// Restores original addresses of the variables.
+    void restore(CodeGenFunction &CGF) {
+      if (!SavedLocals.empty()) {
+        copyInto(SavedLocals, CGF.LocalDeclMap);
+        SavedLocals.clear();
+      }
+    }
+
+  private:
+    /// Copy all the entries in the source map over the corresponding
+    /// entries in the destination, which must exist.
+    static void copyInto(const DeclMapTy &Src, DeclMapTy &Dest) {
+      for (auto &Pair : Src) {
+        if (!Pair.second.isValid()) {
+          Dest.erase(Pair.first);
+          continue;
+        }
+
+        auto I = Dest.find(Pair.first);
+        if (I != Dest.end())
+          I->second = Pair.second;
+        else
+          Dest.insert(Pair);
+      }
+    }
+ };
+
   /// \brief The scope used to remap some variables as private in the OpenACC
   /// loop body (or other captured region emitted without outlining), and to
   /// restore old vars back on exit.
@@ -3203,7 +3357,7 @@ public:
                                   ACCPrivateScope &LoopScope);
 
   /// Helper for the OpenACC loop directives.
-  void EmitACCLoopBody(const PRAGMAExecutableDirective &D, JumpDest LoopExit);
+  void EmitACCLoopBody(const ACCLoopDirective &D, JumpDest LoopExit);
 
   /// \brief Emit code for the worksharing loop-based directive.
   /// \return true, if this construct has any lastprivate clause, false -

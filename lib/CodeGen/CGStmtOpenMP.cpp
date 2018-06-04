@@ -27,9 +27,8 @@ namespace {
 /// Lexical scope for OpenMP executable constructs, that handles correct codegen
 /// for captured expressions.
 class OMPLexicalScope : public CodeGenFunction::LexicalScope {
-  void emitPreInitStmt(CodeGenFunction &CGF, const PRAGMAExecutableDirective &S) {
-    const OMPExecutableDirective &OS = static_cast<const OMPExecutableDirective &>(S);
-    for (const auto *C : OS.clauses()) {
+  void emitPreInitStmt(CodeGenFunction &CGF, const OMPExecutableDirective &S) {
+    for (const auto *C : S.clauses()) {
       if (auto *CPI = OMPClauseWithPreInit::get(C)) {
         if (auto *PreInit = cast_or_null<DeclStmt>(CPI->getPreInitStmt())) {
           for (const auto *I : PreInit->decls()) {
@@ -53,18 +52,13 @@ class OMPLexicalScope : public CodeGenFunction::LexicalScope {
            (CGF.CurCodeDecl && isa<BlockDecl>(CGF.CurCodeDecl));
   }
 
-
-//TODO acc2mp : * continue investigating from here. Implement PRAGMAExecutableDirective on those functions
 public:
   OMPLexicalScope(
-      CodeGenFunction &CGF, const PRAGMAExecutableDirective &S,
+      CodeGenFunction &CGF, const OMPExecutableDirective &S,
       const llvm::Optional<OpenMPDirectiveKind> CapturedRegion = llvm::None,
       const bool EmitPreInitStmt = true)
       : CodeGenFunction::LexicalScope(CGF, S.getSourceRange()),
         InlinedShareds(CGF) {
-
-    const OMPExecutableDirective &OS = static_cast<const OMPExecutableDirective &>(S);
-
     if (EmitPreInitStmt)
       emitPreInitStmt(CGF, S);
     if (!CapturedRegion.hasValue())
@@ -95,19 +89,16 @@ public:
 /// for captured expressions.
 class OMPParallelScope final : public OMPLexicalScope {
   bool EmitPreInitStmt(const OMPExecutableDirective &S) {
-    //const OMPExecutableDirective &OS = static_cast<const OMPExecutableDirective &>(S);
     OpenMPDirectiveKind Kind = S.getDirectiveKind();
     return !(isOpenMPTargetExecutionDirective(Kind) ||
              isOpenMPLoopBoundSharingDirective(Kind)) &&
            isOpenMPParallelDirective(Kind);
   }
 
-public: 
-  // TODO acc2mp Remove commentary once this is compiling right
-  //OMPParallelScope(CodeGenFunction &CGF, const OMPExecutableDirective &S)
-  OMPParallelScope(CodeGenFunction &CGF, const PRAGMAExecutableDirective &S)
+public:
+  OMPParallelScope(CodeGenFunction &CGF, const OMPExecutableDirective &S)
       : OMPLexicalScope(CGF, S, /*CapturedRegion=*/llvm::None,
-                        EmitPreInitStmt(static_cast<const OMPExecutableDirective &>(S))) {}
+                        EmitPreInitStmt(S)) {}
 };
 
 /// Lexical scope for OpenMP teams construct, that handles correct codegen
@@ -1296,7 +1287,7 @@ void CodeGenFunction::EmitOMPParallelDirective(const OMPParallelDirective &S) {
       *this, S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
 }
 
-void CodeGenFunction::EmitOMPLoopBody(const PRAGMAExecutableDirective &D,
+void CodeGenFunction::EmitOMPLoopBody(const OMPLoopDirective &D,
                                       JumpDest LoopExit) {
   RunCleanupsScope BodyScope(*this);
   // Update counters values on current iteration.
@@ -1644,12 +1635,10 @@ void CodeGenFunction::EmitOMPSimdFinal(
 }
 
 static void emitOMPLoopBodyWithStopPoint(CodeGenFunction &CGF,
-//                                         const OMPLoopDirective &S,
-                                         const PRAGMAExecutableDirective &S,
+                                         const OMPLoopDirective &S,
                                          CodeGenFunction::JumpDest LoopExit) {
-  OMPLoopDirective &OS = static_cast<OMPLoopDirective>(S);
-  CGF.EmitOMPLoopBody(OS, LoopExit);
-  CGF.EmitStopPoint(&OS);
+  CGF.EmitOMPLoopBody(S, LoopExit);
+  CGF.EmitStopPoint(&S);
 }
 
 /// Emit a helper variable and return corresponding lvalue.
@@ -2074,7 +2063,7 @@ emitDistributeParallelForInnerBounds(CodeGenFunction &CGF,
 /// 'for_dispatch_init'
 static std::pair<llvm::Value *, llvm::Value *>
 emitDistributeParallelForDispatchBounds(CodeGenFunction &CGF,
-                                        const PRAGMAExecutableDirective &S,
+                                        const OMPExecutableDirective &S,
                                         Address LB, Address UB) {
   const OMPLoopDirective &LS = cast<OMPLoopDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();
@@ -2109,22 +2098,18 @@ static void emitDistributeParallelForDistributeInnerBoundParams(
 
 static void
 emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
-//                                 const OMPLoopDirective &S,
-                                 const PRAGMAExecutableDirective &S,
+                                 const OMPLoopDirective &S,
                                  CodeGenFunction::JumpDest LoopExit) {
   auto &&CGInlinedWorksharingLoop = [&S](CodeGenFunction &CGF,
                                          PrePostActionTy &) {
-
-    const OMPLoopDirective &OS = static_cast<const OMPLoopDirective &>(S);
-    
     bool HasCancel = false;
-    if (!isOpenMPSimdDirective(OS.getDirectiveKind())) {
-      if (const auto *D = dyn_cast<OMPTeamsDistributeParallelForDirective>(&OS))
+    if (!isOpenMPSimdDirective(S.getDirectiveKind())) {
+      if (const auto *D = dyn_cast<OMPTeamsDistributeParallelForDirective>(&S))
         HasCancel = D->hasCancel();
-      else if (const auto *D = dyn_cast<OMPDistributeParallelForDirective>(&OS))
+      else if (const auto *D = dyn_cast<OMPDistributeParallelForDirective>(&S))
         HasCancel = D->hasCancel();
       else if (const auto *D =
-                   dyn_cast<OMPTargetTeamsDistributeParallelForDirective>(&OS))
+                   dyn_cast<OMPTargetTeamsDistributeParallelForDirective>(&S))
         HasCancel = D->hasCancel();
     }
     CodeGenFunction::OMPCancelStackRAII CancelRegion(CGF, S.getDirectiveKind(),
@@ -2134,10 +2119,9 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
                                emitDistributeParallelForDispatchBounds);
   };
 
-  const OMPLoopDirective &OS = static_cast<const OMPLoopDirective &>(S);
   emitCommonOMPParallelDirective(
-      CGF, OS,
-      isOpenMPSimdDirective(OS.getDirectiveKind()) ? OMPD_for_simd : OMPD_for,
+      CGF, S,
+      isOpenMPSimdDirective(S.getDirectiveKind()) ? OMPD_for_simd : OMPD_for,
       CGInlinedWorksharingLoop,
       emitDistributeParallelForDistributeInnerBoundParams);
 }
@@ -2397,8 +2381,7 @@ bool CodeGenFunction::EmitOMPWorksharingLoop(
 /// and upper bounds in case of static and dynamic (dispatch) schedule
 /// of the associated 'for' or 'distribute' loop.
 static std::pair<LValue, LValue>
-//emitForLoopBounds(CodeGenFunction &CGF, const OMPExecutableDirective &S) {
-emitForLoopBounds(CodeGenFunction &CGF, const PRAGMAExecutableDirective &S) {
+emitForLoopBounds(CodeGenFunction &CGF, const OMPExecutableDirective &S) {
   const OMPLoopDirective &LS = cast<OMPLoopDirective>(S);
   LValue LB =
       EmitOMPHelperVar(CGF, cast<DeclRefExpr>(LS.getLowerBoundVariable()));
@@ -2412,8 +2395,7 @@ emitForLoopBounds(CodeGenFunction &CGF, const PRAGMAExecutableDirective &S) {
 /// worksharing loop support, but we use 0 and the iteration space size as
 /// constants
 static std::pair<llvm::Value *, llvm::Value *>
-//emitDispatchForLoopBounds(CodeGenFunction &CGF, const OMPExecutableDirective &S,
-emitDispatchForLoopBounds(CodeGenFunction &CGF, const PRAGMAExecutableDirective &S,
+emitDispatchForLoopBounds(CodeGenFunction &CGF, const OMPExecutableDirective &S,
                           Address LB, Address UB) {
   const OMPLoopDirective &LS = cast<OMPLoopDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();

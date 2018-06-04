@@ -3065,6 +3065,7 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
 
   case ParenExprClass:
   case ArraySubscriptExprClass:
+  case ACCArraySectionExprClass:
   case OMPArraySectionExprClass:
   case MemberExprClass:
   case ConditionalOperatorClass:
@@ -4078,6 +4079,34 @@ QualType AtomicExpr::getValueType() const {
   if (auto AT = T->getAs<AtomicType>())
     return AT->getValueType();
   return T;
+}
+
+QualType ACCArraySectionExpr::getBaseOriginalType(const Expr *Base) {
+  unsigned ArraySectionCount = 0;
+  while (auto *OASE = dyn_cast<ACCArraySectionExpr>(Base->IgnoreParens())) {
+    Base = OASE->getBase();
+    ++ArraySectionCount;
+  }
+  while (auto *ASE =
+             dyn_cast<ArraySubscriptExpr>(Base->IgnoreParenImpCasts())) {
+    Base = ASE->getBase();
+    ++ArraySectionCount;
+  }
+  Base = Base->IgnoreParenImpCasts();
+  auto OriginalTy = Base->getType();
+  if (auto *DRE = dyn_cast<DeclRefExpr>(Base))
+    if (auto *PVD = dyn_cast<ParmVarDecl>(DRE->getDecl()))
+      OriginalTy = PVD->getOriginalType().getNonReferenceType();
+
+  for (unsigned Cnt = 0; Cnt < ArraySectionCount; ++Cnt) {
+    if (OriginalTy->isAnyPointerType())
+      OriginalTy = OriginalTy->getPointeeType();
+    else {
+      assert (OriginalTy->isArrayType());
+      OriginalTy = OriginalTy->castAsArrayTypeUnsafe()->getElementType();
+    }
+  }
+  return OriginalTy;
 }
 
 QualType OMPArraySectionExpr::getBaseOriginalType(const Expr *Base) {
