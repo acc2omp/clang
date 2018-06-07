@@ -1578,8 +1578,8 @@ TypeSourceInfo *Sema::SubstType(TypeSourceInfo *T,
   assert(!CodeSynthesisContexts.empty() &&
          "Cannot perform an instantiation without some context on the "
          "instantiation stack");
-  
-  if (!T->getType()->isInstantiationDependentType() && 
+
+  if (!T->getType()->isInstantiationDependentType() &&
       !T->getType()->isVariablyModifiedType())
     return T;
 
@@ -1595,11 +1595,11 @@ TypeSourceInfo *Sema::SubstType(TypeLoc TL,
   assert(!CodeSynthesisContexts.empty() &&
          "Cannot perform an instantiation without some context on the "
          "instantiation stack");
-  
+
   if (TL.getType().isNull())
     return nullptr;
 
-  if (!TL.getType()->isInstantiationDependentType() && 
+  if (!TL.getType()->isInstantiationDependentType() &&
       !TL.getType()->isVariablyModifiedType()) {
     // FIXME: Make a copy of the TypeLoc data here, so that we can
     // return a new TypeSourceInfo. Inefficient!

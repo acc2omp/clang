@@ -206,25 +206,44 @@ public:
   //     CodeGenFunction &, const OMPExecutableDirective &S, Address LB,
   //     Address UB)>
   //     CodeGenDispatchBoundsTy;
-
-
-  typedef llvm::function_ref<void(CodeGenFunction &, const PRAGMAExecutableDirective &,
+  typedef llvm::function_ref<void(CodeGenFunction &, const ACCLoopDirective &,
                                   JumpDest)>
-      CodeGenLoopTy;
+      ACCCodeGenLoopTy;
+  typedef llvm::function_ref<void(CodeGenFunction &, SourceLocation,
+                                  const unsigned, const bool)>
+      ACCCodeGenOrderedTy;
+
+  // Codegen lambda for loop bounds in worksharing loop constructs
+  typedef llvm::function_ref<std::pair<LValue, LValue>(
+      CodeGenFunction &, const ACCExecutableDirective &S)>
+      ACCCodeGenLoopBoundsTy;
+
+  // Codegen lambda for loop bounds in dispatch-based loop implementation
+  typedef llvm::function_ref<std::pair<llvm::Value *, llvm::Value *>(
+      CodeGenFunction &, const ACCExecutableDirective &S, Address LB,
+      Address UB)>
+      ACCCodeGenDispatchBoundsTy;
+
+
+  typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopDirective &,
+                                  JumpDest)>
+      OMPCodeGenLoopTy;
+
+  // Codegen lambda for loop bounds in worksharing loop constructs
+  typedef llvm::function_ref<std::pair<LValue, LValue>(
+      CodeGenFunction &, const OMPExecutableDirective &S)>
+      OMPCodeGenLoopBoundsTy;
+
+  // Codegen lambda for loop bounds in dispatch-based loop implementation
+  typedef llvm::function_ref<std::pair<llvm::Value *, llvm::Value *>(
+      CodeGenFunction &, const OMPExecutableDirective &S, Address LB,
+      Address UB)>
+      OMPCodeGenDispatchBoundsTy;
+
   typedef llvm::function_ref<void(CodeGenFunction &, SourceLocation,
                                   const unsigned, const bool)>
       CodeGenOrderedTy;
 
-  // Codegen lambda for loop bounds in worksharing loop constructs
-  typedef llvm::function_ref<std::pair<LValue, LValue>(
-      CodeGenFunction &, const PRAGMAExecutableDirective &S)>
-      CodeGenLoopBoundsTy;
-
-  // Codegen lambda for loop bounds in dispatch-based loop implementation
-  typedef llvm::function_ref<std::pair<llvm::Value *, llvm::Value *>(
-      CodeGenFunction &, const PRAGMAExecutableDirective &S, Address LB,
-      Address UB)>
-      CodeGenDispatchBoundsTy;
 
   /// \brief CGBuilder insert helper. This function is called after an
   /// instruction is created using Builder.
@@ -3363,12 +3382,12 @@ public:
   /// \return true, if this construct has any lastprivate clause, false -
   /// otherwise.
   bool EmitACCWorksharingLoop(const ACCLoopDirective &S, Expr *EUB,
-                              const CodeGenLoopBoundsTy &CodeGenLoopBounds,
-                              const CodeGenDispatchBoundsTy &CGDispatchBounds);
+                              const ACCCodeGenLoopBoundsTy &CodeGenLoopBounds,
+                              const ACCCodeGenDispatchBoundsTy &CGDispatchBounds);
 
   /// Emit code for the distribute loop-based directive.
   void EmitACCDistributeLoop(const ACCLoopDirective &S,
-                             const CodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
+                             const ACCCodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
 
   /// Helpers for the OpenACC loop directives.
   void EmitACCSimdInit(const ACCLoopDirective &D, bool IsMonotonic = false);
@@ -3656,12 +3675,12 @@ public:
   /// \return true, if this construct has any lastprivate clause, false -
   /// otherwise.
   bool EmitOMPWorksharingLoop(const OMPLoopDirective &S, Expr *EUB,
-                              const CodeGenLoopBoundsTy &CodeGenLoopBounds,
-                              const CodeGenDispatchBoundsTy &CGDispatchBounds);
+                              const OMPCodeGenLoopBoundsTy &CodeGenLoopBounds,
+                              const OMPCodeGenDispatchBoundsTy &CGDispatchBounds);
 
   /// Emit code for the distribute loop-based directive.
   void EmitOMPDistributeLoop(const OMPLoopDirective &S,
-                             const CodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
+                             const OMPCodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
 
   /// Helpers for the OpenMP loop directives.
   void EmitOMPSimdInit(const OMPLoopDirective &D, bool IsMonotonic = false);
@@ -3678,7 +3697,7 @@ private:
   /// Helpers for blocks.
   llvm::Value *EmitBlockLiteral(const CGBlockInfo &Info);
 
-// -- MYHEADER -- 
+// -- MYHEADER --
 
   /// struct with the values to be passed to the OpenACC loop-related functions
   struct ACCLoopArguments {
@@ -3717,22 +3736,22 @@ private:
   void EmitACCOuterLoop(bool DynamicOrOrdered, bool IsMonotonic,
                         const ACCLoopDirective &S, ACCPrivateScope &LoopScope,
                         const ACCLoopArguments &LoopArgs,
-                        const CodeGenLoopTy &CodeGenLoop,
+                        const ACCCodeGenLoopTy &CodeGenLoop,
                         const CodeGenOrderedTy &CodeGenOrdered);
   void EmitACCForOuterLoop(const OpenACCScheduleTy &ScheduleKind,
                            bool IsMonotonic, const ACCLoopDirective &S,
                            ACCPrivateScope &LoopScope, bool Ordered,
                            const ACCLoopArguments &LoopArgs,
-                           const CodeGenDispatchBoundsTy &CGDispatchBounds);
+                           const ACCCodeGenDispatchBoundsTy &CGDispatchBounds);
   void EmitACCDistributeOuterLoop(OpenACCDistScheduleClauseKind ScheduleKind,
                                   const ACCLoopDirective &S,
                                   ACCPrivateScope &LoopScope,
                                   const ACCLoopArguments &LoopArgs,
-                                  const CodeGenLoopTy &CodeGenLoopContent);
+                                  const ACCCodeGenLoopTy &CodeGenLoopContent);
   /// \brief Emit code for sections directive.
   void EmitSections(const ACCExecutableDirective &S);
- 
-// -- MYHEADER -- 
+
+// -- MYHEADER --
   /// struct with the values to be passed to the OpenMP loop-related functions
   struct OMPLoopArguments {
     /// loop lower bound
@@ -3770,22 +3789,22 @@ private:
   void EmitOMPOuterLoop(bool DynamicOrOrdered, bool IsMonotonic,
                         const OMPLoopDirective &S, OMPPrivateScope &LoopScope,
                         const OMPLoopArguments &LoopArgs,
-                        const CodeGenLoopTy &CodeGenLoop,
+                        const OMPCodeGenLoopTy &CodeGenLoop,
                         const CodeGenOrderedTy &CodeGenOrdered);
   void EmitOMPForOuterLoop(const OpenMPScheduleTy &ScheduleKind,
                            bool IsMonotonic, const OMPLoopDirective &S,
                            OMPPrivateScope &LoopScope, bool Ordered,
                            const OMPLoopArguments &LoopArgs,
-                           const CodeGenDispatchBoundsTy &CGDispatchBounds);
+                           const OMPCodeGenDispatchBoundsTy &CGDispatchBounds);
   void EmitOMPDistributeOuterLoop(OpenMPDistScheduleClauseKind ScheduleKind,
                                   const OMPLoopDirective &S,
                                   OMPPrivateScope &LoopScope,
                                   const OMPLoopArguments &LoopArgs,
-                                  const CodeGenLoopTy &CodeGenLoopContent);
+                                  const OMPCodeGenLoopTy &CodeGenLoopContent);
   /// \brief Emit code for sections directive.
   void EmitSections(const OMPExecutableDirective &S);
 
-// -- MYHEADER -- 
+// -- MYHEADER --
 public:
 
   //===--------------------------------------------------------------------===//

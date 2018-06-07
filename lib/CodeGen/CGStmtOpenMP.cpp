@@ -1748,7 +1748,7 @@ void CodeGenFunction::EmitOMPOuterLoop(
     bool DynamicOrOrdered, bool IsMonotonic, const OMPLoopDirective &S,
     CodeGenFunction::OMPPrivateScope &LoopScope,
     const CodeGenFunction::OMPLoopArguments &LoopArgs,
-    const CodeGenFunction::CodeGenLoopTy &CodeGenLoop,
+    const CodeGenFunction::OMPCodeGenLoopTy &CodeGenLoop,
     const CodeGenFunction::CodeGenOrderedTy &CodeGenOrdered) {
   auto &RT = CGM.getOpenMPRuntime();
 
@@ -1853,7 +1853,7 @@ void CodeGenFunction::EmitOMPForOuterLoop(
     const OpenMPScheduleTy &ScheduleKind, bool IsMonotonic,
     const OMPLoopDirective &S, OMPPrivateScope &LoopScope, bool Ordered,
     const OMPLoopArguments &LoopArgs,
-    const CodeGenDispatchBoundsTy &CGDispatchBounds) {
+    const OMPCodeGenDispatchBoundsTy &CGDispatchBounds) {
   auto &RT = CGM.getOpenMPRuntime();
 
   // Dynamic scheduling of the outer loop (dynamic, guided, auto, runtime).
@@ -1961,7 +1961,7 @@ static void emitEmptyOrdered(CodeGenFunction &, SourceLocation Loc,
 void CodeGenFunction::EmitOMPDistributeOuterLoop(
     OpenMPDistScheduleClauseKind ScheduleKind, const OMPLoopDirective &S,
     OMPPrivateScope &LoopScope, const OMPLoopArguments &LoopArgs,
-    const CodeGenLoopTy &CodeGenLoopContent) {
+    const OMPCodeGenLoopTy &CodeGenLoopContent) {
 
   auto &RT = CGM.getOpenMPRuntime();
 
@@ -2191,8 +2191,8 @@ namespace {
 
 bool CodeGenFunction::EmitOMPWorksharingLoop(
     const OMPLoopDirective &S, Expr *EUB,
-    const CodeGenLoopBoundsTy &CodeGenLoopBounds,
-    const CodeGenDispatchBoundsTy &CGDispatchBounds) {
+    const OMPCodeGenLoopBoundsTy &CodeGenLoopBounds,
+    const OMPCodeGenDispatchBoundsTy &CGDispatchBounds) {
   // Emit the loop iteration variable.
   auto IVExpr = cast<DeclRefExpr>(S.getIterationVariable());
   auto IVDecl = cast<VarDecl>(IVExpr->getDecl());
@@ -3207,7 +3207,7 @@ void CodeGenFunction::EmitOMPFlushDirective(const OMPFlushDirective &S) {
 }
 
 void CodeGenFunction::EmitOMPDistributeLoop(const OMPLoopDirective &S,
-                                            const CodeGenLoopTy &CodeGenLoop,
+                                            const OMPCodeGenLoopTy &CodeGenLoop,
                                             Expr *IncExpr) {
   // Emit the loop iteration variable.
   auto IVExpr = cast<DeclRefExpr>(S.getIterationVariable());

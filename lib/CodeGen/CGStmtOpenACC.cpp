@@ -1748,7 +1748,7 @@ void CodeGenFunction::EmitACCOuterLoop(
     bool DynamicOrOrdered, bool IsMonotonic, const ACCLoopDirective &S,
     CodeGenFunction::ACCPrivateScope &LoopScope,
     const CodeGenFunction::ACCLoopArguments &LoopArgs,
-    const CodeGenFunction::CodeGenLoopTy &CodeGenLoop,
+    const CodeGenFunction::ACCCodeGenLoopTy &CodeGenLoop,
     const CodeGenFunction::CodeGenOrderedTy &CodeGenOrdered) {
   auto &RT = CGM.getOpenACCRuntime();
 
@@ -1853,7 +1853,7 @@ void CodeGenFunction::EmitACCForOuterLoop(
     const OpenACCScheduleTy &ScheduleKind, bool IsMonotonic,
     const ACCLoopDirective &S, ACCPrivateScope &LoopScope, bool Ordered,
     const ACCLoopArguments &LoopArgs,
-    const CodeGenDispatchBoundsTy &CGDispatchBounds) {
+    const ACCCodeGenDispatchBoundsTy &CGDispatchBounds) {
   auto &RT = CGM.getOpenACCRuntime();
 
   // Dynamic scheduling of the outer loop (dynamic, guided, auto, runtime).
@@ -1961,7 +1961,7 @@ static void emitEmptyOrdered(CodeGenFunction &, SourceLocation Loc,
 void CodeGenFunction::EmitACCDistributeOuterLoop(
     OpenACCDistScheduleClauseKind ScheduleKind, const ACCLoopDirective &S,
     ACCPrivateScope &LoopScope, const ACCLoopArguments &LoopArgs,
-    const CodeGenLoopTy &CodeGenLoopContent) {
+    const ACCCodeGenLoopTy &CodeGenLoopContent) {
 
   auto &RT = CGM.getOpenACCRuntime();
 
@@ -2191,8 +2191,8 @@ namespace {
 
 bool CodeGenFunction::EmitACCWorksharingLoop(
     const ACCLoopDirective &S, Expr *EUB,
-    const CodeGenLoopBoundsTy &CodeGenLoopBounds,
-    const CodeGenDispatchBoundsTy &CGDispatchBounds) {
+    const ACCCodeGenLoopBoundsTy &CodeGenLoopBounds,
+    const ACCCodeGenDispatchBoundsTy &CGDispatchBounds) {
   // Emit the loop iteration variable.
   auto IVExpr = cast<DeclRefExpr>(S.getIterationVariable());
   auto IVDecl = cast<VarDecl>(IVExpr->getDecl());
@@ -2717,7 +2717,7 @@ void CodeGenFunction::EmitACCParallelSectionsDirective(
 
 void CodeGenFunction::EmitACCTaskBasedDirective(
     const ACCExecutableDirective &S, const OpenACCDirectiveKind CapturedRegion,
-    const RegionCodeGenTy &BodyGen, const TaskGenTy &TaskGen,
+    const RegionCodeGenTy &BodyGen, const ACCTaskGenTy &TaskGen,
     ACCTaskDataTy &Data) {
   // Emit outlined function for task construct.
   const CapturedStmt *CS = S.getCapturedStmt(CapturedRegion);
@@ -3207,7 +3207,7 @@ void CodeGenFunction::EmitACCFlushDirective(const ACCFlushDirective &S) {
 }
 
 void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopDirective &S,
-                                            const CodeGenLoopTy &CodeGenLoop,
+                                            const ACCCodeGenLoopTy &CodeGenLoop,
                                             Expr *IncExpr) {
   // Emit the loop iteration variable.
   auto IVExpr = cast<DeclRefExpr>(S.getIterationVariable());
