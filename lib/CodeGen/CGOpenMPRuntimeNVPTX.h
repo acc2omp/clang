@@ -89,7 +89,7 @@ private:
   void emitGenericKernel(const OMPExecutableDirective &D, StringRef ParentName,
                          llvm::Function *&OutlinedFn,
                          llvm::Constant *&OutlinedFnID, bool IsOffloadEntry,
-                         const RegionCodeGenTy &CodeGen);
+                         const OMPRegionCodeGenTy &CodeGen);
 
   /// \brief Emit outlined function specialized for the Single Program
   /// Multiple Data programming model for applicable target directives on the
@@ -105,7 +105,7 @@ private:
   void emitSpmdKernel(const OMPExecutableDirective &D, StringRef ParentName,
                       llvm::Function *&OutlinedFn,
                       llvm::Constant *&OutlinedFnID, bool IsOffloadEntry,
-                      const RegionCodeGenTy &CodeGen);
+                      const OMPRegionCodeGenTy &CodeGen);
 
   /// \brief Emit outlined function for 'target' directive on the NVPTX
   /// device.
@@ -121,7 +121,7 @@ private:
                                   llvm::Function *&OutlinedFn,
                                   llvm::Constant *&OutlinedFnID,
                                   bool IsOffloadEntry,
-                                  const RegionCodeGenTy &CodeGen) override;
+                                  const OMPRegionCodeGenTy &CodeGen) override;
 
   /// \brief Emits code for parallel or serial call of the \a OutlinedFn with
   /// variables captured in a record which address is stored in \a
@@ -200,7 +200,7 @@ public:
   emitParallelOutlinedFunction(const OMPExecutableDirective &D,
                                const VarDecl *ThreadIDVar,
                                OpenMPDirectiveKind InnermostKind,
-                               const RegionCodeGenTy &CodeGen) override;
+                               const OMPRegionCodeGenTy &CodeGen) override;
 
   /// \brief Emits inlined function for the specified OpenMP teams
   //  directive.
@@ -215,7 +215,7 @@ public:
   emitTeamsOutlinedFunction(const OMPExecutableDirective &D,
                             const VarDecl *ThreadIDVar,
                             OpenMPDirectiveKind InnermostKind,
-                            const RegionCodeGenTy &CodeGen) override;
+                            const OMPRegionCodeGenTy &CodeGen) override;
 
   /// \brief Emits code for teams call of the \a OutlinedFn with
   /// variables captured in a record which address is stored in \a

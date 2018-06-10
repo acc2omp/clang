@@ -74,7 +74,7 @@ enum OpenMPRTLFunctionNVPTX {
 };
 
 /// Pre(post)-action for different OpenMP constructs specialized for NVPTX.
-class NVPTXActionTy final : public PrePostActionTy {
+class NVPTXActionTy final : public OMPPrePostActionTy {
   llvm::Value *EnterCallee;
   ArrayRef<llvm::Value *> EnterArgs;
   llvm::Value *ExitCallee;
@@ -293,7 +293,7 @@ void CGOpenMPRuntimeNVPTX::emitGenericKernel(const OMPExecutableDirective &D,
                                              llvm::Function *&OutlinedFn,
                                              llvm::Constant *&OutlinedFnID,
                                              bool IsOffloadEntry,
-                                             const RegionCodeGenTy &CodeGen) {
+                                             const OMPRegionCodeGenTy &CodeGen) {
   ExecutionModeRAII ModeRAII(CurrentExecutionMode,
                              CGOpenMPRuntimeNVPTX::ExecutionMode::Generic);
   EntryFunctionState EST;
@@ -302,7 +302,7 @@ void CGOpenMPRuntimeNVPTX::emitGenericKernel(const OMPExecutableDirective &D,
   WrapperFunctionsMap.clear();
 
   // Emit target region as a standalone region.
-  class NVPTXPrePostActionTy : public PrePostActionTy {
+  class NVPTXPrePostActionTy : public OMPPrePostActionTy {
     CGOpenMPRuntimeNVPTX::EntryFunctionState &EST;
     CGOpenMPRuntimeNVPTX::WorkerFunctionState &WST;
 
@@ -393,13 +393,13 @@ void CGOpenMPRuntimeNVPTX::emitSpmdKernel(const OMPExecutableDirective &D,
                                           llvm::Function *&OutlinedFn,
                                           llvm::Constant *&OutlinedFnID,
                                           bool IsOffloadEntry,
-                                          const RegionCodeGenTy &CodeGen) {
+                                          const OMPRegionCodeGenTy &CodeGen) {
   ExecutionModeRAII ModeRAII(CurrentExecutionMode,
                              CGOpenMPRuntimeNVPTX::ExecutionMode::Spmd);
   EntryFunctionState EST;
 
   // Emit target region as a standalone region.
-  class NVPTXPrePostActionTy : public PrePostActionTy {
+  class NVPTXPrePostActionTy : public OMPPrePostActionTy {
     CGOpenMPRuntimeNVPTX &RT;
     CGOpenMPRuntimeNVPTX::EntryFunctionState &EST;
     const OMPExecutableDirective &D;
@@ -813,7 +813,7 @@ void CGOpenMPRuntimeNVPTX::createOffloadEntry(llvm::Constant *ID,
 void CGOpenMPRuntimeNVPTX::emitTargetOutlinedFunction(
     const OMPExecutableDirective &D, StringRef ParentName,
     llvm::Function *&OutlinedFn, llvm::Constant *&OutlinedFnID,
-    bool IsOffloadEntry, const RegionCodeGenTy &CodeGen) {
+    bool IsOffloadEntry, const OMPRegionCodeGenTy &CodeGen) {
   if (!IsOffloadEntry) // Nothing to do.
     return;
 
@@ -873,7 +873,7 @@ void CGOpenMPRuntimeNVPTX::emitNumTeamsClause(CodeGenFunction &CGF,
 
 llvm::Value *CGOpenMPRuntimeNVPTX::emitParallelOutlinedFunction(
     const OMPExecutableDirective &D, const VarDecl *ThreadIDVar,
-    OpenMPDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen) {
+    OpenMPDirectiveKind InnermostKind, const OMPRegionCodeGenTy &CodeGen) {
 
   auto *OutlinedFun = cast<llvm::Function>(
     CGOpenMPRuntime::emitParallelOutlinedFunction(
@@ -889,7 +889,7 @@ llvm::Value *CGOpenMPRuntimeNVPTX::emitParallelOutlinedFunction(
 
 llvm::Value *CGOpenMPRuntimeNVPTX::emitTeamsOutlinedFunction(
     const OMPExecutableDirective &D, const VarDecl *ThreadIDVar,
-    OpenMPDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen) {
+    OpenMPDirectiveKind InnermostKind, const OMPRegionCodeGenTy &CodeGen) {
 
   llvm::Value *OutlinedFunVal = CGOpenMPRuntime::emitTeamsOutlinedFunction(
       D, ThreadIDVar, InnermostKind, CodeGen);
@@ -943,7 +943,7 @@ void CGOpenMPRuntimeNVPTX::emitGenericParallelCall(
   Fn->setLinkage(llvm::GlobalValue::InternalLinkage);
 
   auto &&L0ParallelGen = [this, WFn, &CapturedVars](CodeGenFunction &CGF,
-                                                    PrePostActionTy &) {
+                                                    OMPPrePostActionTy &) {
     CGBuilderTy &Bld = CGF.Builder;
 
     llvm::Value *ID = Bld.CreateBitOrPointerCast(WFn, CGM.Int8PtrTy);
@@ -1009,9 +1009,9 @@ void CGOpenMPRuntimeNVPTX::emitGenericParallelCall(
   llvm::Value *Args[] = {RTLoc, ThreadID};
 
   auto &&SeqGen = [this, Fn, &CapturedVars, &Args, Loc](CodeGenFunction &CGF,
-                                                        PrePostActionTy &) {
+                                                        OMPPrePostActionTy &) {
     auto &&CodeGen = [this, Fn, &CapturedVars, Loc](CodeGenFunction &CGF,
-                                                    PrePostActionTy &Action) {
+                                                    OMPPrePostActionTy &Action) {
       Action.Enter(CGF);
 
       llvm::SmallVector<llvm::Value *, 16> OutlinedFnArgs;
@@ -1023,7 +1023,7 @@ void CGOpenMPRuntimeNVPTX::emitGenericParallelCall(
       emitOutlinedFunctionCall(CGF, Loc, Fn, OutlinedFnArgs);
     };
 
-    RegionCodeGenTy RCG(CodeGen);
+    OMPRegionCodeGenTy RCG(CodeGen);
     NVPTXActionTy Action(
         createNVPTXRuntimeFunction(OMPRTL_NVPTX__kmpc_serialized_parallel),
         Args,
@@ -1037,7 +1037,7 @@ void CGOpenMPRuntimeNVPTX::emitGenericParallelCall(
     emitOMPIfClause(CGF, IfCond, L0ParallelGen, SeqGen);
   else {
     CodeGenFunction::RunCleanupsScope Scope(CGF);
-    RegionCodeGenTy ThenRCG(L0ParallelGen);
+    OMPRegionCodeGenTy ThenRCG(L0ParallelGen);
     ThenRCG(CGF);
   }
 }
@@ -2304,7 +2304,7 @@ void CGOpenMPRuntimeNVPTX::emitReduction(
   // Add emission of __kmpc_end_reduce{_nowait}(<gtid>);
   llvm::Value *EndArgs[] = {ThreadId};
   auto &&CodeGen = [&Privates, &LHSExprs, &RHSExprs, &ReductionOps,
-                    this](CodeGenFunction &CGF, PrePostActionTy &Action) {
+                    this](CodeGenFunction &CGF, OMPPrePostActionTy &Action) {
     auto IPriv = Privates.begin();
     auto ILHS = LHSExprs.begin();
     auto IRHS = RHSExprs.begin();
@@ -2316,7 +2316,7 @@ void CGOpenMPRuntimeNVPTX::emitReduction(
       ++IRHS;
     }
   };
-  RegionCodeGenTy RCG(CodeGen);
+  OMPRegionCodeGenTy RCG(CodeGen);
   NVPTXActionTy Action(
       nullptr, llvm::None,
       createNVPTXRuntimeFunction(OMPRTL_NVPTX__kmpc_end_reduce_nowait),

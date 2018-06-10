@@ -52,13 +52,13 @@ public:
 
   CGOpenACCRegionInfo(const CapturedStmt &CS,
                      const CGOpenACCRegionKind RegionKind,
-                     const RegionCodeGenTy &CodeGen, OpenACCDirectiveKind Kind,
+                     const ACCRegionCodeGenTy &CodeGen, OpenACCDirectiveKind Kind,
                      bool HasCancel)
       : CGCapturedStmtInfo(CS, CR_OpenACC), RegionKind(RegionKind),
         CodeGen(CodeGen), Kind(Kind), HasCancel(HasCancel) {}
 
   CGOpenACCRegionInfo(const CGOpenACCRegionKind RegionKind,
-                     const RegionCodeGenTy &CodeGen, OpenACCDirectiveKind Kind,
+                     const ACCRegionCodeGenTy &CodeGen, OpenACCDirectiveKind Kind,
                      bool HasCancel)
       : CGCapturedStmtInfo(CR_OpenACC), RegionKind(RegionKind), CodeGen(CodeGen),
         Kind(Kind), HasCancel(HasCancel) {}
@@ -90,7 +90,7 @@ public:
 
 protected:
   CGOpenACCRegionKind RegionKind;
-  RegionCodeGenTy CodeGen;
+  ACCRegionCodeGenTy CodeGen;
   OpenACCDirectiveKind Kind;
   bool HasCancel;
 };
@@ -99,7 +99,7 @@ protected:
 class CGOpenACCOutlinedRegionInfo final : public CGOpenACCRegionInfo {
 public:
   CGOpenACCOutlinedRegionInfo(const CapturedStmt &CS, const VarDecl *ThreadIDVar,
-                             const RegionCodeGenTy &CodeGen,
+                             const ACCRegionCodeGenTy &CodeGen,
                              OpenACCDirectiveKind Kind, bool HasCancel,
                              StringRef HelperName)
       : CGOpenACCRegionInfo(CS, ParallelOutlinedRegion, CodeGen, Kind,
@@ -131,15 +131,15 @@ private:
 /// \brief API for captured statement code generation in OpenACC constructs.
 class CGOpenACCTaskOutlinedRegionInfo final : public CGOpenACCRegionInfo {
 public:
-  class UntiedTaskActionTy final : public PrePostActionTy {
+  class UntiedTaskActionTy final : public ACCPrePostActionTy {
     bool Untied;
     const VarDecl *PartIDVar;
-    const RegionCodeGenTy UntiedCodeGen;
+    const ACCRegionCodeGenTy UntiedCodeGen;
     llvm::SwitchInst *UntiedSwitch = nullptr;
 
   public:
     UntiedTaskActionTy(bool Tied, const VarDecl *PartIDVar,
-                       const RegionCodeGenTy &UntiedCodeGen)
+                       const ACCRegionCodeGenTy &UntiedCodeGen)
         : Untied(!Tied), PartIDVar(PartIDVar), UntiedCodeGen(UntiedCodeGen) {}
     void Enter(CodeGenFunction &CGF) override {
       if (Untied) {
@@ -180,7 +180,7 @@ public:
   };
   CGOpenACCTaskOutlinedRegionInfo(const CapturedStmt &CS,
                                  const VarDecl *ThreadIDVar,
-                                 const RegionCodeGenTy &CodeGen,
+                                 const ACCRegionCodeGenTy &CodeGen,
                                  OpenACCDirectiveKind Kind, bool HasCancel,
                                  const UntiedTaskActionTy &Action)
       : CGOpenACCRegionInfo(CS, TaskOutlinedRegion, CodeGen, Kind, HasCancel),
@@ -221,7 +221,7 @@ private:
 class CGOpenACCInlinedRegionInfo : public CGOpenACCRegionInfo {
 public:
   CGOpenACCInlinedRegionInfo(CodeGenFunction::CGCapturedStmtInfo *OldCSI,
-                            const RegionCodeGenTy &CodeGen,
+                            const ACCRegionCodeGenTy &CodeGen,
                             OpenACCDirectiveKind Kind, bool HasCancel)
       : CGOpenACCRegionInfo(InlinedRegion, CodeGen, Kind, HasCancel),
         OldCSI(OldCSI),
@@ -307,7 +307,7 @@ private:
 class CGOpenACCTargetRegionInfo final : public CGOpenACCRegionInfo {
 public:
   CGOpenACCTargetRegionInfo(const CapturedStmt &CS,
-                           const RegionCodeGenTy &CodeGen, StringRef HelperName)
+                           const ACCRegionCodeGenTy &CodeGen, StringRef HelperName)
       : CGOpenACCRegionInfo(CS, TargetRegion, CodeGen, ACCD_target,
                            /*HasCancel=*/false),
         HelperName(HelperName) {}
@@ -328,7 +328,7 @@ private:
   StringRef HelperName;
 };
 
-static void EmptyCodeGen(CodeGenFunction &, PrePostActionTy &) {
+static void EmptyCodeGen(CodeGenFunction &, ACCPrePostActionTy &) {
   llvm_unreachable("No codegen for expressions");
 }
 /// \brief API for generation of expressions captured in a innermost OpenACC
@@ -404,7 +404,7 @@ public:
   /// \param CodeGen Code generation sequence for combined directives. Includes
   /// a list of functions used for code generation of implicitly inlined
   /// regions.
-  InlinedOpenACCRegionRAII(CodeGenFunction &CGF, const RegionCodeGenTy &CodeGen,
+  InlinedOpenACCRegionRAII(CodeGenFunction &CGF, const ACCRegionCodeGenTy &CodeGen,
                           OpenACCDirectiveKind Kind, bool HasCancel)
       : CGF(CGF) {
     // Start emission for the construct.
@@ -718,10 +718,10 @@ enum OpenACCRTLFunction {
 /// A basic class for pre|post-action for advanced codegen sequence for OpenACC
 /// region.
 class CleanupTy final : public EHScopeStack::Cleanup {
-  PrePostActionTy *Action;
+  ACCPrePostActionTy *Action;
 
 public:
-  explicit CleanupTy(PrePostActionTy *Action) : Action(Action) {}
+  explicit CleanupTy(ACCPrePostActionTy *Action) : Action(Action) {}
   void Emit(CodeGenFunction &CGF, Flags /*flags*/) override {
     if (!CGF.HaveInsertPoint())
       return;
@@ -731,13 +731,13 @@ public:
 
 } // anonymous namespace
 
-void RegionCodeGenTy::operator()(CodeGenFunction &CGF) const {
+void ACCRegionCodeGenTy::operator()(CodeGenFunction &CGF) const {
   CodeGenFunction::RunCleanupsScope Scope(CGF);
   if (PrePostAction) {
     CGF.EHStack.pushCleanup<CleanupTy>(NormalAndEHCleanup, PrePostAction);
     Callback(CodeGen, CGF, *PrePostAction);
   } else {
-    PrePostActionTy Action;
+    ACCPrePostActionTy Action;
     Callback(CodeGen, CGF, Action);
   }
 }
@@ -893,18 +893,18 @@ static void EmitACCAggregateInit(CodeGenFunction &CGF, Address DestAddr,
   CGF.EmitBlock(DoneBB, /*IsFinished=*/true);
 }
 
-LValue ReductionCodeGen::emitSharedLValue(CodeGenFunction &CGF, const Expr *E) {
+LValue ACCReductionCodeGen::emitSharedLValue(CodeGenFunction &CGF, const Expr *E) {
   return CGF.EmitACCSharedLValue(E);
 }
 
-LValue ReductionCodeGen::emitSharedLValueUB(CodeGenFunction &CGF,
+LValue ACCReductionCodeGen::emitSharedLValueUB(CodeGenFunction &CGF,
                                             const Expr *E) {
   if (const auto *OASE = dyn_cast<ACCArraySectionExpr>(E))
     return CGF.EmitACCArraySectionExpr(OASE, /*IsLowerBound=*/false);
   return LValue();
 }
 
-void ReductionCodeGen::emitAggregateInitialization(
+void ACCReductionCodeGen::emitAggregateInitialization(
     CodeGenFunction &CGF, unsigned N, Address PrivateAddr, LValue SharedLVal,
     const ACCDeclareReductionDecl *DRD) {
   // Emit VarDecl with copy init for arrays.
@@ -921,7 +921,7 @@ void ReductionCodeGen::emitAggregateInitialization(
                        DRD, SharedLVal.getAddress());
 }
 
-ReductionCodeGen::ReductionCodeGen(ArrayRef<const Expr *> Shareds,
+ACCReductionCodeGen::ACCReductionCodeGen(ArrayRef<const Expr *> Shareds,
                                    ArrayRef<const Expr *> Privates,
                                    ArrayRef<const Expr *> ReductionOps) {
   ClausesData.reserve(Shareds.size());
@@ -937,7 +937,7 @@ ReductionCodeGen::ReductionCodeGen(ArrayRef<const Expr *> Shareds,
   }
 }
 
-void ReductionCodeGen::emitSharedLValue(CodeGenFunction &CGF, unsigned N) {
+void ACCReductionCodeGen::emitSharedLValue(CodeGenFunction &CGF, unsigned N) {
   assert(SharedAddresses.size() == N &&
          "Number of generated lvalues must be exactly N.");
   LValue First = emitSharedLValue(CGF, ClausesData[N].Ref);
@@ -945,7 +945,7 @@ void ReductionCodeGen::emitSharedLValue(CodeGenFunction &CGF, unsigned N) {
   SharedAddresses.emplace_back(First, Second);
 }
 
-void ReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N) {
+void ACCReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N) {
   auto *PrivateVD =
       cast<VarDecl>(cast<DeclRefExpr>(ClausesData[N].Private)->getDecl());
   QualType PrivateType = PrivateVD->getType();
@@ -983,7 +983,7 @@ void ReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N) {
   CGF.EmitVariablyModifiedType(PrivateType);
 }
 
-void ReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N,
+void ACCReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N,
                                          llvm::Value *Size) {
   auto *PrivateVD =
       cast<VarDecl>(cast<DeclRefExpr>(ClausesData[N].Private)->getDecl());
@@ -1002,7 +1002,7 @@ void ReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N,
   CGF.EmitVariablyModifiedType(PrivateType);
 }
 
-void ReductionCodeGen::emitInitialization(
+void ACCReductionCodeGen::emitInitialization(
     CodeGenFunction &CGF, unsigned N, Address PrivateAddr, LValue SharedLVal,
     llvm::function_ref<bool(CodeGenFunction &)> DefaultInit) {
   assert(SharedAddresses.size() > N && "No variable was generated");
@@ -1032,7 +1032,7 @@ void ReductionCodeGen::emitInitialization(
   }
 }
 
-bool ReductionCodeGen::needCleanups(unsigned N) {
+bool ACCReductionCodeGen::needCleanups(unsigned N) {
   auto *PrivateVD =
       cast<VarDecl>(cast<DeclRefExpr>(ClausesData[N].Private)->getDecl());
   QualType PrivateType = PrivateVD->getType();
@@ -1040,7 +1040,7 @@ bool ReductionCodeGen::needCleanups(unsigned N) {
   return DTorKind != QualType::DK_none;
 }
 
-void ReductionCodeGen::emitCleanups(CodeGenFunction &CGF, unsigned N,
+void ACCReductionCodeGen::emitCleanups(CodeGenFunction &CGF, unsigned N,
                                     Address PrivateAddr) {
   auto *PrivateVD =
       cast<VarDecl>(cast<DeclRefExpr>(ClausesData[N].Private)->getDecl());
@@ -1101,7 +1101,7 @@ static Address castToBase(CodeGenFunction &CGF, QualType BaseTy, QualType ElTy,
   return Address(Addr, BaseLVAlignment);
 }
 
-Address ReductionCodeGen::adjustPrivateAddress(CodeGenFunction &CGF, unsigned N,
+Address ACCReductionCodeGen::adjustPrivateAddress(CodeGenFunction &CGF, unsigned N,
                                                Address PrivateAddr) {
   const DeclRefExpr *DE;
   const VarDecl *OrigVD = nullptr;
@@ -1143,7 +1143,7 @@ Address ReductionCodeGen::adjustPrivateAddress(CodeGenFunction &CGF, unsigned N,
   return PrivateAddr;
 }
 
-bool ReductionCodeGen::usesReductionInitializer(unsigned N) const {
+bool ACCReductionCodeGen::usesReductionInitializer(unsigned N) const {
   auto *DRD = getReductionInit(ClausesData[N].ReductionOp);
   return DRD && DRD->getInitializer();
 }
@@ -1308,7 +1308,7 @@ static Address createIdentFieldGEP(CodeGenFunction &CGF, Address Addr,
 static llvm::Value *emitParallelOrTeamsOutlinedFunction(
     CodeGenModule &CGM, const ACCExecutableDirective &D, const CapturedStmt *CS,
     const VarDecl *ThreadIDVar, OpenACCDirectiveKind InnermostKind,
-    const StringRef OutlinedHelperName, const RegionCodeGenTy &CodeGen) {
+    const StringRef OutlinedHelperName, const ACCRegionCodeGenTy &CodeGen) {
   assert(ThreadIDVar->getType()->isPointerType() &&
          "thread id variable must be of type kmp_int32 *");
   CodeGenFunction CGF(CGM, true);
@@ -1336,7 +1336,7 @@ static llvm::Value *emitParallelOrTeamsOutlinedFunction(
 
 llvm::Value *CGOpenACCRuntime::emitParallelOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
-    OpenACCDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen) {
+    OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen) {
   const CapturedStmt *CS = D.getCapturedStmt(ACCD_parallel);
   return emitParallelOrTeamsOutlinedFunction(
       CGM, D, CS, ThreadIDVar, InnermostKind, getOutlinedHelperName(), CodeGen);
@@ -1344,7 +1344,7 @@ llvm::Value *CGOpenACCRuntime::emitParallelOutlinedFunction(
 
 llvm::Value *CGOpenACCRuntime::emitTeamsOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
-    OpenACCDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen) {
+    OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen) {
   const CapturedStmt *CS = D.getCapturedStmt(ACCD_teams);
   return emitParallelOrTeamsOutlinedFunction(
       CGM, D, CS, ThreadIDVar, InnermostKind, getOutlinedHelperName(), CodeGen);
@@ -1353,10 +1353,10 @@ llvm::Value *CGOpenACCRuntime::emitTeamsOutlinedFunction(
 llvm::Value *CGOpenACCRuntime::emitTaskOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
     const VarDecl *PartIDVar, const VarDecl *TaskTVar,
-    OpenACCDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen,
+    OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen,
     bool Tied, unsigned &NumberOfParts) {
   auto &&UntiedCodeGen = [this, &D, TaskTVar](CodeGenFunction &CGF,
-                                              PrePostActionTy &) {
+                                              ACCPrePostActionTy &) {
     auto *ThreadID = getThreadID(CGF, D.getLocStart());
     auto *UpLoc = emitUpdateLocation(CGF, D.getLocStart());
     llvm::Value *TaskArgs[] = {
@@ -2514,8 +2514,8 @@ Address CGOpenACCRuntime::getAddrOfArtificialThreadPrivate(CodeGenFunction &CGF,
 ///   ElseGen();
 /// }
 void CGOpenACCRuntime::emitACCIfClause(CodeGenFunction &CGF, const Expr *Cond,
-                                      const RegionCodeGenTy &ThenGen,
-                                      const RegionCodeGenTy &ElseGen) {
+                                      const ACCRegionCodeGenTy &ThenGen,
+                                      const ACCRegionCodeGenTy &ElseGen) {
   CodeGenFunction::LexicalScope ConditionScope(CGF, Cond->getSourceRange());
 
   // If the condition constant folds and can be elided, try to avoid emitting
@@ -2560,7 +2560,7 @@ void CGOpenACCRuntime::emitParallelCall(CodeGenFunction &CGF, SourceLocation Loc
     return;
   auto *RTLoc = emitUpdateLocation(CGF, Loc);
   auto &&ThenGen = [OutlinedFn, CapturedVars, RTLoc](CodeGenFunction &CGF,
-                                                     PrePostActionTy &) {
+                                                     ACCPrePostActionTy &) {
     // Build call __kmpc_fork_call(loc, n, microtask, var1, .., varn);
     auto &RT = CGF.CGM.getOpenACCRuntime();
     llvm::Value *Args[] = {
@@ -2575,7 +2575,7 @@ void CGOpenACCRuntime::emitParallelCall(CodeGenFunction &CGF, SourceLocation Loc
     CGF.EmitRuntimeCall(RTLFn, RealArgs);
   };
   auto &&ElseGen = [OutlinedFn, CapturedVars, RTLoc, Loc](CodeGenFunction &CGF,
-                                                          PrePostActionTy &) {
+                                                          ACCPrePostActionTy &) {
     auto &RT = CGF.CGM.getOpenACCRuntime();
     auto ThreadID = RT.getThreadID(CGF, Loc);
     // Build calls:
@@ -2605,7 +2605,7 @@ void CGOpenACCRuntime::emitParallelCall(CodeGenFunction &CGF, SourceLocation Loc
   if (IfCond)
     emitACCIfClause(CGF, IfCond, ThenGen, ElseGen);
   else {
-    RegionCodeGenTy ThenRCG(ThenGen);
+    ACCRegionCodeGenTy ThenRCG(ThenGen);
     ThenRCG(CGF);
   }
 }
@@ -2660,7 +2660,7 @@ llvm::Value *CGOpenACCRuntime::getCriticalRegionLock(StringRef CriticalName) {
 
 namespace {
 /// Common pre(post)-action for different OpenACC constructs.
-class CommonActionTy final : public PrePostActionTy {
+class CommonActionTy final : public ACCPrePostActionTy {
   llvm::Value *EnterCallee;
   ArrayRef<llvm::Value *> EnterArgs;
   llvm::Value *ExitCallee;
@@ -2698,7 +2698,7 @@ public:
 
 void CGOpenACCRuntime::emitCriticalRegion(CodeGenFunction &CGF,
                                          StringRef CriticalName,
-                                         const RegionCodeGenTy &CriticalOpGen,
+                                         const ACCRegionCodeGenTy &CriticalOpGen,
                                          SourceLocation Loc, const Expr *Hint) {
   // __kmpc_critical[_with_hint](ident_t *, gtid, Lock[, hint]);
   // CriticalOpGen();
@@ -2723,7 +2723,7 @@ void CGOpenACCRuntime::emitCriticalRegion(CodeGenFunction &CGF,
 }
 
 void CGOpenACCRuntime::emitMasterRegion(CodeGenFunction &CGF,
-                                       const RegionCodeGenTy &MasterOpGen,
+                                       const ACCRegionCodeGenTy &MasterOpGen,
                                        SourceLocation Loc) {
   if (!CGF.HaveInsertPoint())
     return;
@@ -2755,7 +2755,7 @@ void CGOpenACCRuntime::emitTaskyieldCall(CodeGenFunction &CGF,
 }
 
 void CGOpenACCRuntime::emitTaskgroupRegion(CodeGenFunction &CGF,
-                                          const RegionCodeGenTy &TaskgroupOpGen,
+                                          const ACCRegionCodeGenTy &TaskgroupOpGen,
                                           SourceLocation Loc) {
   if (!CGF.HaveInsertPoint())
     return;
@@ -2835,7 +2835,7 @@ static llvm::Value *emitCopyprivateCopyFunction(
 }
 
 void CGOpenACCRuntime::emitSingleRegion(CodeGenFunction &CGF,
-                                       const RegionCodeGenTy &SingleOpGen,
+                                       const ACCRegionCodeGenTy &SingleOpGen,
                                        SourceLocation Loc,
                                        ArrayRef<const Expr *> CopyprivateVars,
                                        ArrayRef<const Expr *> SrcExprs,
@@ -2916,7 +2916,7 @@ void CGOpenACCRuntime::emitSingleRegion(CodeGenFunction &CGF,
 }
 
 void CGOpenACCRuntime::emitOrderedRegion(CodeGenFunction &CGF,
-                                        const RegionCodeGenTy &OrderedOpGen,
+                                        const ACCRegionCodeGenTy &OrderedOpGen,
                                         SourceLocation Loc, bool IsThreads) {
   if (!CGF.HaveInsertPoint())
     return;
@@ -3401,7 +3401,7 @@ void CGOpenACCRuntime::OffloadEntriesInfoManagerTy::actOnTargetRegionEntriesInfo
 /// unregister the descriptor of the current compilation unit.
 static llvm::Function *
 createOffloadingBinaryDescriptorFunction(CodeGenModule &CGM, StringRef Name,
-                                         const RegionCodeGenTy &Codegen) {
+                                         const ACCRegionCodeGenTy &Codegen) {
   auto &C = CGM.getContext();
   FunctionArgList Args;
   ImplicitParamDecl DummyPtr(C, C.VoidPtrTy, ImplicitParamDecl::Other);
@@ -3512,13 +3512,13 @@ CGOpenACCRuntime::createOffloadingBinaryDescriptorRegistration() {
 
   auto *UnRegFn = createOffloadingBinaryDescriptorFunction(
       CGM, ".omp_offloading.descriptor_unreg",
-      [&](CodeGenFunction &CGF, PrePostActionTy &) {
+      [&](CodeGenFunction &CGF, ACCPrePostActionTy &) {
         CGF.EmitRuntimeCall(createRuntimeFunction(ACCRTL__tgt_unregister_lib),
                             Desc);
       });
   auto *RegFn = createOffloadingBinaryDescriptorFunction(
       CGM, ".omp_offloading.descriptor_reg",
-      [&](CodeGenFunction &CGF, PrePostActionTy &) {
+      [&](CodeGenFunction &CGF, ACCPrePostActionTy &) {
         CGF.EmitRuntimeCall(createRuntimeFunction(ACCRTL__tgt_register_lib),
                             Desc);
         CGM.getCXXABI().registerGlobalDtor(CGF, RegUnregVar, UnRegFn, Desc);
@@ -4705,7 +4705,7 @@ void CGOpenACCRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
   }
   auto &&ThenCodeGen = [this, &Data, TDBase, KmpTaskTQTyRD, NumDependencies,
                         &TaskArgs,
-                        &DepTaskArgs](CodeGenFunction &CGF, PrePostActionTy &) {
+                        &DepTaskArgs](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     if (!Data.Tied) {
       auto PartIdFI = std::next(KmpTaskTQTyRD->field_begin(), KmpTaskTPartId);
       auto PartIdLVal = CGF.EmitLValueForField(TDBase, *PartIdFI);
@@ -4735,7 +4735,7 @@ void CGOpenACCRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
   }
   auto &&ElseCodeGen = [&TaskArgs, ThreadID, NewTaskNewTaskTTy, TaskEntry,
                         NumDependencies, &DepWaitTaskArgs,
-                        Loc](CodeGenFunction &CGF, PrePostActionTy &) {
+                        Loc](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     auto &RT = CGF.CGM.getOpenACCRuntime();
     CodeGenFunction::RunCleanupsScope LocalScope(CGF);
     // Build void __kmpc_omp_wait_deps(ident_t *, kmp_int32 gtid,
@@ -4747,7 +4747,7 @@ void CGOpenACCRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
                           DepWaitTaskArgs);
     // Call proxy_task_entry(gtid, new_task);
     auto &&CodeGen = [TaskEntry, ThreadID, NewTaskNewTaskTTy,
-                      Loc](CodeGenFunction &CGF, PrePostActionTy &Action) {
+                      Loc](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
       Action.Enter(CGF);
       llvm::Value *OutlinedFnArgs[] = {ThreadID, NewTaskNewTaskTTy};
       CGF.CGM.getOpenACCRuntime().emitOutlinedFunctionCall(CGF, Loc, TaskEntry,
@@ -4758,7 +4758,7 @@ void CGOpenACCRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
     // kmp_task_t *new_task);
     // Build void __kmpc_omp_task_complete_if0(ident_t *, kmp_int32 gtid,
     // kmp_task_t *new_task);
-    RegionCodeGenTy RCG(CodeGen);
+    ACCRegionCodeGenTy RCG(CodeGen);
     CommonActionTy Action(
         RT.createRuntimeFunction(ACCRTL__kmpc_omp_task_begin_if0), TaskArgs,
         RT.createRuntimeFunction(ACCRTL__kmpc_omp_task_complete_if0), TaskArgs);
@@ -4769,7 +4769,7 @@ void CGOpenACCRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
   if (IfCond)
     emitACCIfClause(CGF, IfCond, ThenCodeGen, ElseCodeGen);
   else {
-    RegionCodeGenTy ThenRCG(ThenCodeGen);
+    ACCRegionCodeGenTy ThenRCG(ThenCodeGen);
     ThenRCG(CGF);
   }
 }
@@ -5211,7 +5211,7 @@ void CGOpenACCRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
       Lock       // kmp_critical_name *&<lock>
   };
   auto &&CodeGen = [&Privates, &LHSExprs, &RHSExprs, &ReductionOps](
-      CodeGenFunction &CGF, PrePostActionTy &Action) {
+      CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     auto &RT = CGF.CGM.getOpenACCRuntime();
     auto IPriv = Privates.begin();
     auto ILHS = LHSExprs.begin();
@@ -5224,7 +5224,7 @@ void CGOpenACCRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
       ++IRHS;
     }
   };
-  RegionCodeGenTy RCG(CodeGen);
+  ACCRegionCodeGenTy RCG(CodeGen);
   CommonActionTy Action(
       nullptr, llvm::None,
       createRuntimeFunction(WithNowait ? ACCRTL__kmpc_end_reduce_nowait
@@ -5245,7 +5245,7 @@ void CGOpenACCRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
   CGF.EmitBlock(Case2BB);
 
   auto &&AtomicCodeGen = [Loc, &Privates, &LHSExprs, &RHSExprs, &ReductionOps](
-      CodeGenFunction &CGF, PrePostActionTy &Action) {
+      CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     auto ILHS = LHSExprs.begin();
     auto IRHS = RHSExprs.begin();
     auto IPriv = Privates.begin();
@@ -5317,7 +5317,7 @@ void CGOpenACCRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
           auto &RT = CGF.CGM.getOpenACCRuntime();
           RT.emitCriticalRegion(
               CGF, ".atomic_reduction",
-              [=](CodeGenFunction &CGF, PrePostActionTy &Action) {
+              [=](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
                 Action.Enter(CGF);
                 emitReductionCombiner(CGF, E);
               },
@@ -5336,7 +5336,7 @@ void CGOpenACCRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
       ++IPriv;
     }
   };
-  RegionCodeGenTy AtomicRCG(AtomicCodeGen);
+  ACCRegionCodeGenTy AtomicRCG(AtomicCodeGen);
   if (!WithNowait) {
     // Add emission of __kmpc_end_reduce(<loc>, <gtid>, &<lock>);
     llvm::Value *EndArgs[] = {
@@ -5376,7 +5376,7 @@ static std::string generateUniqueName(StringRef Prefix, SourceLocation Loc,
 /// \endcode
 static llvm::Value *emitReduceInitFunction(CodeGenModule &CGM,
                                            SourceLocation Loc,
-                                           ReductionCodeGen &RCG, unsigned N) {
+                                           ACCReductionCodeGen &RCG, unsigned N) {
   auto &C = CGM.getContext();
   FunctionArgList Args;
   ImplicitParamDecl Param(C, /*DC=*/nullptr, Loc, /*Id=*/nullptr, C.VoidPtrTy,
@@ -5440,7 +5440,7 @@ static llvm::Value *emitReduceInitFunction(CodeGenModule &CGM,
 /// \endcode
 static llvm::Value *emitReduceCombFunction(CodeGenModule &CGM,
                                            SourceLocation Loc,
-                                           ReductionCodeGen &RCG, unsigned N,
+                                           ACCReductionCodeGen &RCG, unsigned N,
                                            const Expr *ReductionOp,
                                            const Expr *LHS, const Expr *RHS,
                                            const Expr *PrivateRef) {
@@ -5514,7 +5514,7 @@ static llvm::Value *emitReduceCombFunction(CodeGenModule &CGM,
 /// \endcode
 static llvm::Value *emitReduceFiniFunction(CodeGenModule &CGM,
                                            SourceLocation Loc,
-                                           ReductionCodeGen &RCG, unsigned N) {
+                                           ACCReductionCodeGen &RCG, unsigned N) {
   if (!RCG.needCleanups(N))
     return nullptr;
   auto &C = CGM.getContext();
@@ -5584,7 +5584,7 @@ llvm::Value *CGOpenACCRuntime::emitTaskReductionInit(
       RDType, ArraySize, ArrayType::Normal, /*IndexTypeQuals=*/0);
   // kmp_task_red_input_t .rd_input.[Size];
   Address TaskRedInput = CGF.CreateMemTemp(ArrayRDType, ".rd_input.");
-  ReductionCodeGen RCG(Data.ReductionVars, Data.ReductionCopies,
+  ACCReductionCodeGen RCG(Data.ReductionVars, Data.ReductionCopies,
                        Data.ReductionOps);
   for (unsigned Cnt = 0; Cnt < Size; ++Cnt) {
     // kmp_task_red_input_t &ElemLVal = .rd_input.[Cnt];
@@ -5658,7 +5658,7 @@ llvm::Value *CGOpenACCRuntime::emitTaskReductionInit(
 
 void CGOpenACCRuntime::emitTaskReductionFixups(CodeGenFunction &CGF,
                                               SourceLocation Loc,
-                                              ReductionCodeGen &RCG,
+                                              ACCReductionCodeGen &RCG,
                                               unsigned N) {
   auto Sizes = RCG.getSizes(N);
   // Emit threadprivate global variable if the type is non-constant
@@ -5716,7 +5716,7 @@ void CGOpenACCRuntime::emitTaskwaitCall(CodeGenFunction &CGF,
 
 void CGOpenACCRuntime::emitInlinedDirective(CodeGenFunction &CGF,
                                            OpenACCDirectiveKind InnerKind,
-                                           const RegionCodeGenTy &CodeGen,
+                                           const ACCRegionCodeGenTy &CodeGen,
                                            bool HasCancel) {
   if (!CGF.HaveInsertPoint())
     return;
@@ -5794,7 +5794,7 @@ void CGOpenACCRuntime::emitCancelCall(CodeGenFunction &CGF, SourceLocation Loc,
   if (auto *ACCRegionInfo =
           dyn_cast_or_null<CGOpenACCRegionInfo>(CGF.CapturedStmtInfo)) {
     auto &&ThenGen = [Loc, CancelRegion, ACCRegionInfo](CodeGenFunction &CGF,
-                                                        PrePostActionTy &) {
+                                                        ACCPrePostActionTy &) {
       auto &RT = CGF.CGM.getOpenACCRuntime();
       llvm::Value *Args[] = {
           RT.emitUpdateLocation(CGF, Loc), RT.getThreadID(CGF, Loc),
@@ -5818,9 +5818,9 @@ void CGOpenACCRuntime::emitCancelCall(CodeGenFunction &CGF, SourceLocation Loc,
     };
     if (IfCond)
       emitACCIfClause(CGF, IfCond, ThenGen,
-                      [](CodeGenFunction &, PrePostActionTy &) {});
+                      [](CodeGenFunction &, ACCPrePostActionTy &) {});
     else {
-      RegionCodeGenTy ThenRCG(ThenGen);
+      ACCRegionCodeGenTy ThenRCG(ThenGen);
       ThenRCG(CGF);
     }
   }
@@ -5856,7 +5856,7 @@ static void getTargetEntryUniqueInfo(ASTContext &C, SourceLocation Loc,
 void CGOpenACCRuntime::emitTargetOutlinedFunction(
     const ACCExecutableDirective &D, StringRef ParentName,
     llvm::Function *&OutlinedFn, llvm::Constant *&OutlinedFnID,
-    bool IsOffloadEntry, const RegionCodeGenTy &CodeGen) {
+    bool IsOffloadEntry, const ACCRegionCodeGenTy &CodeGen) {
   assert(!ParentName.empty() && "Invalid target region parent name!");
 
   emitTargetOutlinedFunctionHelper(D, ParentName, OutlinedFn, OutlinedFnID,
@@ -5866,7 +5866,7 @@ void CGOpenACCRuntime::emitTargetOutlinedFunction(
 void CGOpenACCRuntime::emitTargetOutlinedFunctionHelper(
     const ACCExecutableDirective &D, StringRef ParentName,
     llvm::Function *&OutlinedFn, llvm::Constant *&OutlinedFnID,
-    bool IsOffloadEntry, const RegionCodeGenTy &CodeGen) {
+    bool IsOffloadEntry, const ACCRegionCodeGenTy &CodeGen) {
   // Create a unique name for the entry function using the source location
   // information of the current target region. The name will be something like:
   //
@@ -7048,7 +7048,7 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
   llvm::SmallVector<llvm::Value *, 16> CapturedVars;
   const CapturedStmt &CS = *D.getCapturedStmt(ACCD_target);
   auto &&ArgsCodegen = [&CS, &CapturedVars](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     CGF.GenerateOpenACCCapturedVars(CS, CapturedVars);
   };
   emitInlinedDirective(CGF, ACCD_unknown, ArgsCodegen);
@@ -7058,7 +7058,7 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
   // Fill up the pointer arrays and transfer execution to the device.
   auto &&ThenGen = [this, Device, OutlinedFn, OutlinedFnID, &D, &InputInfo,
                     &MapTypesArray, &CS, RequiresOuterTask,
-                    &CapturedVars](CodeGenFunction &CGF, PrePostActionTy &) {
+                    &CapturedVars](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     // On top of the arrays that were filled up, the target offloading call
     // takes as arguments the device id as well as the host pointer. The host
     // pointer is used by the runtime library to identify the current target
@@ -7175,7 +7175,7 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
   // Notify that the host version must be executed.
   auto &&ElseGen = [this, &D, OutlinedFn, &CS, &CapturedVars,
                     RequiresOuterTask](CodeGenFunction &CGF,
-                                       PrePostActionTy &) {
+                                       ACCPrePostActionTy &) {
     if (RequiresOuterTask) {
       CapturedVars.clear();
       CGF.GenerateOpenACCCapturedVars(CS, CapturedVars);
@@ -7185,7 +7185,7 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
 
   auto &&TargetThenGen = [this, &ThenGen, &D, &InputInfo, &MapTypesArray,
                           &CapturedVars, RequiresOuterTask,
-                          &CS](CodeGenFunction &CGF, PrePostActionTy &) {
+                          &CS](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     // Fill up the arrays with all the captured variables.
     MappableExprsHandler::MapBaseValuesArrayTy BasePointers;
     MappableExprsHandler::MapValuesArrayTy Pointers;
@@ -7263,7 +7263,7 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
   };
 
   auto &&TargetElseGen = [this, &ElseGen, &D, RequiresOuterTask](
-                             CodeGenFunction &CGF, PrePostActionTy &) {
+                             CodeGenFunction &CGF, ACCPrePostActionTy &) {
     if (RequiresOuterTask) {
       CodeGenFunction::ACCTargetDataInfo InputInfo;
       CGF.EmitACCTargetTaskBasedDirective(D, ElseGen, InputInfo);
@@ -7280,11 +7280,11 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
     if (IfCond) {
       emitACCIfClause(CGF, IfCond, TargetThenGen, TargetElseGen);
     } else {
-      RegionCodeGenTy ThenRCG(TargetThenGen);
+      ACCRegionCodeGenTy ThenRCG(TargetThenGen);
       ThenRCG(CGF);
     }
   } else {
-    RegionCodeGenTy ElseRCG(TargetElseGen);
+    ACCRegionCodeGenTy ElseRCG(TargetElseGen);
     ElseRCG(CGF);
   }
 }
@@ -7499,19 +7499,19 @@ void CGOpenACCRuntime::emitNumTeamsClause(CodeGenFunction &CGF,
 
 void CGOpenACCRuntime::emitTargetDataCalls(
     CodeGenFunction &CGF, const ACCExecutableDirective &D, const Expr *IfCond,
-    const Expr *Device, const RegionCodeGenTy &CodeGen, TargetDataInfo &Info) {
+    const Expr *Device, const ACCRegionCodeGenTy &CodeGen, TargetDataInfo &Info) {
   if (!CGF.HaveInsertPoint())
     return;
 
   // Action used to replace the default codegen action and turn privatization
   // off.
-  PrePostActionTy NoPrivAction;
+  ACCPrePostActionTy NoPrivAction;
 
   // Generate the code for the opening of the data environment. Capture all the
   // arguments of the runtime call by reference because they are used in the
   // closing of the region.
   auto &&BeginThenGen = [this, &D, Device, &Info,
-                         &CodeGen](CodeGenFunction &CGF, PrePostActionTy &) {
+                         &CodeGen](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     // Fill up the arrays with all the mapped variables.
     MappableExprsHandler::MapBaseValuesArrayTy BasePointers;
     MappableExprsHandler::MapValuesArrayTy Pointers;
@@ -7558,7 +7558,7 @@ void CGOpenACCRuntime::emitTargetDataCalls(
 
   // Generate code for the closing of the data region.
   auto &&EndThenGen = [this, Device, &Info](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     assert(Info.isValid() && "Invalid data environment closing arguments.");
 
     llvm::Value *BasePointersArrayArg = nullptr;
@@ -7591,7 +7591,7 @@ void CGOpenACCRuntime::emitTargetDataCalls(
   // region with no privatization in the 'else' branch of the conditional.
   // Otherwise, we don't have to do anything.
   auto &&BeginElseGen = [&Info, &CodeGen, &NoPrivAction](CodeGenFunction &CGF,
-                                                         PrePostActionTy &) {
+                                                         ACCPrePostActionTy &) {
     if (!Info.CaptureDeviceAddrMap.empty()) {
       CodeGen.setAction(NoPrivAction);
       CodeGen(CGF);
@@ -7600,12 +7600,12 @@ void CGOpenACCRuntime::emitTargetDataCalls(
 
   // We don't have to do anything to close the region if the if clause evaluates
   // to false.
-  auto &&EndElseGen = [](CodeGenFunction &CGF, PrePostActionTy &) {};
+  auto &&EndElseGen = [](CodeGenFunction &CGF, ACCPrePostActionTy &) {};
 
   if (IfCond) {
     emitACCIfClause(CGF, IfCond, BeginThenGen, BeginElseGen);
   } else {
-    RegionCodeGenTy RCG(BeginThenGen);
+    ACCRegionCodeGenTy RCG(BeginThenGen);
     RCG(CGF);
   }
 
@@ -7619,7 +7619,7 @@ void CGOpenACCRuntime::emitTargetDataCalls(
   if (IfCond) {
     emitACCIfClause(CGF, IfCond, EndThenGen, EndElseGen);
   } else {
-    RegionCodeGenTy RCG(EndThenGen);
+    ACCRegionCodeGenTy RCG(EndThenGen);
     RCG(CGF);
   }
 }
@@ -7639,7 +7639,7 @@ void CGOpenACCRuntime::emitTargetDataStandAloneCall(
   llvm::Value *MapTypesArray = nullptr;
   // Generate the code for the opening of the data environment.
   auto &&ThenGen = [this, &D, Device, &InputInfo,
-                    &MapTypesArray](CodeGenFunction &CGF, PrePostActionTy &) {
+                    &MapTypesArray](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     // Emit device ID if any.
     llvm::Value *DeviceID = nullptr;
     if (Device) {
@@ -7685,7 +7685,7 @@ void CGOpenACCRuntime::emitTargetDataStandAloneCall(
   };
 
   auto &&TargetThenGen = [this, &ThenGen, &D, &InputInfo, &MapTypesArray](
-                             CodeGenFunction &CGF, PrePostActionTy &) {
+                             CodeGenFunction &CGF, ACCPrePostActionTy &) {
     // Fill up the arrays with all the mapped variables.
     MappableExprsHandler::MapBaseValuesArrayTy BasePointers;
     MappableExprsHandler::MapValuesArrayTy Pointers;
@@ -7718,9 +7718,9 @@ void CGOpenACCRuntime::emitTargetDataStandAloneCall(
 
   if (IfCond)
     emitACCIfClause(CGF, IfCond, TargetThenGen,
-                    [](CodeGenFunction &CGF, PrePostActionTy &) {});
+                    [](CodeGenFunction &CGF, ACCPrePostActionTy &) {});
   else {
-    RegionCodeGenTy ThenRCG(TargetThenGen);
+    ACCRegionCodeGenTy ThenRCG(TargetThenGen);
     ThenRCG(CGF);
   }
 }
@@ -8086,20 +8086,20 @@ Address CGOpenACCRuntime::getParameterAddress(CodeGenFunction &CGF,
 
 llvm::Value *CGOpenACCSIMDRuntime::emitParallelOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
-    OpenACCDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen) {
+    OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 
 llvm::Value *CGOpenACCSIMDRuntime::emitTeamsOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
-    OpenACCDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen) {
+    OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 
 llvm::Value *CGOpenACCSIMDRuntime::emitTaskOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
     const VarDecl *PartIDVar, const VarDecl *TaskTVar,
-    OpenACCDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen,
+    OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen,
     bool Tied, unsigned &NumberOfParts) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
@@ -8114,13 +8114,13 @@ void CGOpenACCSIMDRuntime::emitParallelCall(CodeGenFunction &CGF,
 
 void CGOpenACCSIMDRuntime::emitCriticalRegion(
     CodeGenFunction &CGF, StringRef CriticalName,
-    const RegionCodeGenTy &CriticalOpGen, SourceLocation Loc,
+    const ACCRegionCodeGenTy &CriticalOpGen, SourceLocation Loc,
     const Expr *Hint) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 
 void CGOpenACCSIMDRuntime::emitMasterRegion(CodeGenFunction &CGF,
-                                           const RegionCodeGenTy &MasterOpGen,
+                                           const ACCRegionCodeGenTy &MasterOpGen,
                                            SourceLocation Loc) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
@@ -8131,13 +8131,13 @@ void CGOpenACCSIMDRuntime::emitTaskyieldCall(CodeGenFunction &CGF,
 }
 
 void CGOpenACCSIMDRuntime::emitTaskgroupRegion(
-    CodeGenFunction &CGF, const RegionCodeGenTy &TaskgroupOpGen,
+    CodeGenFunction &CGF, const ACCRegionCodeGenTy &TaskgroupOpGen,
     SourceLocation Loc) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 
 void CGOpenACCSIMDRuntime::emitSingleRegion(
-    CodeGenFunction &CGF, const RegionCodeGenTy &SingleOpGen,
+    CodeGenFunction &CGF, const ACCRegionCodeGenTy &SingleOpGen,
     SourceLocation Loc, ArrayRef<const Expr *> CopyprivateVars,
     ArrayRef<const Expr *> DestExprs, ArrayRef<const Expr *> SrcExprs,
     ArrayRef<const Expr *> AssignmentOps) {
@@ -8145,7 +8145,7 @@ void CGOpenACCSIMDRuntime::emitSingleRegion(
 }
 
 void CGOpenACCSIMDRuntime::emitOrderedRegion(CodeGenFunction &CGF,
-                                            const RegionCodeGenTy &OrderedOpGen,
+                                            const ACCRegionCodeGenTy &OrderedOpGen,
                                             SourceLocation Loc,
                                             bool IsThreads) {
   llvm_unreachable("Not supported in SIMD-only mode");
@@ -8268,7 +8268,7 @@ llvm::Value *CGOpenACCSIMDRuntime::emitTaskReductionInit(
 
 void CGOpenACCSIMDRuntime::emitTaskReductionFixups(CodeGenFunction &CGF,
                                                   SourceLocation Loc,
-                                                  ReductionCodeGen &RCG,
+                                                  ACCReductionCodeGen &RCG,
                                                   unsigned N) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
@@ -8300,7 +8300,7 @@ void CGOpenACCSIMDRuntime::emitCancelCall(CodeGenFunction &CGF,
 void CGOpenACCSIMDRuntime::emitTargetOutlinedFunction(
     const ACCExecutableDirective &D, StringRef ParentName,
     llvm::Function *&OutlinedFn, llvm::Constant *&OutlinedFnID,
-    bool IsOffloadEntry, const RegionCodeGenTy &CodeGen) {
+    bool IsOffloadEntry, const ACCRegionCodeGenTy &CodeGen) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 
@@ -8345,7 +8345,7 @@ void CGOpenACCSIMDRuntime::emitNumTeamsClause(CodeGenFunction &CGF,
 
 void CGOpenACCSIMDRuntime::emitTargetDataCalls(
     CodeGenFunction &CGF, const ACCExecutableDirective &D, const Expr *IfCond,
-    const Expr *Device, const RegionCodeGenTy &CodeGen, TargetDataInfo &Info) {
+    const Expr *Device, const ACCRegionCodeGenTy &CodeGen, TargetDataInfo &Info) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 

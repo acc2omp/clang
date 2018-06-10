@@ -15,7 +15,6 @@
 #define LLVM_CLANG_LIB_CODEGEN_CGOPENMPRUNTIME_H
 
 #include "CGValue.h"
-#include "GCOpenRuntime.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/OpenMPKinds.h"
 #include "clang/Basic/SourceLocation.h"
@@ -52,42 +51,42 @@ class CodeGenModule;
 
 /// A basic class for pre|post-action for advanced codegen sequence for OpenMP
 /// region.
-/* class PrePostActionTy { */
-/* public: */
-/*   explicit PrePostActionTy() {} */
-/*   virtual void Enter(CodeGenFunction &CGF) {} */
-/*   virtual void Exit(CodeGenFunction &CGF) {} */
-/*   virtual ~PrePostActionTy() {} */
-/* }; */
+class OMPPrePostActionTy {
+public:
+  explicit OMPPrePostActionTy() {}
+  virtual void Enter(CodeGenFunction &CGF) {}
+  virtual void Exit(CodeGenFunction &CGF) {}
+  virtual ~OMPPrePostActionTy() {}
+};
 
 /// Class provides a way to call simple version of codegen for OpenMP region, or
 /// an advanced with possible pre|post-actions in codegen.
-/* class RegionCodeGenTy final { */
-/*   intptr_t CodeGen; */
-/*   typedef void (*CodeGenTy)(intptr_t, CodeGenFunction &, PrePostActionTy &); */
-/*   CodeGenTy Callback; */
-/*   mutable PrePostActionTy *PrePostAction; */
-/*   RegionCodeGenTy() = delete; */
-/*   RegionCodeGenTy &operator=(const RegionCodeGenTy &) = delete; */
-/*   template <typename Callable> */
-/*   static void CallbackFn(intptr_t CodeGen, CodeGenFunction &CGF, */
-/*                          PrePostActionTy &Action) { */
-/*     return (*reinterpret_cast<Callable *>(CodeGen))(CGF, Action); */
-/*   } */
+class OMPRegionCodeGenTy final {
+  intptr_t CodeGen;
+  typedef void (*CodeGenTy)(intptr_t, CodeGenFunction &, OMPPrePostActionTy &);
+  CodeGenTy Callback;
+  mutable OMPPrePostActionTy *PrePostAction;
+  OMPRegionCodeGenTy() = delete;
+  OMPRegionCodeGenTy &operator=(const OMPRegionCodeGenTy &) = delete;
+  template <typename Callable>
+  static void CallbackFn(intptr_t CodeGen, CodeGenFunction &CGF,
+                         OMPPrePostActionTy &Action) {
+    return (*reinterpret_cast<Callable *>(CodeGen))(CGF, Action);
+  }
 
-/* public: */
-/*   template <typename Callable> */
-/*   RegionCodeGenTy( */
-/*       Callable &&CodeGen, */
-/*       typename std::enable_if< */
-/*           !std::is_same<typename std::remove_reference<Callable>::type, */
-/*                         RegionCodeGenTy>::value>::type * = nullptr) */
-/*       : CodeGen(reinterpret_cast<intptr_t>(&CodeGen)), */
-/*         Callback(CallbackFn<typename std::remove_reference<Callable>::type>), */
-/*         PrePostAction(nullptr) {} */
-/*   void setAction(PrePostActionTy &Action) const { PrePostAction = &Action; } */
-/*   void operator()(CodeGenFunction &CGF) const; */
-/* }; */
+public:
+  template <typename Callable>
+  OMPRegionCodeGenTy(
+      Callable &&CodeGen,
+      typename std::enable_if<
+          !std::is_same<typename std::remove_reference<Callable>::type,
+                        OMPRegionCodeGenTy>::value>::type * = nullptr)
+      : CodeGen(reinterpret_cast<intptr_t>(&CodeGen)),
+        Callback(CallbackFn<typename std::remove_reference<Callable>::type>),
+        PrePostAction(nullptr) {}
+  void setAction(OMPPrePostActionTy &Action) const { PrePostAction = &Action; }
+  void operator()(CodeGenFunction &CGF) const;
+};
 
 struct OMPTaskDataTy final {
   SmallVector<const Expr *, 4> PrivateVars;
@@ -111,91 +110,91 @@ struct OMPTaskDataTy final {
 };
 
 /// Class intended to support codegen of all kind of the reduction clauses.
-/* class ReductionCodeGen { */
-/* private: */
-/*   /// Data required for codegen of reduction clauses. */
-/*   struct ReductionData { */
-/*     /// Reference to the original shared item. */
-/*     const Expr *Ref = nullptr; */
-/*     /// Helper expression for generation of private copy. */
-/*     const Expr *Private = nullptr; */
-/*     /// Helper expression for generation reduction operation. */
-/*     const Expr *ReductionOp = nullptr; */
-/*     ReductionData(const Expr *Ref, const Expr *Private, const Expr *ReductionOp) */
-/*         : Ref(Ref), Private(Private), ReductionOp(ReductionOp) {} */
-/*   }; */
-/*   /// List of reduction-based clauses. */
-/*   SmallVector<ReductionData, 4> ClausesData; */
+class OMPReductionCodeGen {
+private:
+  /// Data required for codegen of reduction clauses.
+  struct ReductionData {
+    /// Reference to the original shared item.
+    const Expr *Ref = nullptr;
+    /// Helper expression for generation of private copy.
+    const Expr *Private = nullptr;
+    /// Helper expression for generation reduction operation.
+    const Expr *ReductionOp = nullptr;
+    ReductionData(const Expr *Ref, const Expr *Private, const Expr *ReductionOp)
+        : Ref(Ref), Private(Private), ReductionOp(ReductionOp) {}
+  };
+  /// List of reduction-based clauses.
+  SmallVector<ReductionData, 4> ClausesData;
 
-/*   /// List of addresses of original shared variables/expressions. */
-/*   SmallVector<std::pair<LValue, LValue>, 4> SharedAddresses; */
-/*   /// Sizes of the reduction items in chars. */
-/*   SmallVector<std::pair<llvm::Value *, llvm::Value *>, 4> Sizes; */
-/*   /// Base declarations for the reduction items. */
-/*   SmallVector<const VarDecl *, 4> BaseDecls; */
+  /// List of addresses of original shared variables/expressions.
+  SmallVector<std::pair<LValue, LValue>, 4> SharedAddresses;
+  /// Sizes of the reduction items in chars.
+  SmallVector<std::pair<llvm::Value *, llvm::Value *>, 4> Sizes;
+  /// Base declarations for the reduction items.
+  SmallVector<const VarDecl *, 4> BaseDecls;
 
-/*   /// Emits lvalue for shared expresion. */
-/*   LValue emitSharedLValue(CodeGenFunction &CGF, const Expr *E); */
-/*   /// Emits upper bound for shared expression (if array section). */
-/*   LValue emitSharedLValueUB(CodeGenFunction &CGF, const Expr *E); */
-/*   /// Performs aggregate initialization. */
-/*   /// \param N Number of reduction item in the common list. */
-/*   /// \param PrivateAddr Address of the corresponding private item. */
-/*   /// \param SharedLVal Address of the original shared variable. */
-/*   /// \param DRD Declare reduction construct used for reduction item. */
-/*   void emitAggregateInitialization(CodeGenFunction &CGF, unsigned N, */
-/*                                    Address PrivateAddr, LValue SharedLVal, */
-/*                                    const OMPDeclareReductionDecl *DRD); */
+  /// Emits lvalue for shared expresion.
+  LValue emitSharedLValue(CodeGenFunction &CGF, const Expr *E);
+  /// Emits upper bound for shared expression (if array section).
+  LValue emitSharedLValueUB(CodeGenFunction &CGF, const Expr *E);
+  /// Performs aggregate initialization.
+  /// \param N Number of reduction item in the common list.
+  /// \param PrivateAddr Address of the corresponding private item.
+  /// \param SharedLVal Address of the original shared variable.
+  /// \param DRD Declare reduction construct used for reduction item.
+  void emitAggregateInitialization(CodeGenFunction &CGF, unsigned N,
+                                   Address PrivateAddr, LValue SharedLVal,
+                                   const OMPDeclareReductionDecl *DRD);
 
-/* public: */
-/*   ReductionCodeGen(ArrayRef<const Expr *> Shareds, */
-/*                    ArrayRef<const Expr *> Privates, */
-/*                    ArrayRef<const Expr *> ReductionOps); */
-/*   /// Emits lvalue for a reduction item. */
-/*   /// \param N Number of the reduction item. */
-/*   void emitSharedLValue(CodeGenFunction &CGF, unsigned N); */
-/*   /// Emits the code for the variable-modified type, if required. */
-/*   /// \param N Number of the reduction item. */
-/*   void emitAggregateType(CodeGenFunction &CGF, unsigned N); */
-/*   /// Emits the code for the variable-modified type, if required. */
-/*   /// \param N Number of the reduction item. */
-/*   /// \param Size Size of the type in chars. */
-/*   void emitAggregateType(CodeGenFunction &CGF, unsigned N, llvm::Value *Size); */
-/*   /// Performs initialization of the private copy for the reduction item. */
-/*   /// \param N Number of the reduction item. */
-/*   /// \param PrivateAddr Address of the corresponding private item. */
-/*   /// \param DefaultInit Default initialization sequence that should be */
-/*   /// performed if no reduction specific initialization is found. */
-/*   /// \param SharedLVal Address of the original shared variable. */
-/*   void */
-/*   emitInitialization(CodeGenFunction &CGF, unsigned N, Address PrivateAddr, */
-/*                      LValue SharedLVal, */
-/*                      llvm::function_ref<bool(CodeGenFunction &)> DefaultInit); */
-/*   /// Returns true if the private copy requires cleanups. */
-/*   bool needCleanups(unsigned N); */
-/*   /// Emits cleanup code for the reduction item. */
-/*   /// \param N Number of the reduction item. */
-/*   /// \param PrivateAddr Address of the corresponding private item. */
-/*   void emitCleanups(CodeGenFunction &CGF, unsigned N, Address PrivateAddr); */
-/*   /// Adjusts \p PrivatedAddr for using instead of the original variable */
-/*   /// address in normal operations. */
-/*   /// \param N Number of the reduction item. */
-/*   /// \param PrivateAddr Address of the corresponding private item. */
-/*   Address adjustPrivateAddress(CodeGenFunction &CGF, unsigned N, */
-/*                                Address PrivateAddr); */
-/*   /// Returns LValue for the reduction item. */
-/*   LValue getSharedLValue(unsigned N) const { return SharedAddresses[N].first; } */
-/*   /// Returns the size of the reduction item (in chars and total number of */
-/*   /// elements in the item), or nullptr, if the size is a constant. */
-/*   std::pair<llvm::Value *, llvm::Value *> getSizes(unsigned N) const { */
-/*     return Sizes[N]; */
-/*   } */
-/*   /// Returns the base declaration of the reduction item. */
-/*   const VarDecl *getBaseDecl(unsigned N) const { return BaseDecls[N]; } */
-/*   /// Returns true if the initialization of the reduction item uses initializer */
-/*   /// from declare reduction construct. */
-/*   bool usesReductionInitializer(unsigned N) const; */
-/* }; */
+public:
+  OMPReductionCodeGen(ArrayRef<const Expr *> Shareds,
+                   ArrayRef<const Expr *> Privates,
+                   ArrayRef<const Expr *> ReductionOps);
+  /// Emits lvalue for a reduction item.
+  /// \param N Number of the reduction item.
+  void emitSharedLValue(CodeGenFunction &CGF, unsigned N);
+  /// Emits the code for the variable-modified type, if required.
+  /// \param N Number of the reduction item.
+  void emitAggregateType(CodeGenFunction &CGF, unsigned N);
+  /// Emits the code for the variable-modified type, if required.
+  /// \param N Number of the reduction item.
+  /// \param Size Size of the type in chars.
+  void emitAggregateType(CodeGenFunction &CGF, unsigned N, llvm::Value *Size);
+  /// Performs initialization of the private copy for the reduction item.
+  /// \param N Number of the reduction item.
+  /// \param PrivateAddr Address of the corresponding private item.
+  /// \param DefaultInit Default initialization sequence that should be
+  /// performed if no reduction specific initialization is found.
+  /// \param SharedLVal Address of the original shared variable.
+  void
+  emitInitialization(CodeGenFunction &CGF, unsigned N, Address PrivateAddr,
+                     LValue SharedLVal,
+                     llvm::function_ref<bool(CodeGenFunction &)> DefaultInit);
+  /// Returns true if the private copy requires cleanups.
+  bool needCleanups(unsigned N);
+  /// Emits cleanup code for the reduction item.
+  /// \param N Number of the reduction item.
+  /// \param PrivateAddr Address of the corresponding private item.
+  void emitCleanups(CodeGenFunction &CGF, unsigned N, Address PrivateAddr);
+  /// Adjusts \p PrivatedAddr for using instead of the original variable
+  /// address in normal operations.
+  /// \param N Number of the reduction item.
+  /// \param PrivateAddr Address of the corresponding private item.
+  Address adjustPrivateAddress(CodeGenFunction &CGF, unsigned N,
+                               Address PrivateAddr);
+  /// Returns LValue for the reduction item.
+  LValue getSharedLValue(unsigned N) const { return SharedAddresses[N].first; }
+  /// Returns the size of the reduction item (in chars and total number of
+  /// elements in the item), or nullptr, if the size is a constant.
+  std::pair<llvm::Value *, llvm::Value *> getSizes(unsigned N) const {
+    return Sizes[N];
+  }
+  /// Returns the base declaration of the reduction item.
+  const VarDecl *getBaseDecl(unsigned N) const { return BaseDecls[N]; }
+  /// Returns true if the initialization of the reduction item uses initializer
+  /// from declare reduction construct.
+  bool usesReductionInitializer(unsigned N) const;
+};
 
 class CGOpenMPRuntime {
 protected:
@@ -220,7 +219,7 @@ protected:
                                                 llvm::Function *&OutlinedFn,
                                                 llvm::Constant *&OutlinedFnID,
                                                 bool IsOffloadEntry,
-                                                const RegionCodeGenTy &CodeGen);
+                                                const OMPRegionCodeGenTy &CodeGen);
 
   /// \brief Emits code for OpenMP 'if' clause using specified \a CodeGen
   /// function. Here is the logic:
@@ -230,8 +229,8 @@ protected:
   ///   ElseGen();
   /// }
   void emitOMPIfClause(CodeGenFunction &CGF, const Expr *Cond,
-                       const RegionCodeGenTy &ThenGen,
-                       const RegionCodeGenTy &ElseGen);
+                       const OMPRegionCodeGenTy &ThenGen,
+                       const OMPRegionCodeGenTy &ElseGen);
 
   /// \brief Emits object of ident_t type with info for source location.
   /// \param Flags Flags for OpenMP location.
@@ -639,7 +638,7 @@ public:
   /// \param CodeGen Code generation sequence for the \a D directive.
   virtual llvm::Value *emitParallelOutlinedFunction(
       const OMPExecutableDirective &D, const VarDecl *ThreadIDVar,
-      OpenMPDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen);
+      OpenMPDirectiveKind InnermostKind, const OMPRegionCodeGenTy &CodeGen);
 
   /// \brief Emits outlined function for the specified OpenMP teams directive
   /// \a D. This outlined function has type void(*)(kmp_int32 *ThreadID,
@@ -651,7 +650,7 @@ public:
   /// \param CodeGen Code generation sequence for the \a D directive.
   virtual llvm::Value *emitTeamsOutlinedFunction(
       const OMPExecutableDirective &D, const VarDecl *ThreadIDVar,
-      OpenMPDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen);
+      OpenMPDirectiveKind InnermostKind, const OMPRegionCodeGenTy &CodeGen);
 
   /// \brief Emits outlined function for the OpenMP task directive \a D. This
   /// outlined function has type void(*)(kmp_int32 ThreadID, struct task_t*
@@ -671,7 +670,7 @@ public:
   virtual llvm::Value *emitTaskOutlinedFunction(
       const OMPExecutableDirective &D, const VarDecl *ThreadIDVar,
       const VarDecl *PartIDVar, const VarDecl *TaskTVar,
-      OpenMPDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen,
+      OpenMPDirectiveKind InnermostKind, const OMPRegionCodeGenTy &CodeGen,
       bool Tied, unsigned &NumberOfParts);
 
   /// \brief Cleans up references to the objects in finished function.
@@ -699,7 +698,7 @@ public:
   /// critical region.
   /// \param Hint Value of the 'hint' clause (optional).
   virtual void emitCriticalRegion(CodeGenFunction &CGF, StringRef CriticalName,
-                                  const RegionCodeGenTy &CriticalOpGen,
+                                  const OMPRegionCodeGenTy &CriticalOpGen,
                                   SourceLocation Loc,
                                   const Expr *Hint = nullptr);
 
@@ -707,7 +706,7 @@ public:
   /// \param MasterOpGen Generator for the statement associated with the given
   /// master region.
   virtual void emitMasterRegion(CodeGenFunction &CGF,
-                                const RegionCodeGenTy &MasterOpGen,
+                                const OMPRegionCodeGenTy &MasterOpGen,
                                 SourceLocation Loc);
 
   /// \brief Emits code for a taskyield directive.
@@ -717,14 +716,14 @@ public:
   /// \param TaskgroupOpGen Generator for the statement associated with the
   /// given taskgroup region.
   virtual void emitTaskgroupRegion(CodeGenFunction &CGF,
-                                   const RegionCodeGenTy &TaskgroupOpGen,
+                                   const OMPRegionCodeGenTy &TaskgroupOpGen,
                                    SourceLocation Loc);
 
   /// \brief Emits a single region.
   /// \param SingleOpGen Generator for the statement associated with the given
   /// single region.
   virtual void emitSingleRegion(CodeGenFunction &CGF,
-                                const RegionCodeGenTy &SingleOpGen,
+                                const OMPRegionCodeGenTy &SingleOpGen,
                                 SourceLocation Loc,
                                 ArrayRef<const Expr *> CopyprivateVars,
                                 ArrayRef<const Expr *> DestExprs,
@@ -735,7 +734,7 @@ public:
   /// \param OrderedOpGen Generator for the statement associated with the given
   /// ordered region.
   virtual void emitOrderedRegion(CodeGenFunction &CGF,
-                                 const RegionCodeGenTy &OrderedOpGen,
+                                 const OMPRegionCodeGenTy &OrderedOpGen,
                                  SourceLocation Loc, bool IsThreads);
 
   /// \brief Emit an implicit/explicit barrier for OpenMP threads.
@@ -1039,7 +1038,7 @@ public:
   /// otherwise.
   virtual void emitInlinedDirective(CodeGenFunction &CGF,
                                     OpenMPDirectiveKind InnermostKind,
-                                    const RegionCodeGenTy &CodeGen,
+                                    const OMPRegionCodeGenTy &CodeGen,
                                     bool HasCancel = false);
 
   /// Emits reduction function.
@@ -1151,7 +1150,7 @@ public:
   /// \param RCG Allows to reuse an existing data for the reductions.
   /// \param N Reduction item for which fixups must be emitted.
   virtual void emitTaskReductionFixups(CodeGenFunction &CGF, SourceLocation Loc,
-                                       ReductionCodeGen &RCG, unsigned N);
+                                       OMPReductionCodeGen &RCG, unsigned N);
 
   /// Get the address of `void *` type of the privatue copy of the reduction
   /// item specified by the \p SharedLVal.
@@ -1196,7 +1195,7 @@ public:
                                           llvm::Function *&OutlinedFn,
                                           llvm::Constant *&OutlinedFnID,
                                           bool IsOffloadEntry,
-                                          const RegionCodeGenTy &CodeGen);
+                                          const OMPRegionCodeGenTy &CodeGen);
 
   /// \brief Emit the target offloading code associated with \a D. The emitted
   /// code attempts offloading the execution to the device, an the event of
@@ -1307,7 +1306,7 @@ public:
   virtual void emitTargetDataCalls(CodeGenFunction &CGF,
                                    const OMPExecutableDirective &D,
                                    const Expr *IfCond, const Expr *Device,
-                                   const RegionCodeGenTy &CodeGen,
+                                   const OMPRegionCodeGenTy &CodeGen,
                                    TargetDataInfo &Info);
 
   /// \brief Emit the data mapping/movement code associated with the directive
@@ -1382,7 +1381,7 @@ public:
   emitParallelOutlinedFunction(const OMPExecutableDirective &D,
                                const VarDecl *ThreadIDVar,
                                OpenMPDirectiveKind InnermostKind,
-                               const RegionCodeGenTy &CodeGen) override;
+                               const OMPRegionCodeGenTy &CodeGen) override;
 
   /// \brief Emits outlined function for the specified OpenMP teams directive
   /// \a D. This outlined function has type void(*)(kmp_int32 *ThreadID,
@@ -1396,7 +1395,7 @@ public:
   emitTeamsOutlinedFunction(const OMPExecutableDirective &D,
                             const VarDecl *ThreadIDVar,
                             OpenMPDirectiveKind InnermostKind,
-                            const RegionCodeGenTy &CodeGen) override;
+                            const OMPRegionCodeGenTy &CodeGen) override;
 
   /// \brief Emits outlined function for the OpenMP task directive \a D. This
   /// outlined function has type void(*)(kmp_int32 ThreadID, struct task_t*
@@ -1416,7 +1415,7 @@ public:
   llvm::Value *emitTaskOutlinedFunction(
       const OMPExecutableDirective &D, const VarDecl *ThreadIDVar,
       const VarDecl *PartIDVar, const VarDecl *TaskTVar,
-      OpenMPDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen,
+      OpenMPDirectiveKind InnermostKind, const OMPRegionCodeGenTy &CodeGen,
       bool Tied, unsigned &NumberOfParts) override;
 
   /// \brief Emits code for parallel or serial call of the \a OutlinedFn with
@@ -1440,7 +1439,7 @@ public:
   /// critical region.
   /// \param Hint Value of the 'hint' clause (optional).
   void emitCriticalRegion(CodeGenFunction &CGF, StringRef CriticalName,
-                          const RegionCodeGenTy &CriticalOpGen,
+                          const OMPRegionCodeGenTy &CriticalOpGen,
                           SourceLocation Loc,
                           const Expr *Hint = nullptr) override;
 
@@ -1448,7 +1447,7 @@ public:
   /// \param MasterOpGen Generator for the statement associated with the given
   /// master region.
   void emitMasterRegion(CodeGenFunction &CGF,
-                        const RegionCodeGenTy &MasterOpGen,
+                        const OMPRegionCodeGenTy &MasterOpGen,
                         SourceLocation Loc) override;
 
   /// \brief Emits code for a taskyield directive.
@@ -1458,14 +1457,14 @@ public:
   /// \param TaskgroupOpGen Generator for the statement associated with the
   /// given taskgroup region.
   void emitTaskgroupRegion(CodeGenFunction &CGF,
-                           const RegionCodeGenTy &TaskgroupOpGen,
+                           const OMPRegionCodeGenTy &TaskgroupOpGen,
                            SourceLocation Loc) override;
 
   /// \brief Emits a single region.
   /// \param SingleOpGen Generator for the statement associated with the given
   /// single region.
   void emitSingleRegion(CodeGenFunction &CGF,
-                        const RegionCodeGenTy &SingleOpGen, SourceLocation Loc,
+                        const OMPRegionCodeGenTy &SingleOpGen, SourceLocation Loc,
                         ArrayRef<const Expr *> CopyprivateVars,
                         ArrayRef<const Expr *> DestExprs,
                         ArrayRef<const Expr *> SrcExprs,
@@ -1475,7 +1474,7 @@ public:
   /// \param OrderedOpGen Generator for the statement associated with the given
   /// ordered region.
   void emitOrderedRegion(CodeGenFunction &CGF,
-                         const RegionCodeGenTy &OrderedOpGen,
+                         const OMPRegionCodeGenTy &OrderedOpGen,
                          SourceLocation Loc, bool IsThreads) override;
 
   /// \brief Emit an implicit/explicit barrier for OpenMP threads.
@@ -1776,7 +1775,7 @@ public:
   /// \param RCG Allows to reuse an existing data for the reductions.
   /// \param N Reduction item for which fixups must be emitted.
   void emitTaskReductionFixups(CodeGenFunction &CGF, SourceLocation Loc,
-                               ReductionCodeGen &RCG, unsigned N) override;
+                               OMPReductionCodeGen &RCG, unsigned N) override;
 
   /// Get the address of `void *` type of the privatue copy of the reduction
   /// item specified by the \p SharedLVal.
@@ -1820,7 +1819,7 @@ public:
                                   llvm::Function *&OutlinedFn,
                                   llvm::Constant *&OutlinedFnID,
                                   bool IsOffloadEntry,
-                                  const RegionCodeGenTy &CodeGen) override;
+                                  const OMPRegionCodeGenTy &CodeGen) override;
 
   /// \brief Emit the target offloading code associated with \a D. The emitted
   /// code attempts offloading the execution to the device, an the event of
@@ -1887,7 +1886,7 @@ public:
   /// until the region is closed.
   void emitTargetDataCalls(CodeGenFunction &CGF,
                            const OMPExecutableDirective &D, const Expr *IfCond,
-                           const Expr *Device, const RegionCodeGenTy &CodeGen,
+                           const Expr *Device, const OMPRegionCodeGenTy &CodeGen,
                            TargetDataInfo &Info) override;
 
   /// \brief Emit the data mapping/movement code associated with the directive

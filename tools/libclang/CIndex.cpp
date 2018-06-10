@@ -2133,6 +2133,7 @@ private:
   void AddDecl(const Decl *D, bool isFirst = true);
   void AddTypeLoc(TypeSourceInfo *TI);
   void EnqueueChildren(const Stmt *S);
+  void EnqueueChildren(const ACCClause *S);
   void EnqueueChildren(const OMPClause *S);
 };
 } // end anonyous namespace
@@ -2143,7 +2144,7 @@ void EnqueueVisitor::AddDeclarationNameInfo(const Stmt *S) {
   WL.push_back(DeclarationNameInfoVisit(S, Parent));
 }
 
-void 
+void
 EnqueueVisitor::AddNestedNameSpecifierLoc(NestedNameSpecifierLoc Qualifier) {
   if (Qualifier)
     WL.push_back(NestedNameSpecifierLocVisit(Qualifier, Parent));
@@ -2765,9 +2766,18 @@ void OMPClauseEnqueue::VisitOMPIsDevicePtrClause(const OMPIsDevicePtrClause *C) 
 }
 
 // -- MYHEADER -- 
+void EnqueueVisitor::EnqueueChildren(const ACCClause *S) {
+  unsigned size = WL.size();
+  ACCClauseEnqueue Visitor(this);
+  Visitor.Visit(S);
+  if (size == WL.size())
+    return;
+  // Now reverse the entries we just added.  This will match the DFS
+  // ordering performed by the worklist.
+  VisitorWorkList::iterator I = WL.begin() + size, E = WL.end();
+  std::reverse(I, E);
+}
 
-//TODO acc2mp
-// Study if this needs to be replicated
 void EnqueueVisitor::EnqueueChildren(const OMPClause *S) {
   unsigned size = WL.size();
   OMPClauseEnqueue Visitor(this);

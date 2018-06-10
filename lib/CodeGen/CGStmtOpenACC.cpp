@@ -212,7 +212,7 @@ public:
 
 static void emitCommonACCTargetDirective(CodeGenFunction &CGF,
                                          const ACCExecutableDirective &S,
-                                         const RegionCodeGenTy &CodeGen);
+                                         const ACCRegionCodeGenTy &CodeGen);
 
 LValue CodeGenFunction::EmitACCSharedLValue(const Expr *E) {
   if (auto *OrigDRE = dyn_cast<DeclRefExpr>(E)) {
@@ -1074,7 +1074,7 @@ void CodeGenFunction::EmitACCReductionClauseInit(
       std::advance(IRHS, 1);
     }
   }
-  ReductionCodeGen RedCG(Shareds, Privates, ReductionOps);
+  ACCReductionCodeGen RedCG(Shareds, Privates, ReductionOps);
   unsigned Count = 0;
   auto ILHS = LHSs.begin();
   auto IRHS = RHSs.begin();
@@ -1219,7 +1219,7 @@ typedef llvm::function_ref<void(CodeGenFunction &,
 
 static void emitCommonACCParallelDirective(
     CodeGenFunction &CGF, const ACCExecutableDirective &S,
-    OpenACCDirectiveKind InnermostKind, const RegionCodeGenTy &CodeGen,
+    OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen,
     const CodeGenBoundParametersTy &CodeGenBoundParameters) {
   const CapturedStmt *CS = S.getCapturedStmt(ACCD_parallel);
   auto OutlinedFn = CGF.CGM.getOpenACCRuntime().emitParallelOutlinedFunction(
@@ -1263,7 +1263,7 @@ static void emitEmptyBoundParameters(CodeGenFunction &,
 
 void CodeGenFunction::EmitACCParallelDirective(const ACCParallelDirective &S) {
   // Emit parallel region as a standalone region.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
     bool Copyins = CGF.EmitACCCopyinClause(S);
     (void)CGF.EmitACCFirstprivateClause(S, PrivateScope);
@@ -1650,7 +1650,7 @@ static LValue EmitACCHelperVar(CodeGenFunction &CGF,
 }
 
 static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopDirective &S,
-                              PrePostActionTy &Action) {
+                              ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
   assert(isOpenACCSimdDirective(S.getDirectiveKind()) &&
          "Expected simd directive");
@@ -1737,7 +1737,7 @@ static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopDirective &S,
 }
 
 void CodeGenFunction::EmitACCSimdDirective(const ACCSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitACCSimdRegion(CGF, S, Action);
   };
   ACCLexicalScope Scope(*this, S, ACCD_unknown);
@@ -2101,7 +2101,7 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
                                  const ACCLoopDirective &S,
                                  CodeGenFunction::JumpDest LoopExit) {
   auto &&CGInlinedWorksharingLoop = [&S](CodeGenFunction &CGF,
-                                         PrePostActionTy &) {
+                                         ACCPrePostActionTy &) {
     bool HasCancel = false;
     if (!isOpenACCSimdDirective(S.getDirectiveKind())) {
       if (const auto *D = dyn_cast<ACCTeamsDistributeParallelForDirective>(&S))
@@ -2128,7 +2128,7 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
 
 void CodeGenFunction::EmitACCDistributeParallelForDirective(
     const ACCDistributeParallelForDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
   };
@@ -2138,7 +2138,7 @@ void CodeGenFunction::EmitACCDistributeParallelForDirective(
 
 void CodeGenFunction::EmitACCDistributeParallelForSimdDirective(
     const ACCDistributeParallelForSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
   };
@@ -2148,7 +2148,7 @@ void CodeGenFunction::EmitACCDistributeParallelForSimdDirective(
 
 void CodeGenFunction::EmitACCDistributeSimdDirective(
     const ACCDistributeSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
   ACCLexicalScope Scope(*this, S, ACCD_unknown);
@@ -2158,7 +2158,7 @@ void CodeGenFunction::EmitACCDistributeSimdDirective(
 void CodeGenFunction::EmitACCTargetSimdDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName, const ACCTargetSimdDirective &S) {
   // Emit SPMD target parallel for region as a standalone region.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitACCSimdRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
@@ -2171,7 +2171,7 @@ void CodeGenFunction::EmitACCTargetSimdDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetSimdDirective(
     const ACCTargetSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitACCSimdRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -2408,7 +2408,7 @@ emitDispatchForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S,
 void CodeGenFunction::EmitACCForDirective(const ACCForDirective &S) {
   bool HasLastprivates = false;
   auto &&CodeGen = [&S, &HasLastprivates](CodeGenFunction &CGF,
-                                          PrePostActionTy &) {
+                                          ACCPrePostActionTy &) {
     ACCCancelStackRAII CancelRegion(CGF, ACCD_for, S.hasCancel());
     HasLastprivates = CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(),
                                                  emitForLoopBounds,
@@ -2429,7 +2429,7 @@ void CodeGenFunction::EmitACCForDirective(const ACCForDirective &S) {
 void CodeGenFunction::EmitACCForSimdDirective(const ACCForSimdDirective &S) {
   bool HasLastprivates = false;
   auto &&CodeGen = [&S, &HasLastprivates](CodeGenFunction &CGF,
-                                          PrePostActionTy &) {
+                                          ACCPrePostActionTy &) {
     HasLastprivates = CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(),
                                                  emitForLoopBounds,
                                                  emitDispatchForLoopBounds);
@@ -2459,7 +2459,7 @@ void CodeGenFunction::EmitSections(const ACCExecutableDirective &S) {
   const auto *CS = dyn_cast<CompoundStmt>(Stmt);
   bool HasLastprivates = false;
   auto &&CodeGen = [&S, Stmt, CS, &HasLastprivates](CodeGenFunction &CGF,
-                                                    PrePostActionTy &) {
+                                                    ACCPrePostActionTy &) {
     auto &C = CGF.CGM.getContext();
     auto KmpInt32Ty = C.getIntTypeForBitwidth(/*DestWidth=*/32, /*Signed=*/1);
     // Emit helper vars inits.
@@ -2607,7 +2607,7 @@ void CodeGenFunction::EmitACCSectionsDirective(const ACCSectionsDirective &S) {
 }
 
 void CodeGenFunction::EmitACCSectionDirective(const ACCSectionDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitStmt(S.getInnermostCapturedStmt()->getCapturedStmt());
   };
   ACCLexicalScope Scope(*this, S, ACCD_unknown);
@@ -2633,7 +2633,7 @@ void CodeGenFunction::EmitACCSingleDirective(const ACCSingleDirective &S) {
                          C->assignment_ops().end());
   }
   // Emit code for 'single' region along with 'copyprivate' clauses
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     Action.Enter(CGF);
     ACCPrivateScope SingleScope(CGF);
     (void)CGF.EmitACCFirstprivateClause(S, SingleScope);
@@ -2657,7 +2657,7 @@ void CodeGenFunction::EmitACCSingleDirective(const ACCSingleDirective &S) {
 }
 
 void CodeGenFunction::EmitACCMasterDirective(const ACCMasterDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     Action.Enter(CGF);
     CGF.EmitStmt(S.getInnermostCapturedStmt()->getCapturedStmt());
   };
@@ -2666,7 +2666,7 @@ void CodeGenFunction::EmitACCMasterDirective(const ACCMasterDirective &S) {
 }
 
 void CodeGenFunction::EmitACCCriticalDirective(const ACCCriticalDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     Action.Enter(CGF);
     CGF.EmitStmt(S.getInnermostCapturedStmt()->getCapturedStmt());
   };
@@ -2683,7 +2683,7 @@ void CodeGenFunction::EmitACCParallelForDirective(
     const ACCParallelForDirective &S) {
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     ACCCancelStackRAII CancelRegion(CGF, ACCD_parallel_for, S.hasCancel());
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
@@ -2696,7 +2696,7 @@ void CodeGenFunction::EmitACCParallelForSimdDirective(
     const ACCParallelForSimdDirective &S) {
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };
@@ -2708,7 +2708,7 @@ void CodeGenFunction::EmitACCParallelSectionsDirective(
     const ACCParallelSectionsDirective &S) {
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'sections' directive.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitSections(S);
   };
   emitCommonACCParallelDirective(*this, S, ACCD_sections, CodeGen,
@@ -2717,7 +2717,7 @@ void CodeGenFunction::EmitACCParallelSectionsDirective(
 
 void CodeGenFunction::EmitACCTaskBasedDirective(
     const ACCExecutableDirective &S, const OpenACCDirectiveKind CapturedRegion,
-    const RegionCodeGenTy &BodyGen, const ACCTaskGenTy &TaskGen,
+    const ACCRegionCodeGenTy &BodyGen, const ACCTaskGenTy &TaskGen,
     ACCTaskDataTy &Data) {
   // Emit outlined function for task construct.
   const CapturedStmt *CS = S.getCapturedStmt(CapturedRegion);
@@ -2823,7 +2823,7 @@ void CodeGenFunction::EmitACCTaskBasedDirective(
       Data.Dependences.push_back(std::make_pair(C->getDependencyKind(), IRef));
   auto &&CodeGen = [&Data, &S, CS, &BodyGen, &LastprivateDstsOrigs,
                     CapturedRegion](CodeGenFunction &CGF,
-                                    PrePostActionTy &Action) {
+                                    ACCPrePostActionTy &Action) {
     // Set proper addresses for generated private copies.
     ACCPrivateScope Scope(CGF);
     if (!Data.PrivateVars.empty() || !Data.FirstprivateVars.empty() ||
@@ -2881,7 +2881,7 @@ void CodeGenFunction::EmitACCTaskBasedDirective(
     }
     if (Data.Reductions) {
       ACCLexicalScope LexScope(CGF, S, CapturedRegion);
-      ReductionCodeGen RedCG(Data.ReductionVars, Data.ReductionCopies,
+      ACCReductionCodeGen RedCG(Data.ReductionVars, Data.ReductionCopies,
                              Data.ReductionOps);
       llvm::Value *ReductionsPtr = CGF.Builder.CreateLoad(
           CGF.GetAddrOfLocalVar(CS->getCapturedDecl()->getParam(9)));
@@ -2931,7 +2931,7 @@ void CodeGenFunction::EmitACCTaskBasedDirective(
     // privatized earlier.
     ACCPrivateScope InRedScope(CGF);
     if (!InRedVars.empty()) {
-      ReductionCodeGen RedCG(InRedVars, InRedPrivs, InRedOps);
+      ACCReductionCodeGen RedCG(InRedVars, InRedPrivs, InRedOps);
       for (unsigned Cnt = 0, E = InRedVars.size(); Cnt < E; ++Cnt) {
         RedCG.emitSharedLValue(CGF, Cnt);
         RedCG.emitAggregateType(CGF, Cnt);
@@ -3001,7 +3001,7 @@ createImplicitFirstprivateForType(ASTContext &C, ACCTaskDataTy &Data,
 }
 
 void CodeGenFunction::EmitACCTargetTaskBasedDirective(
-    const ACCExecutableDirective &S, const RegionCodeGenTy &BodyGen,
+    const ACCExecutableDirective &S, const ACCRegionCodeGenTy &BodyGen,
     ACCTargetDataInfo &InputInfo) {
   // Emit outlined function for task construct.
   auto CS = S.getCapturedStmt(ACCD_task);
@@ -3058,7 +3058,7 @@ void CodeGenFunction::EmitACCTargetTaskBasedDirective(
     for (auto *IRef : C->varlists())
       Data.Dependences.push_back(std::make_pair(C->getDependencyKind(), IRef));
   auto &&CodeGen = [&Data, &S, CS, &BodyGen, BPVD, PVD, SVD,
-                    &InputInfo](CodeGenFunction &CGF, PrePostActionTy &Action) {
+                    &InputInfo](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     // Set proper addresses for generated private copies.
     ACCPrivateScope Scope(CGF);
     if (!Data.FirstprivateVars.empty()) {
@@ -3131,7 +3131,7 @@ void CodeGenFunction::EmitACCTaskDirective(const ACCTaskDirective &S) {
   ACCTaskDataTy Data;
   // Check if we should emit tied or untied task.
   Data.Tied = !S.getSingleClause<ACCUntiedClause>();
-  auto &&BodyGen = [CS](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&BodyGen = [CS](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitStmt(CS->getCapturedStmt());
   };
   auto &&TaskGen = [&S, SharedsTy, CapturedStruct,
@@ -3159,7 +3159,7 @@ void CodeGenFunction::EmitACCTaskwaitDirective(const ACCTaskwaitDirective &S) {
 
 void CodeGenFunction::EmitACCTaskgroupDirective(
     const ACCTaskgroupDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     Action.Enter(CGF);
     if (const Expr *E = S.getReductionRef()) {
       SmallVector<const Expr *, 4> LHSs;
@@ -3396,7 +3396,7 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopDirective &S,
 
 void CodeGenFunction::EmitACCDistributeDirective(
     const ACCDistributeDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
 
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
@@ -3424,7 +3424,7 @@ void CodeGenFunction::EmitACCOrderedDirective(const ACCOrderedDirective &S) {
   }
   auto *C = S.getSingleClause<ACCSIMDClause>();
   auto &&CodeGen = [&S, C, this](CodeGenFunction &CGF,
-                                 PrePostActionTy &Action) {
+                                 ACCPrePostActionTy &Action) {
     const CapturedStmt *CS = S.getInnermostCapturedStmt();
     if (C) {
       llvm::SmallVector<llvm::Value *, 16> CapturedVars;
@@ -3895,7 +3895,7 @@ void CodeGenFunction::EmitACCAtomicDirective(const ACCAtomicDirective &S) {
   }
 
   auto &&CodeGen = [&S, Kind, IsSeqCst, CS](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     CGF.EmitStopPoint(CS);
     EmitACCAtomicExpr(CGF, Kind, IsSeqCst, S.isPostfixUpdate(), S.getX(),
                       S.getV(), S.getExpr(), S.getUpdateExpr(),
@@ -3907,7 +3907,7 @@ void CodeGenFunction::EmitACCAtomicDirective(const ACCAtomicDirective &S) {
 
 static void emitCommonACCTargetDirective(CodeGenFunction &CGF,
                                          const ACCExecutableDirective &S,
-                                         const RegionCodeGenTy &CodeGen) {
+                                         const ACCRegionCodeGenTy &CodeGen) {
   assert(isOpenACCTargetExecutionDirective(S.getDirectiveKind()));
   CodeGenModule &CGM = CGF.CGM;
 
@@ -3962,7 +3962,7 @@ static void emitCommonACCTargetDirective(CodeGenFunction &CGF,
 }
 
 static void emitTargetRegion(CodeGenFunction &CGF, const ACCTargetDirective &S,
-                             PrePostActionTy &Action) {
+                             ACCPrePostActionTy &Action) {
   CodeGenFunction::ACCPrivateScope PrivateScope(CGF);
   (void)CGF.EmitACCFirstprivateClause(S, PrivateScope);
   CGF.EmitACCPrivateClause(S, PrivateScope);
@@ -3975,7 +3975,7 @@ static void emitTargetRegion(CodeGenFunction &CGF, const ACCTargetDirective &S,
 void CodeGenFunction::EmitACCTargetDeviceFunction(CodeGenModule &CGM,
                                                   StringRef ParentName,
                                                   const ACCTargetDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
@@ -3987,7 +3987,7 @@ void CodeGenFunction::EmitACCTargetDeviceFunction(CodeGenModule &CGM,
 }
 
 void CodeGenFunction::EmitACCTargetDirective(const ACCTargetDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -3996,7 +3996,7 @@ void CodeGenFunction::EmitACCTargetDirective(const ACCTargetDirective &S) {
 static void emitCommonACCTeamsDirective(CodeGenFunction &CGF,
                                         const ACCExecutableDirective &S,
                                         OpenACCDirectiveKind InnermostKind,
-                                        const RegionCodeGenTy &CodeGen) {
+                                        const ACCRegionCodeGenTy &CodeGen) {
   const CapturedStmt *CS = S.getCapturedStmt(ACCD_teams);
   auto OutlinedFn = CGF.CGM.getOpenACCRuntime().emitTeamsOutlinedFunction(
       S, *CS->getCapturedDecl()->param_begin(), InnermostKind, CodeGen);
@@ -4020,7 +4020,7 @@ static void emitCommonACCTeamsDirective(CodeGenFunction &CGF,
 
 void CodeGenFunction::EmitACCTeamsDirective(const ACCTeamsDirective &S) {
   // Emit teams region as a standalone region.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
     (void)CGF.EmitACCFirstprivateClause(S, PrivateScope);
     CGF.EmitACCPrivateClause(S, PrivateScope);
@@ -4034,12 +4034,12 @@ void CodeGenFunction::EmitACCTeamsDirective(const ACCTeamsDirective &S) {
       *this, S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
 }
 
-static void emitTargetTeamsRegion(CodeGenFunction &CGF, PrePostActionTy &Action,
+static void emitTargetTeamsRegion(CodeGenFunction &CGF, ACCPrePostActionTy &Action,
                                   const ACCTargetTeamsDirective &S) {
   auto *CS = S.getCapturedStmt(ACCD_teams);
   Action.Enter(CGF);
   // Emit teams region as a standalone region.
-  auto &&CodeGen = [&S, CS](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S, CS](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     CodeGenFunction::ACCPrivateScope PrivateScope(CGF);
     (void)CGF.EmitACCFirstprivateClause(S, PrivateScope);
     CGF.EmitACCPrivateClause(S, PrivateScope);
@@ -4057,7 +4057,7 @@ static void emitTargetTeamsRegion(CodeGenFunction &CGF, PrePostActionTy &Action,
 void CodeGenFunction::EmitACCTargetTeamsDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
     const ACCTargetTeamsDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsRegion(CGF, Action, S);
   };
   llvm::Function *Fn;
@@ -4070,23 +4070,23 @@ void CodeGenFunction::EmitACCTargetTeamsDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetTeamsDirective(
     const ACCTargetTeamsDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsRegion(CGF, Action, S);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
 
 static void
-emitTargetTeamsDistributeRegion(CodeGenFunction &CGF, PrePostActionTy &Action,
+emitTargetTeamsDistributeRegion(CodeGenFunction &CGF, ACCPrePostActionTy &Action,
                                 const ACCTargetTeamsDistributeDirective &S) {
   Action.Enter(CGF);
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     CodeGenFunction::ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4102,7 +4102,7 @@ emitTargetTeamsDistributeRegion(CodeGenFunction &CGF, PrePostActionTy &Action,
 void CodeGenFunction::EmitACCTargetTeamsDistributeDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
     const ACCTargetTeamsDistributeDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeRegion(CGF, Action, S);
   };
   llvm::Function *Fn;
@@ -4115,23 +4115,23 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeDirective(
     const ACCTargetTeamsDistributeDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeRegion(CGF, Action, S);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
 
 static void emitTargetTeamsDistributeSimdRegion(
-    CodeGenFunction &CGF, PrePostActionTy &Action,
+    CodeGenFunction &CGF, ACCPrePostActionTy &Action,
     const ACCTargetTeamsDistributeSimdDirective &S) {
   Action.Enter(CGF);
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     CodeGenFunction::ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4147,7 +4147,7 @@ static void emitTargetTeamsDistributeSimdRegion(
 void CodeGenFunction::EmitACCTargetTeamsDistributeSimdDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
     const ACCTargetTeamsDistributeSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeSimdRegion(CGF, Action, S);
   };
   llvm::Function *Fn;
@@ -4160,7 +4160,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeSimdDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeSimdDirective(
     const ACCTargetTeamsDistributeSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeSimdRegion(CGF, Action, S);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -4169,13 +4169,13 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeSimdDirective(
 void CodeGenFunction::EmitACCTeamsDistributeDirective(
     const ACCTeamsDistributeDirective &S) {
 
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4190,13 +4190,13 @@ void CodeGenFunction::EmitACCTeamsDistributeDirective(
 
 void CodeGenFunction::EmitACCTeamsDistributeSimdDirective(
     const ACCTeamsDistributeSimdDirective &S) {
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4211,14 +4211,14 @@ void CodeGenFunction::EmitACCTeamsDistributeSimdDirective(
 
 void CodeGenFunction::EmitACCTeamsDistributeParallelForDirective(
     const ACCTeamsDistributeParallelForDirective &S) {
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4233,14 +4233,14 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelForDirective(
 
 void CodeGenFunction::EmitACCTeamsDistributeParallelForSimdDirective(
     const ACCTeamsDistributeParallelForSimdDirective &S) {
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                            PrePostActionTy &) {
+                                            ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4255,15 +4255,15 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelForSimdDirective(
 
 static void emitTargetTeamsDistributeParallelForRegion(
     CodeGenFunction &CGF, const ACCTargetTeamsDistributeParallelForDirective &S,
-    PrePostActionTy &Action) {
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+    ACCPrePostActionTy &Action) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGenTeams = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                                 PrePostActionTy &) {
+                                                 ACCPrePostActionTy &) {
     CodeGenFunction::ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4283,7 +4283,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
     const ACCTargetTeamsDistributeParallelForDirective &S) {
   // Emit SPMD target teams distribute parallel for region as a standalone
   // region.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
@@ -4296,7 +4296,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDirective(
     const ACCTargetTeamsDistributeParallelForDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -4305,15 +4305,15 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDirective(
 static void emitTargetTeamsDistributeParallelForSimdRegion(
     CodeGenFunction &CGF,
     const ACCTargetTeamsDistributeParallelForSimdDirective &S,
-    PrePostActionTy &Action) {
-  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+    ACCPrePostActionTy &Action) {
+  auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
   };
 
   // Emit teams region as a standalone region.
   auto &&CodeGenTeams = [&S, &CodeGenDistribute](CodeGenFunction &CGF,
-                                                 PrePostActionTy &) {
+                                                 ACCPrePostActionTy &) {
     CodeGenFunction::ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -4333,7 +4333,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
     const ACCTargetTeamsDistributeParallelForSimdDirective &S) {
   // Emit SPMD target teams distribute parallel for simd region as a standalone
   // region.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForSimdRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
@@ -4346,7 +4346,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDirective(
     const ACCTargetTeamsDistributeParallelForSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForSimdRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -4456,12 +4456,12 @@ void CodeGenFunction::EmitACCTargetDataDirective(
   // This action can be replaced by the OpenACC runtime code generation to
   // deactivate privatization.
   bool PrivatizeDevicePointers = false;
-  class DevicePointerPrivActionTy : public PrePostActionTy {
+  class DevicePointerPrivActionTy : public ACCPrePostActionTy {
     bool &PrivatizeDevicePointers;
 
   public:
     explicit DevicePointerPrivActionTy(bool &PrivatizeDevicePointers)
-        : PrePostActionTy(), PrivatizeDevicePointers(PrivatizeDevicePointers) {}
+        : ACCPrePostActionTy(), PrivatizeDevicePointers(PrivatizeDevicePointers) {}
     void Enter(CodeGenFunction &CGF) override {
       PrivatizeDevicePointers = true;
     }
@@ -4469,16 +4469,16 @@ void CodeGenFunction::EmitACCTargetDataDirective(
   DevicePointerPrivActionTy PrivAction(PrivatizeDevicePointers);
 
   auto &&CodeGen = [&S, &Info, &PrivatizeDevicePointers](
-                       CodeGenFunction &CGF, PrePostActionTy &Action) {
-    auto &&InnermostCodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+                       CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
+    auto &&InnermostCodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
       CGF.EmitStmt(S.getInnermostCapturedStmt()->getCapturedStmt());
     };
 
     // Codegen that selects wheather to generate the privatization code or not.
     auto &&PrivCodeGen = [&S, &Info, &PrivatizeDevicePointers,
                           &InnermostCodeGen](CodeGenFunction &CGF,
-                                             PrePostActionTy &Action) {
-      RegionCodeGenTy RCG(InnermostCodeGen);
+                                             ACCPrePostActionTy &Action) {
+      ACCRegionCodeGenTy RCG(InnermostCodeGen);
       PrivatizeDevicePointers = false;
 
       // Call the pre-action to change the status of PrivatizeDevicePointers if
@@ -4498,7 +4498,7 @@ void CodeGenFunction::EmitACCTargetDataDirective(
     };
 
     // Forward the provided action to the privatization codegen.
-    RegionCodeGenTy PrivRCG(PrivCodeGen);
+    ACCRegionCodeGenTy PrivRCG(PrivCodeGen);
     PrivRCG.setAction(Action);
 
     // Notwithstanding the body of the region is emitted as inlined directive,
@@ -4509,7 +4509,7 @@ void CodeGenFunction::EmitACCTargetDataDirective(
                                                     PrivRCG);
   };
 
-  RegionCodeGenTy RCG(CodeGen);
+  ACCRegionCodeGenTy RCG(CodeGen);
 
   // If we don't have target devices, don't bother emitting the data mapping
   // code.
@@ -4580,11 +4580,11 @@ void CodeGenFunction::EmitACCTargetExitDataDirective(
 
 static void emitTargetParallelRegion(CodeGenFunction &CGF,
                                      const ACCTargetParallelDirective &S,
-                                     PrePostActionTy &Action) {
+                                     ACCPrePostActionTy &Action) {
   // Get the captured statement associated with the 'parallel' region.
   auto *CS = S.getCapturedStmt(ACCD_parallel);
   Action.Enter(CGF);
-  auto &&CodeGen = [&S, CS](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S, CS](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CodeGenFunction::ACCPrivateScope PrivateScope(CGF);
     (void)CGF.EmitACCFirstprivateClause(S, PrivateScope);
     CGF.EmitACCPrivateClause(S, PrivateScope);
@@ -4603,7 +4603,7 @@ static void emitTargetParallelRegion(CodeGenFunction &CGF,
 void CodeGenFunction::EmitACCTargetParallelDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
     const ACCTargetParallelDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
@@ -4616,7 +4616,7 @@ void CodeGenFunction::EmitACCTargetParallelDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetParallelDirective(
     const ACCTargetParallelDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -4624,11 +4624,11 @@ void CodeGenFunction::EmitACCTargetParallelDirective(
 
 static void emitTargetParallelForRegion(CodeGenFunction &CGF,
                                         const ACCTargetParallelForDirective &S,
-                                        PrePostActionTy &Action) {
+                                        ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CodeGenFunction::ACCCancelStackRAII CancelRegion(
         CGF, ACCD_target_parallel_for, S.hasCancel());
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
@@ -4642,7 +4642,7 @@ void CodeGenFunction::EmitACCTargetParallelForDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
     const ACCTargetParallelForDirective &S) {
   // Emit SPMD target parallel for region as a standalone region.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
@@ -4655,7 +4655,7 @@ void CodeGenFunction::EmitACCTargetParallelForDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetParallelForDirective(
     const ACCTargetParallelForDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -4664,11 +4664,11 @@ void CodeGenFunction::EmitACCTargetParallelForDirective(
 static void
 emitTargetParallelForSimdRegion(CodeGenFunction &CGF,
                                 const ACCTargetParallelForSimdDirective &S,
-                                PrePostActionTy &Action) {
+                                ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };
@@ -4680,7 +4680,7 @@ void CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
     const ACCTargetParallelForSimdDirective &S) {
   // Emit SPMD target parallel for region as a standalone region.
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForSimdRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
@@ -4693,7 +4693,7 @@ void CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
 
 void CodeGenFunction::EmitACCTargetParallelForSimdDirective(
     const ACCTargetParallelForSimdDirective &S) {
-  auto &&CodeGen = [&S](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForSimdRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
@@ -4739,7 +4739,7 @@ void CodeGenFunction::EmitACCTaskLoopBasedDirective(const ACCLoopDirective &S) {
     Data.Schedule.setPointer(EmitScalarExpr(Clause->getNumTasks()));
   }
 
-  auto &&BodyGen = [CS, &S](CodeGenFunction &CGF, PrePostActionTy &) {
+  auto &&BodyGen = [CS, &S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     // if (PreCond) {
     //   for (IV in 0..LastIteration) BODY;
     //   <Final counter/linear vars updates>;
@@ -4824,7 +4824,7 @@ void CodeGenFunction::EmitACCTaskLoopBasedDirective(const ACCLoopDirective &S) {
   auto &&TaskGen = [&S, SharedsTy, CapturedStruct,
                     IfCond](CodeGenFunction &CGF, llvm::Value *OutlinedFn,
                             const ACCTaskDataTy &Data) {
-    auto &&CodeGen = [&](CodeGenFunction &CGF, PrePostActionTy &) {
+    auto &&CodeGen = [&](CodeGenFunction &CGF, ACCPrePostActionTy &) {
       ACCLoopScope PreInitScope(CGF, S);
       CGF.CGM.getOpenACCRuntime().emitTaskLoopCall(CGF, S.getLocStart(), S,
                                                   OutlinedFn, SharedsTy,
@@ -4839,7 +4839,7 @@ void CodeGenFunction::EmitACCTaskLoopBasedDirective(const ACCLoopDirective &S) {
     CGM.getOpenACCRuntime().emitTaskgroupRegion(
         *this,
         [&S, &BodyGen, &TaskGen, &Data](CodeGenFunction &CGF,
-                                        PrePostActionTy &Action) {
+                                        ACCPrePostActionTy &Action) {
           Action.Enter(CGF);
           CGF.EmitACCTaskBasedDirective(S, ACCD_taskloop, BodyGen, TaskGen,
                                         Data);
@@ -4883,7 +4883,7 @@ void CodeGenFunction::EmitSimpleACCExecutableDirective(
     const ACCExecutableDirective &D) {
   if (!D.hasAssociatedStmt() || !D.getAssociatedStmt())
     return;
-  auto &&CodeGen = [&D](CodeGenFunction &CGF, PrePostActionTy &Action) {
+  auto &&CodeGen = [&D](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     if (isOpenACCSimdDirective(D.getDirectiveKind())) {
       emitACCSimdRegion(CGF, cast<ACCLoopDirective>(D), Action);
     } else {

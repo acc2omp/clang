@@ -94,7 +94,8 @@ class BlockByrefHelpers;
 class BlockByrefInfo;
 class BlockFlags;
 class BlockFieldFlags;
-class RegionCodeGenTy;
+class OMPRegionCodeGenTy;
+class ACCRegionCodeGenTy;
 class TargetCodeGenInfo;
 struct ACCTaskDataTy;
 struct OMPTaskDataTy;
@@ -3236,7 +3237,7 @@ public:
       ACCTaskGenTy;
   void EmitACCTaskBasedDirective(const ACCExecutableDirective &S,
                                  const OpenACCDirectiveKind CapturedRegion,
-                                 const RegionCodeGenTy &BodyGen,
+                                 const ACCRegionCodeGenTy &BodyGen,
                                  const ACCTaskGenTy &TaskGen, ACCTaskDataTy &Data);
   struct ACCTargetDataInfo {
     Address BasePointersArray = Address::invalid();
@@ -3250,7 +3251,7 @@ public:
           SizesArray(SizesArray), NumberOfTargetItems(NumberOfTargetItems) {}
   };
   void EmitACCTargetTaskBasedDirective(const ACCExecutableDirective &S,
-                                       const RegionCodeGenTy &BodyGen,
+                                       const ACCRegionCodeGenTy &BodyGen,
                                        ACCTargetDataInfo &InputInfo);
 
   void EmitACCParallelDirective(const ACCParallelDirective &S);
@@ -3529,7 +3530,7 @@ public:
       TaskGenTy;
   void EmitOMPTaskBasedDirective(const OMPExecutableDirective &S,
                                  const OpenMPDirectiveKind CapturedRegion,
-                                 const RegionCodeGenTy &BodyGen,
+                                 const OMPRegionCodeGenTy &BodyGen,
                                  const TaskGenTy &TaskGen, OMPTaskDataTy &Data);
   struct OMPTargetDataInfo {
     Address BasePointersArray = Address::invalid();
@@ -3543,7 +3544,7 @@ public:
           SizesArray(SizesArray), NumberOfTargetItems(NumberOfTargetItems) {}
   };
   void EmitOMPTargetTaskBasedDirective(const OMPExecutableDirective &S,
-                                       const RegionCodeGenTy &BodyGen,
+                                       const OMPRegionCodeGenTy &BodyGen,
                                        OMPTargetDataInfo &InputInfo);
 
   void EmitOMPParallelDirective(const OMPParallelDirective &S);
