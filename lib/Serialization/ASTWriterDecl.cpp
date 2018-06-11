@@ -142,6 +142,9 @@ namespace clang {
     void VisitObjCCompatibleAliasDecl(ObjCCompatibleAliasDecl *D);
     void VisitObjCPropertyDecl(ObjCPropertyDecl *D);
     void VisitObjCPropertyImplDecl(ObjCPropertyImplDecl *D);
+    void VisitACCThreadPrivateDecl(ACCThreadPrivateDecl *D);
+    void VisitACCDeclareReductionDecl(ACCDeclareReductionDecl *D);
+    void VisitACCCapturedExprDecl(ACCCapturedExprDecl *D);
     void VisitOMPThreadPrivateDecl(OMPThreadPrivateDecl *D);
     void VisitOMPDeclareReductionDecl(OMPDeclareReductionDecl *D);
     void VisitOMPCapturedExprDecl(OMPCapturedExprDecl *D);
@@ -1710,6 +1713,29 @@ void ASTDeclWriter::VisitRedeclarable(Redeclarable<T> *D) {
   }
 }
 
+void ASTDeclWriter::VisitACCThreadPrivateDecl(ACCThreadPrivateDecl *D) {
+  Record.push_back(D->varlist_size());
+  VisitDecl(D);
+  for (auto *I : D->varlists())
+    Record.AddStmt(I);
+  Code = serialization::DECL_ACC_THREADPRIVATE;
+}
+
+void ASTDeclWriter::VisitACCDeclareReductionDecl(ACCDeclareReductionDecl *D) {
+  VisitValueDecl(D);
+  Record.AddSourceLocation(D->getLocStart());
+  Record.AddStmt(D->getCombiner());
+  Record.AddStmt(D->getInitializer());
+  Record.push_back(D->getInitializerKind());
+  Record.AddDeclRef(D->getPrevDeclInScope());
+  Code = serialization::DECL_ACC_DECLARE_REDUCTION;
+}
+
+void ASTDeclWriter::VisitACCCapturedExprDecl(ACCCapturedExprDecl *D) {
+  VisitVarDecl(D);
+  Code = serialization::DECL_ACC_CAPTUREDEXPR;
+}
+
 void ASTDeclWriter::VisitOMPThreadPrivateDecl(OMPThreadPrivateDecl *D) {
   Record.push_back(D->varlist_size());
   VisitDecl(D);
@@ -2198,6 +2224,7 @@ static bool isRequiredDecl(const Decl *D, ASTContext &Context,
   // An ObjCMethodDecl is never considered as "required" because its
   // implementation container always is.
 
+  // TODO acc2mp study if duplication is necessary
   // File scoped assembly or obj-c or OMP declare target implementation must be
   // seen.
   if (isa<FileScopeAsmDecl>(D) || isa<ObjCImplDecl>(D) ||

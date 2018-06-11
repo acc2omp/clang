@@ -102,34 +102,45 @@ public:
     /// \brief This is the scope for a function-level C++ try or catch scope.
     FnTryCatchScope = 0x4000,
 
+    /// \brief This is the scope of OpenACC executable directive.
+    OpenACCDirectiveScope = 0x8000,
+
+    /// \brief This is the scope of some OpenACC loop directive.
+    OpenACCLoopDirectiveScope = 0x10000,
+
+    /// \brief This is the scope of some OpenACC simd directive.
+    /// For example, it is used for 'acc simd', 'acc for simd'.
+    /// This flag is propagated to children scopes.
+    OpenACCSimdDirectiveScope = 0x20000,
+
     /// \brief This is the scope of OpenMP executable directive.
-    OpenMPDirectiveScope = 0x8000,
+    OpenMPDirectiveScope = 0x40000,
 
     /// \brief This is the scope of some OpenMP loop directive.
-    OpenMPLoopDirectiveScope = 0x10000,
+    OpenMPLoopDirectiveScope = 0x80000,
 
     /// \brief This is the scope of some OpenMP simd directive.
     /// For example, it is used for 'omp simd', 'omp for simd'.
     /// This flag is propagated to children scopes.
-    OpenMPSimdDirectiveScope = 0x20000,
+    OpenMPSimdDirectiveScope = 0x100000,
 
     /// This scope corresponds to an enum.
-    EnumScope = 0x40000,
+    EnumScope = 0x200000,
 
     /// This scope corresponds to an SEH try.
-    SEHTryScope = 0x80000,
+    SEHTryScope = 0x400000,
 
     /// This scope corresponds to an SEH except.
-    SEHExceptScope = 0x100000,
+    SEHExceptScope = 0x800000,
 
     /// We are currently in the filter expression of an SEH except block.
-    SEHFilterScope = 0x200000,
+    SEHFilterScope = 0x1000000,
 
     /// This is a compound statement scope.
-    CompoundStmtScope = 0x400000,
+    CompoundStmtScope = 0x2000000,
 
     /// We are between inheritance colon and the real class/struct definition scope.
-    ClassInheritanceScope = 0x800000,
+    ClassInheritanceScope = 0x4000000,
   };
 private:
   /// The parent scope for this scope.  This is null for the translation-unit
@@ -398,6 +409,35 @@ public:
         return false;
     }
     return false;
+  }
+
+  /// \brief Determines whether this scope is the OpenACC directive scope
+  bool isOpenACCDirectiveScope() const {
+    return (getFlags() & Scope::OpenACCDirectiveScope);
+  }
+
+  /// \brief Determine whether this scope is some OpenACC loop directive scope
+  /// (for example, 'acc for', 'acc simd').
+  bool isOpenACCLoopDirectiveScope() const {
+    if (getFlags() & Scope::OpenACCLoopDirectiveScope) {
+      assert(isOpenACCDirectiveScope() &&
+             "OpenACC loop directive scope is not a directive scope");
+      return true;
+    }
+    return false;
+  }
+
+  /// \brief Determine whether this scope is (or is nested into) some OpenACC
+  /// loop simd directive scope (for example, 'acc simd', 'acc for simd').
+  bool isOpenACCSimdDirectiveScope() const {
+    return getFlags() & Scope::OpenACCSimdDirectiveScope;
+  }
+
+  /// \brief Determine whether this scope is a loop having OpenACC loop
+  /// directive attached.
+  bool isOpenACCLoopScope() const {
+    const Scope *P = getParent();
+    return P && P->isOpenACCLoopDirectiveScope();
   }
 
   /// \brief Determines whether this scope is the OpenMP directive scope

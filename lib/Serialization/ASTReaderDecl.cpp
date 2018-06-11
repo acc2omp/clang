@@ -398,6 +398,9 @@ namespace clang {
     void VisitObjCCompatibleAliasDecl(ObjCCompatibleAliasDecl *D);
     void VisitObjCPropertyDecl(ObjCPropertyDecl *D);
     void VisitObjCPropertyImplDecl(ObjCPropertyImplDecl *D);
+    void VisitACCThreadPrivateDecl(ACCThreadPrivateDecl *D);
+    void VisitACCDeclareReductionDecl(ACCDeclareReductionDecl *D);
+    void VisitACCCapturedExprDecl(ACCCapturedExprDecl *D);
     void VisitOMPThreadPrivateDecl(OMPThreadPrivateDecl *D);
     void VisitOMPDeclareReductionDecl(OMPDeclareReductionDecl *D);
     void VisitOMPCapturedExprDecl(OMPCapturedExprDecl *D);
@@ -2516,6 +2519,31 @@ void ASTDeclReader::mergeMergeable(Mergeable<T> *D) {
                                                Existing->getCanonicalDecl());
 }
 
+void ASTDeclReader::VisitACCThreadPrivateDecl(ACCThreadPrivateDecl *D) {
+  VisitDecl(D);
+  unsigned NumVars = D->varlist_size();
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i) {
+    Vars.push_back(Record.readExpr());
+  }
+  D->setVars(Vars);
+}
+
+void ASTDeclReader::VisitACCDeclareReductionDecl(ACCDeclareReductionDecl *D) {
+  VisitValueDecl(D);
+  D->setLocation(ReadSourceLocation());
+  D->setCombiner(Record.readExpr());
+  D->setInitializer(
+      Record.readExpr(),
+      static_cast<ACCDeclareReductionDecl::InitKind>(Record.readInt()));
+  D->PrevDeclInScope = ReadDeclID();
+}
+
+void ASTDeclReader::VisitACCCapturedExprDecl(ACCCapturedExprDecl *D) {
+  VisitVarDecl(D);
+}
+
 void ASTDeclReader::VisitOMPThreadPrivateDecl(OMPThreadPrivateDecl *D) {
   VisitDecl(D);
   unsigned NumVars = D->varlist_size();
@@ -2602,6 +2630,8 @@ static bool isConsumerInterestedIn(ASTContext &Ctx, Decl *D, bool HasBody) {
       isa<PragmaCommentDecl>(D) ||
       isa<PragmaDetectMismatchDecl>(D))
     return true;
+  if (isa<ACCThreadPrivateDecl>(D) || isa<ACCDeclareReductionDecl>(D))
+    return !D->getDeclContext()->isFunctionOrMethod();
   if (isa<OMPThreadPrivateDecl>(D) || isa<OMPDeclareReductionDecl>(D))
     return !D->getDeclContext()->isFunctionOrMethod();
   if (VarDecl *Var = dyn_cast<VarDecl>(D))
@@ -3626,6 +3656,15 @@ Decl *ASTReader::ReadDeclRecord(DeclID ID) {
     // Note: last entry of the ImportDecl record is the number of stored source 
     // locations.
     D = ImportDecl::CreateDeserialized(Context, ID, Record.back());
+    break;
+  case DECL_ACC_THREADPRIVATE:
+    D = ACCThreadPrivateDecl::CreateDeserialized(Context, ID, Record.readInt());
+    break;
+  case DECL_ACC_DECLARE_REDUCTION:
+    D = ACCDeclareReductionDecl::CreateDeserialized(Context, ID);
+    break;
+  case DECL_ACC_CAPTUREDEXPR:
+    D = ACCCapturedExprDecl::CreateDeserialized(Context, ID);
     break;
   case DECL_OMP_THREADPRIVATE:
     D = OMPThreadPrivateDecl::CreateDeserialized(Context, ID, Record.readInt());

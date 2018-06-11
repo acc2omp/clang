@@ -2313,8 +2313,8 @@ enum CXCursorKind {
    * expressions.
    */
   CXCursor_DeclStmt                      = 232,
-// -- MYHEADER --
-  /** \brief OpenACC parallel directive.
+  /* -- MYHEADER --
+   * \brief OpenACC parallel directive.
    */
   CXCursor_ACCParallelDirective          = 233,
 
@@ -2506,8 +2506,7 @@ enum CXCursorKind {
    */
   CXCursor_ACCTargetTeamsDistributeSimdDirective = 280,
 
-// -- MYHEADER -- 
-// -- MYHEADER --
+  /* -- MYHEADER -- */ 
 
   /** \brief OpenMP parallel directive.
    */
@@ -2697,7 +2696,7 @@ enum CXCursorKind {
    */
   CXCursor_OMPTargetTeamsDistributeSimdDirective = 327,
 
-// -- MYHEADER --
+  /* -- MYHEADER -- */
 
   CXCursor_LastStmt = CXCursor_OMPTargetTeamsDistributeSimdDirective,
 

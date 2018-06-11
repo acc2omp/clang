@@ -1741,15 +1741,19 @@ private:
   /// A SmallVector of types.
   typedef SmallVector<ParsedType, 12> TypeVector;
 
-  //TODO acc2mp
+  //TODO acc2mp study if this need to be replicated. AllowOpenMPStandalone
   // C99 Argument for bool AllowOpenACCStandalone
   // Expand AllowedConstructsKind
 
   StmtResult ParseStatement(SourceLocation *TrailingElseLoc = nullptr,
                             bool AllowOpenMPStandalone = false);
   enum AllowedConstructsKind {
-    /// \brief Allow any declarations, statements, OpenMP directives.
+    /// \brief Allow any declarations, statements, OpenMP and OpenACC directives.
     ACK_Any,
+    /// \brief Allow only statements and non-standalone OpenACC directives.
+    ACK_StatementsOpenACCNonStandalone,
+    /// \brief Allow statements and all executable OpenACC directives
+    ACK_StatementsOpenACCAnyExecutable,
     /// \brief Allow only statements and non-standalone OpenMP directives.
     ACK_StatementsOpenMPNonStandalone,
     /// \brief Allow statements and all executable OpenMP directives
