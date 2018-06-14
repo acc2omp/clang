@@ -26,7 +26,7 @@ using namespace clang;
 //===----------------------------------------------------------------------===//
 // C99 6.8: Statements and Blocks.
 //===----------------------------------------------------------------------===//
-
+// TODO acc2mp study if it is necessary to add support for AllowOpenACCStandalone
 /// \brief Parse a standalone statement (for instance, as the body of an 'if',
 /// 'while', or 'for').
 StmtResult Parser::ParseStatement(SourceLocation *TrailingElseLoc,
@@ -109,6 +109,8 @@ Parser::ParseStatementOrDeclaration(StmtVector &Stmts,
 
   StmtResult Res = ParseStatementOrDeclarationAfterAttributes(
       Stmts, Allowed, TrailingElseLoc, Attrs);
+
+  llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res =" << Res.get() << "\n";
 
   assert((Attrs.empty() || Res.isInvalid() || Res.isUsable()) &&
          "attributes on empty statement");
@@ -356,7 +358,7 @@ Retry:
   case tok::annot_pragma_captured:
     ProhibitAttributes(Attrs);
     return HandlePragmaCaptured();
-  
+
   case tok::annot_pragma_openacc:
     ProhibitAttributes(Attrs);
     llvm::outs()<< "Entering function ParseOpenACCDeclarativeOrExecutableDirective()\n";
@@ -1779,6 +1781,11 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
                                                      Collection.get(),
                                                      T.getCloseLocation());
   } else {
+    // In OpenACC loop region loop control variable must be captured and be
+    // private. Perform analysis of first part (if any).
+    if (getLangOpts().OpenACC && FirstPart.isUsable()) {
+      Actions.ActOnOpenACCLoopInitialization(ForLoc, FirstPart.get());
+    }
     // In OpenMP loop region loop control variable must be captured and be
     // private. Perform analysis of first part (if any).
     if (getLangOpts().OpenMP && FirstPart.isUsable()) {

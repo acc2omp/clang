@@ -304,7 +304,7 @@ void Parser::initializePragmaHandlers() {
 
   if (getLangOpts().OpenACC){
     OpenACCHandler.reset(new PragmaOpenACCHandler());
-    llvm::outs()<<"OPENACC HANDLER ENABLED!!!" << "\n"; 
+    llvm::outs()<<"OPENACC langOpts enabled!!!" << "\n"; 
   }
   else
     OpenACCHandler.reset(new PragmaNoOpenACCHandler());
@@ -2140,23 +2140,23 @@ void
 PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
                                   PragmaIntroducerKind Introducer,
                                   Token &FirstTok) {
-  
-  //TODO acc2mp remove this
-  //llvm::outs() << "I AM OPENACC! THIS IS WHERE WE HANDLE THE PRAGMA\n";
 
-  
+  //TODO acc2mp remove this
+  llvm::outs() << "I AM OPENACC! THIS IS WHERE WE HANDLE THE PRAGMA\n";
 
   SmallVector<Token, 16> Pragma;
   Token Tok;
   Tok.startToken();
   Tok.setKind(tok::annot_pragma_openacc);
   Tok.setLocation(FirstTok.getLocation());
-  
+
   llvm::outs()<<"Generating tokens for OPENACC annotation:\n";
 
   while (Tok.isNot(tok::eod) && Tok.isNot(tok::eof)) {
     Pragma.push_back(Tok);
     PP.Lex(Tok);
+    llvm::outs() << "LexTok(" << Tok.getName() << ")\n";
+
     if (Tok.is(tok::annot_pragma_openacc)) {
       PP.Diag(Tok, diag::err_omp_unexpected_directive) << 0;
       unsigned InnerPragmaCnt = 1;
@@ -2175,13 +2175,13 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   Tok.setKind(tok::annot_pragma_openacc_end);
   Tok.setLocation(EodLoc);
   Pragma.push_back(Tok);
-  
+
   auto Toks = llvm::make_unique<Token[]>(Pragma.size());
   std::copy(Pragma.begin(), Pragma.end(), Toks.get());
   PP.EnterTokenStream(std::move(Toks), Pragma.size(),
                       /*DisableMacroExpansion=*/false);
 
-  /*
+  
 
   //TODO acc2mp THIS IS JUST A DEBUG, remove later
   llvm::outs()<<"Pragma token size is: "<< Pragma.size() << "\n";
@@ -2193,7 +2193,7 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
 
   llvm::outs()<<"\nPassed tokens into PP.EnterTokenStream()\n";
   
-  */
+  
 }
 
 

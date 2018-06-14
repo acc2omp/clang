@@ -99,6 +99,9 @@ namespace {
     void VisitUnresolvedUsingValueDecl(UnresolvedUsingValueDecl *D);
     void VisitUsingDecl(UsingDecl *D);
     void VisitUsingShadowDecl(UsingShadowDecl *D);
+    void VisitACCThreadPrivateDecl(ACCThreadPrivateDecl *D);
+    void VisitACCDeclareReductionDecl(ACCDeclareReductionDecl *D);
+    void VisitACCCapturedExprDecl(ACCCapturedExprDecl *D);
     void VisitOMPThreadPrivateDecl(OMPThreadPrivateDecl *D);
     void VisitOMPDeclareReductionDecl(OMPDeclareReductionDecl *D);
     void VisitOMPCapturedExprDecl(OMPCapturedExprDecl *D);
@@ -418,7 +421,9 @@ void DeclPrinter::VisitDeclContext(DeclContext *DC, bool Indent) {
 
     // FIXME: Need to be able to tell the DeclPrinter when
     const char *Terminator = nullptr;
-    if (isa<OMPThreadPrivateDecl>(*D) || isa<OMPDeclareReductionDecl>(*D))
+    if (isa<ACCThreadPrivateDecl>(*D) || isa<ACCDeclareReductionDecl>(*D))
+      Terminator = nullptr;
+    else if (isa<OMPThreadPrivateDecl>(*D) || isa<OMPDeclareReductionDecl>(*D))
       Terminator = nullptr;
     else if (isa<ObjCMethodDecl>(*D) && cast<ObjCMethodDecl>(*D)->hasBody())
       Terminator = nullptr;
@@ -458,6 +463,10 @@ void DeclPrinter::VisitDeclContext(DeclContext *DC, bool Indent) {
     else
       Out << "\n";
 
+    // Declare target attribute is special one, natural spelling for the pragma
+    // assumes "ending" construct so print it here.
+    if (D->hasAttr<ACCDeclareTargetDeclAttr>())
+      Out << "#pragma acc end declare target\n";
     // Declare target attribute is special one, natural spelling for the pragma
     // assumes "ending" construct so print it here.
     if (D->hasAttr<OMPDeclareTargetDeclAttr>())
@@ -1518,6 +1527,67 @@ void DeclPrinter::VisitUnresolvedUsingValueDecl(UnresolvedUsingValueDecl *D) {
 
 void DeclPrinter::VisitUsingShadowDecl(UsingShadowDecl *D) {
   // ignore
+}
+
+void DeclPrinter::VisitACCThreadPrivateDecl(ACCThreadPrivateDecl *D) {
+  Out << "#pragma acc threadprivate";
+  if (!D->varlist_empty()) {
+    for (ACCThreadPrivateDecl::varlist_iterator I = D->varlist_begin(),
+                                                E = D->varlist_end();
+                                                I != E; ++I) {
+      Out << (I == D->varlist_begin() ? '(' : ',');
+      NamedDecl *ND = cast<NamedDecl>(cast<DeclRefExpr>(*I)->getDecl());
+      ND->printQualifiedName(Out);
+    }
+    Out << ")";
+  }
+}
+
+void DeclPrinter::VisitACCDeclareReductionDecl(ACCDeclareReductionDecl *D) {
+  if (!D->isInvalidDecl()) {
+    Out << "#pragma acc declare reduction (";
+    if (D->getDeclName().getNameKind() == DeclarationName::CXXOperatorName) {
+      static const char *const OperatorNames[NUM_OVERLOADED_OPERATORS] = {
+          nullptr,
+#define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly)  \
+          Spelling,
+#include "clang/Basic/OperatorKinds.def"
+      };
+      const char *OpName =
+          OperatorNames[D->getDeclName().getCXXOverloadedOperator()];
+      assert(OpName && "not an overloaded operator");
+      Out << OpName;
+    } else {
+      assert(D->getDeclName().isIdentifier());
+      D->printName(Out);
+    }
+    Out << " : ";
+    D->getType().print(Out, Policy);
+    Out << " : ";
+    D->getCombiner()->printPretty(Out, nullptr, Policy, 0);
+    Out << ")";
+    if (auto *Init = D->getInitializer()) {
+      Out << " initializer(";
+      switch (D->getInitializerKind()) {
+      case ACCDeclareReductionDecl::DirectInit:
+        Out << "acc_priv(";
+        break;
+      case ACCDeclareReductionDecl::CopyInit:
+        Out << "acc_priv = ";
+        break;
+      case ACCDeclareReductionDecl::CallInit:
+        break;
+      }
+      Init->printPretty(Out, nullptr, Policy, 0);
+      if (D->getInitializerKind() == ACCDeclareReductionDecl::DirectInit)
+        Out << ")";
+      Out << ")";
+    }
+  }
+}
+
+void DeclPrinter::VisitACCCapturedExprDecl(ACCCapturedExprDecl *D) {
+  D->getInit()->printPretty(Out, nullptr, Policy, Indentation);
 }
 
 void DeclPrinter::VisitOMPThreadPrivateDecl(OMPThreadPrivateDecl *D) {

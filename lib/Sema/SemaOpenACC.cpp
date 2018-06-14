@@ -3055,6 +3055,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   case ACCD_parallel_for:
     Res = ActOnOpenACCParallelForDirective(ClausesWithImplicit, AStmt, StartLoc,
                                           EndLoc, VarsWithInheritedDSA);
+    llvm::outs() << "Creating action 'ActOnOpenACCParallelForDirective'. PtrTy =" << Res.get() << "\n";
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
   case ACCD_parallel_for_simd:

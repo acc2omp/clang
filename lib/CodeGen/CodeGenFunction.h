@@ -3098,7 +3098,8 @@ public:
   };
 
   /// Returns calculated size of the specified type.
-  llvm::Value *getTypeSize(QualType Ty);
+  llvm::Value *getACCTypeSize(QualType Ty);
+  llvm::Value *getOMPTypeSize(QualType Ty);
   LValue InitCapturedStruct(const CapturedStmt &S);
   llvm::Function *EmitCapturedStmt(const CapturedStmt &S, CapturedRegionKind K);
   llvm::Function *GenerateCapturedStmtFunction(const CapturedStmt &S);

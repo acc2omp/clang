@@ -130,6 +130,8 @@ CodeGenModule::CodeGenModule(ASTContext &C, const HeaderSearchOptions &HSO,
     createObjCRuntime();
   if (LangOpts.OpenCL)
     createOpenCLRuntime();
+  if (LangOpts.OpenACC)
+    createOpenACCRuntime();
   if (LangOpts.OpenMP)
     createOpenMPRuntime();
   if (LangOpts.CUDA)
@@ -196,6 +198,20 @@ void CodeGenModule::createObjCRuntime() {
 
 void CodeGenModule::createOpenCLRuntime() {
   OpenCLRuntime.reset(new CGOpenCLRuntime(*this));
+}
+
+void CodeGenModule::createOpenACCRuntime() {
+  // Select a specialized code generation class based on the target, if any.
+  // If it does not exist use the default implementation.
+  switch (getTriple().getArch()) {
+  case llvm::Triple::nvptx:
+  default:
+    if (LangOpts.OpenACCSimd)
+      OpenACCRuntime.reset(new CGOpenACCSIMDRuntime(*this));
+    else
+      OpenACCRuntime.reset(new CGOpenACCRuntime(*this));
+    break;
+  }
 }
 
 void CodeGenModule::createOpenMPRuntime() {
@@ -1459,6 +1475,9 @@ void CodeGenModule::SetFunctionAttributes(GlobalDecl GD, llvm::Function *F,
   if (!CodeGenOpts.SanitizeCfiCrossDso)
     CreateFunctionTypeMetadata(FD, F);
 
+  if (getLangOpts().OpenACC && FD->hasAttr<ACCDeclareSimdDeclAttr>())
+    getOpenACCRuntime().emitDeclareSimdFunction(FD, F);
+
   if (getLangOpts().OpenMP && FD->hasAttr<OMPDeclareSimdDeclAttr>())
     getOpenMPRuntime().emitDeclareSimdFunction(FD, F);
 }
@@ -1884,6 +1903,13 @@ bool CodeGenModule::MayBeEmittedEagerly(const ValueDecl *Global) {
       // A definition of an inline constexpr static data member may change
       // linkage later if it's redeclared outside the class.
       return false;
+
+  // If OpenACC is enabled and threadprivates must be generated like TLS, delay
+  // codegen for global variables, because they may be marked as threadprivate.
+  if (LangOpts.OpenACC && LangOpts.OpenACCUseTLS &&
+      getContext().getTargetInfo().isTLSSupported() && isa<VarDecl>(Global))
+    return false;
+
   // If OpenMP is enabled and threadprivates must be generated like TLS, delay
   // codegen for global variables, because they may be marked as threadprivate.
   if (LangOpts.OpenMP && LangOpts.OpenMPUseTLS &&
@@ -1988,6 +2014,18 @@ void CodeGenModule::EmitGlobal(GlobalDecl GD) {
 
       assert((isa<FunctionDecl>(Global) || isa<VarDecl>(Global)) &&
              "Expected Variable or Function");
+    }
+  }
+
+  if (LangOpts.OpenACC) {
+    // If this is OpenACC device, check if it is legal to emit this global
+    // normally.
+    if (OpenACCRuntime && OpenACCRuntime->emitTargetGlobal(GD))
+      return;
+    if (auto *DRD = dyn_cast<ACCDeclareReductionDecl>(Global)) {
+      if (MustBeEmitted(Global))
+        EmitACCDeclareReduction(DRD);
+      return;
     }
   }
 
@@ -4469,6 +4507,9 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
     // File-scope asm is ignored during device-side CUDA compilation.
     if (LangOpts.CUDA && LangOpts.CUDAIsDevice)
       break;
+    // File-scope asm is ignored during device-side OpenACC compilation.
+    if (LangOpts.OpenACCIsDevice)
+      break;
     // File-scope asm is ignored during device-side OpenMP compilation.
     if (LangOpts.OpenMPIsDevice)
       break;
@@ -4522,6 +4563,14 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
 
   case Decl::Export:
     EmitDeclContext(cast<ExportDecl>(D));
+    break;
+
+  case Decl::ACCThreadPrivate:
+    EmitACCThreadPrivateDecl(cast<ACCThreadPrivateDecl>(D));
+    break;
+
+  case Decl::ACCDeclareReduction:
+    EmitACCDeclareReduction(cast<ACCDeclareReductionDecl>(D));
     break;
 
   case Decl::OMPThreadPrivate:
@@ -4805,6 +4854,24 @@ llvm::Constant *CodeGenModule::GetAddrOfRTTIDescriptor(QualType Ty,
     return ObjCRuntime->GetEHType(Ty);
 
   return getCXXABI().getAddrOfRTTIDescriptor(Ty);
+}
+
+void CodeGenModule::EmitACCThreadPrivateDecl(const ACCThreadPrivateDecl *D) {
+  // Do not emit threadprivates in simd-only mode.
+  if (LangOpts.OpenACC && LangOpts.OpenACCSimd)
+    return;
+  for (auto RefExpr : D->varlists()) {
+    auto *VD = cast<VarDecl>(cast<DeclRefExpr>(RefExpr)->getDecl());
+    bool PerformInit =
+        VD->getAnyInitializer() &&
+        !VD->getAnyInitializer()->isConstantInitializer(getContext(),
+                                                        /*ForRef=*/false);
+
+    Address Addr(GetAddrOfGlobalVar(VD), getContext().getDeclAlign(VD));
+    if (auto InitFunction = getOpenACCRuntime().emitThreadPrivateVarDefinition(
+            VD, Addr, RefExpr->getLocStart(), PerformInit))
+      CXXGlobalInits.push_back(InitFunction);
+  }
 }
 
 void CodeGenModule::EmitOMPThreadPrivateDecl(const OMPThreadPrivateDecl *D) {

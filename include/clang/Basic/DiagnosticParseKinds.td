@@ -1061,13 +1061,50 @@ def err_opencl_taking_function_address_parser : Error<
 def err_opencl_logical_exclusive_or : Error<
   "^^ is a reserved operator in OpenCL">;
 
+// OpenACC support.
+def warn_pragma_acc_ignored : Warning<
+  "unexpected '#pragma acc ...' in program">, InGroup<SourceUsesOpenACC>, DefaultIgnore;
+def warn_acc_extra_tokens_at_eol : Warning<
+  "extra tokens at the end of '#pragma acc %0' are ignored">,
+  InGroup<ExtraTokens>;
+def warn_pragma_acc_expected_colon_r_paren : Warning<
+  "missing ':' or ')' after %0 - ignoring">, InGroup<IgnoredPragmas>;
+def err_acc_unknown_directive : Error<
+  "expected an OpenACC directive">;
+def err_acc_unexpected_directive : Error<
+  "unexpected OpenACC directive %select{|'#pragma acc %1'}0">;
+def err_acc_expected_punc : Error<
+  "expected ',' or ')' in '%0' %select{clause|directive}1">;
+def err_acc_unexpected_clause : Error<
+  "unexpected OpenACC clause '%0' in directive '#pragma acc %1'">;
+def err_acc_immediate_directive : Error<
+  "'#pragma acc %0' %select{|with '%2' clause }1cannot be an immediate substatement">;
+def err_acc_expected_identifier_for_critical : Error<
+  "expected identifier specifying the name of the 'acc critical' directive">;
+def err_acc_expected_reduction_identifier : Error<
+  "expected identifier or one of the following operators: '+', '-', '*', '&', '|', '^', '&&', or '||'">;
+def err_acc_decl_in_declare_simd : Error<
+  "function declaration is expected after 'declare simd' directive">;
+def err_acc_unknown_map_type : Error<
+  "incorrect map type, expected one of 'to', 'from', 'tofrom', 'alloc', 'release', or 'delete'">;
+def err_acc_unknown_map_type_modifier : Error<
+  "incorrect map type modifier, expected 'always'">;
+def err_acc_map_type_missing : Error<
+  "missing map type">;
+def err_acc_declare_simd_inbranch_notinbranch : Error<
+  "unexpected '%0' clause, '%1' is specified already">;
+def err_acc_expected_end_declare_target : Error<
+  "expected '#pragma acc end declare target'">;
+def err_acc_declare_target_unexpected_clause: Error<
+  "unexpected '%0' clause, only 'to' or 'link' clauses expected">;
+
 // OpenMP support.
 def warn_pragma_omp_ignored : Warning<
   "unexpected '#pragma omp ...' in program">, InGroup<SourceUsesOpenMP>, DefaultIgnore;
 def warn_omp_extra_tokens_at_eol : Warning<
   "extra tokens at the end of '#pragma omp %0' are ignored">,
   InGroup<ExtraTokens>;
-def warn_pragma_expected_colon_r_paren : Warning<
+def warn_pragma_omp_expected_colon_r_paren : Warning<
   "missing ':' or ')' after %0 - ignoring">, InGroup<IgnoredPragmas>;
 def err_omp_unknown_directive : Error<
   "expected an OpenMP directive">;
@@ -1093,7 +1130,7 @@ def err_omp_map_type_missing : Error<
   "missing map type">;
 def err_omp_declare_simd_inbranch_notinbranch : Error<
   "unexpected '%0' clause, '%1' is specified already">;
-def err_expected_end_declare_target : Error<
+def err_omp_expected_end_declare_target : Error<
   "expected '#pragma omp end declare target'">;
 def err_omp_declare_target_unexpected_clause: Error<
   "unexpected '%0' clause, only 'to' or 'link' clauses expected">;

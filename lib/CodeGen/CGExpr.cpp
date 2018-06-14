@@ -16,6 +16,7 @@
 #include "CGCleanup.h"
 #include "CGDebugInfo.h"
 #include "CGObjCRuntime.h"
+#include "CGOpenACCRuntime.h"
 #include "CGOpenMPRuntime.h"
 #include "CGRecordLayout.h"
 #include "CodeGenFunction.h"
@@ -2204,7 +2205,15 @@ EmitBitCastOfLValueToProperType(CodeGenFunction &CGF,
   return CGF.Builder.CreateBitCast(V, IRType->getPointerTo(AS), Name);
 }
 
-static LValue EmitThreadPrivateVarDeclLValue(
+static LValue EmitACCThreadPrivateVarDeclLValue(
+    CodeGenFunction &CGF, const VarDecl *VD, QualType T, Address Addr,
+    llvm::Type *RealVarTy, SourceLocation Loc) {
+  Addr = CGF.CGM.getOpenACCRuntime().getAddrOfThreadPrivate(CGF, VD, Addr, Loc);
+  Addr = CGF.Builder.CreateElementBitCast(Addr, RealVarTy);
+  return CGF.MakeAddrLValue(Addr, T, AlignmentSource::Decl);
+}
+
+static LValue EmitOMPThreadPrivateVarDeclLValue(
     CodeGenFunction &CGF, const VarDecl *VD, QualType T, Address Addr,
     llvm::Type *RealVarTy, SourceLocation Loc) {
   Addr = CGF.CGM.getOpenMPRuntime().getAddrOfThreadPrivate(CGF, VD, Addr, Loc);
@@ -2267,11 +2276,19 @@ static LValue EmitGlobalVarDeclLValue(CodeGenFunction &CGF,
   V = EmitBitCastOfLValueToProperType(CGF, V, RealVarTy);
   CharUnits Alignment = CGF.getContext().getDeclAlign(VD);
   Address Addr(V, Alignment);
+
+  // Emit reference to the private copy of the variable if it is an OpenACC
+  // threadprivate variable.
+  if (CGF.getLangOpts().OpenACC && !CGF.getLangOpts().OpenACCSimd &&
+      VD->hasAttr<ACCThreadPrivateDeclAttr>()) {
+    return EmitACCThreadPrivateVarDeclLValue(CGF, VD, T, Addr, RealVarTy,
+                                          E->getExprLoc());
+  }
   // Emit reference to the private copy of the variable if it is an OpenMP
   // threadprivate variable.
   if (CGF.getLangOpts().OpenMP && !CGF.getLangOpts().OpenMPSimd &&
       VD->hasAttr<OMPThreadPrivateDeclAttr>()) {
-    return EmitThreadPrivateVarDeclLValue(CGF, VD, T, Addr, RealVarTy,
+    return EmitOMPThreadPrivateVarDeclLValue(CGF, VD, T, Addr, RealVarTy,
                                           E->getExprLoc());
   }
   LValue LV = VD->getType()->isReferenceType() ?
@@ -2365,6 +2382,7 @@ LValue CodeGenFunction::EmitDeclRefLValue(const DeclRefExpr *E) {
     if (Init && !isa<ParmVarDecl>(VD) && VD->getType()->isReferenceType() &&
         VD->isUsableInConstantExpressions(getContext()) &&
         VD->checkInitIsICE() &&
+        //MARK acc2mp does OpenACC is also included?
         // Do not emit if it is private OpenMP variable.
         !(E->refersToEnclosingVariableOrCapture() &&
           ((CapturedStmtInfo &&
@@ -2452,11 +2470,18 @@ LValue CodeGenFunction::EmitDeclRefLValue(const DeclRefExpr *E) {
       llvm_unreachable("DeclRefExpr for Decl not entered in LocalDeclMap?");
     }
 
+    // Check for OpenACC threadprivate variables.
+    if (getLangOpts().OpenACC && !getLangOpts().OpenACCSimd &&
+        VD->hasAttr<ACCThreadPrivateDeclAttr>()) {
+      return EmitACCThreadPrivateVarDeclLValue(
+          *this, VD, T, addr, getTypes().ConvertTypeForMem(VD->getType()),
+          E->getExprLoc());
+    }
 
     // Check for OpenMP threadprivate variables.
     if (getLangOpts().OpenMP && !getLangOpts().OpenMPSimd &&
         VD->hasAttr<OMPThreadPrivateDeclAttr>()) {
-      return EmitThreadPrivateVarDeclLValue(
+      return EmitOMPThreadPrivateVarDeclLValue(
           *this, VD, T, addr, getTypes().ConvertTypeForMem(VD->getType()),
           E->getExprLoc());
     }

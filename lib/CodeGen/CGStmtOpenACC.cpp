@@ -230,12 +230,12 @@ LValue CodeGenFunction::EmitACCSharedLValue(const Expr *E) {
   return EmitLValue(E);
 }
 
-llvm::Value *CodeGenFunction::getTypeSize(QualType Ty) {
+llvm::Value *CodeGenFunction::getACCTypeSize(QualType Ty) {
   auto &C = getContext();
   llvm::Value *Size = nullptr;
   auto SizeInChars = C.getTypeSizeInChars(Ty);
   if (SizeInChars.isZero()) {
-    // getTypeSizeInChars() returns 0 for a VLA.
+    // getACCTypeSizeInChars() returns 0 for a VLA.
     while (auto *VAT = C.getAsVariableArrayType(Ty)) {
       auto VlaSize = getVLASize(VAT);
       Ty = VlaSize.Type;
@@ -2681,6 +2681,7 @@ void CodeGenFunction::EmitACCCriticalDirective(const ACCCriticalDirective &S) {
 
 void CodeGenFunction::EmitACCParallelForDirective(
     const ACCParallelForDirective &S) {
+  llvm::outs() << "I am generating an OpenACC Parallel Loop code";
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {

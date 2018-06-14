@@ -194,8 +194,8 @@ static DeclarationName parseOpenACCReductionId(Parser &P) {
       break;
     LLVM_FALLTHROUGH;
   default:
-    P.Diag(Tok.getLocation(), diag::err_omp_expected_reduction_identifier);
-    P.SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openmp_end,
+    P.Diag(Tok.getLocation(), diag::err_acc_expected_reduction_identifier);
+    P.SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openacc_end,
                 Parser::StopBeforeMatch);
     return DeclarationName();
   }
@@ -208,41 +208,41 @@ static DeclarationName parseOpenACCReductionId(Parser &P) {
 /// \brief Parse 'acc declare reduction' construct.
 ///
 ///       declare-reduction-directive:
-///        annot_pragma_openmp 'declare' 'reduction'
+///        annot_pragma_openacc 'declare' 'reduction'
 ///        '(' <reduction_id> ':' <type> {',' <type>} ':' <expression> ')'
-///        ['initializer' '(' ('omp_priv' '=' <expression>)|<function_call> ')']
-///        annot_pragma_openmp_end
+///        ['initializer' '(' ('acc_priv' '=' <expression>)|<function_call> ')']
+///        annot_pragma_openacc_end
 /// <reduction_id> is either a base language identifier or one of the following
 /// operators: '+', '-', '*', '&', '|', '^', '&&' and '||'.
 ///
 Parser::DeclGroupPtrTy
 Parser::ParseOpenACCDeclareReductionDirective(AccessSpecifier AS) {
   // Parse '('.
-  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openmp_end);
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openacc_end);
   if (T.expectAndConsume(diag::err_expected_lparen_after,
                          getOpenACCDirectiveName(ACCD_declare_reduction))) {
-    SkipUntil(tok::annot_pragma_openmp_end, StopBeforeMatch);
+    SkipUntil(tok::annot_pragma_openacc_end, StopBeforeMatch);
     return DeclGroupPtrTy();
   }
 
   DeclarationName Name = parseOpenACCReductionId(*this);
-  if (Name.isEmpty() && Tok.is(tok::annot_pragma_openmp_end))
+  if (Name.isEmpty() && Tok.is(tok::annot_pragma_openacc_end))
     return DeclGroupPtrTy();
 
   // Consume ':'.
   bool IsCorrect = !ExpectAndConsume(tok::colon);
 
-  if (!IsCorrect && Tok.is(tok::annot_pragma_openmp_end))
+  if (!IsCorrect && Tok.is(tok::annot_pragma_openacc_end))
     return DeclGroupPtrTy();
 
   IsCorrect = IsCorrect && !Name.isEmpty();
 
-  if (Tok.is(tok::colon) || Tok.is(tok::annot_pragma_openmp_end)) {
+  if (Tok.is(tok::colon) || Tok.is(tok::annot_pragma_openacc_end)) {
     Diag(Tok.getLocation(), diag::err_expected_type);
     IsCorrect = false;
   }
 
-  if (!IsCorrect && Tok.is(tok::annot_pragma_openmp_end))
+  if (!IsCorrect && Tok.is(tok::annot_pragma_openacc_end))
     return DeclGroupPtrTy();
 
   SmallVector<std::pair<QualType, SourceLocation>, 8> ReductionTypes;
@@ -260,36 +260,36 @@ Parser::ParseOpenACCDeclareReductionDirective(AccessSpecifier AS) {
             std::make_pair(ReductionType, Range.getBegin()));
       }
     } else {
-      SkipUntil(tok::comma, tok::colon, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::comma, tok::colon, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
     }
 
-    if (Tok.is(tok::colon) || Tok.is(tok::annot_pragma_openmp_end))
+    if (Tok.is(tok::colon) || Tok.is(tok::annot_pragma_openacc_end))
       break;
 
     // Consume ','.
     if (ExpectAndConsume(tok::comma)) {
       IsCorrect = false;
-      if (Tok.is(tok::annot_pragma_openmp_end)) {
+      if (Tok.is(tok::annot_pragma_openacc_end)) {
         Diag(Tok.getLocation(), diag::err_expected_type);
         return DeclGroupPtrTy();
       }
     }
-  } while (Tok.isNot(tok::annot_pragma_openmp_end));
+  } while (Tok.isNot(tok::annot_pragma_openacc_end));
 
   if (ReductionTypes.empty()) {
-    SkipUntil(tok::annot_pragma_openmp_end, StopBeforeMatch);
+    SkipUntil(tok::annot_pragma_openacc_end, StopBeforeMatch);
     return DeclGroupPtrTy();
   }
 
-  if (!IsCorrect && Tok.is(tok::annot_pragma_openmp_end))
+  if (!IsCorrect && Tok.is(tok::annot_pragma_openacc_end))
     return DeclGroupPtrTy();
 
   // Consume ':'.
   if (ExpectAndConsume(tok::colon))
     IsCorrect = false;
 
-  if (Tok.is(tok::annot_pragma_openmp_end)) {
+  if (Tok.is(tok::annot_pragma_openacc_end)) {
     Diag(Tok.getLocation(), diag::err_expected_expression);
     return DeclGroupPtrTy();
   }
@@ -313,14 +313,14 @@ Parser::ParseOpenACCDeclareReductionDirective(AccessSpecifier AS) {
     Actions.ActOnOpenACCDeclareReductionCombinerEnd(D, CombinerResult.get());
 
     if (CombinerResult.isInvalid() && Tok.isNot(tok::r_paren) &&
-        Tok.isNot(tok::annot_pragma_openmp_end)) {
+        Tok.isNot(tok::annot_pragma_openacc_end)) {
       TPA.Commit();
       IsCorrect = false;
       break;
     }
     IsCorrect = !T.consumeClose() && IsCorrect && CombinerResult.isUsable();
     ExprResult InitializerResult;
-    if (Tok.isNot(tok::annot_pragma_openmp_end)) {
+    if (Tok.isNot(tok::annot_pragma_openacc_end)) {
       // Parse <initializer> expression.
       if (Tok.is(tok::identifier) &&
           Tok.getIdentifierInfo()->isStr("initializer"))
@@ -333,32 +333,32 @@ Parser::ParseOpenACCDeclareReductionDirective(AccessSpecifier AS) {
       }
       // Parse '('.
       BalancedDelimiterTracker T(*this, tok::l_paren,
-                                 tok::annot_pragma_openmp_end);
+                                 tok::annot_pragma_openacc_end);
       IsCorrect =
           !T.expectAndConsume(diag::err_expected_lparen_after, "initializer") &&
           IsCorrect;
-      if (Tok.isNot(tok::annot_pragma_openmp_end)) {
+      if (Tok.isNot(tok::annot_pragma_openacc_end)) {
         ParseScope ACCDRScope(this, Scope::FnScope | Scope::DeclScope |
                                         Scope::CompoundStmtScope |
                                         Scope::OpenACCDirectiveScope);
         // Parse expression.
-        VarDecl *OmpPrivParm =
+        VarDecl *AccPrivParm =
             Actions.ActOnOpenACCDeclareReductionInitializerStart(getCurScope(),
                                                                 D);
-        // Check if initializer is omp_priv <init_expr> or something else.
+        // Check if initializer is acc_priv <init_expr> or something else.
         if (Tok.is(tok::identifier) &&
-            Tok.getIdentifierInfo()->isStr("omp_priv")) {
+            Tok.getIdentifierInfo()->isStr("acc_priv")) {
           ConsumeToken();
-          ParseOpenACCReductionInitializerForDecl(OmpPrivParm);
+          ParseOpenACCReductionInitializerForDecl(AccPrivParm);
         } else {
           InitializerResult = Actions.ActOnFinishFullExpr(
               ParseAssignmentExpression().get(), D->getLocation(),
               /*DiscardedValue=*/true);
         }
         Actions.ActOnOpenACCDeclareReductionInitializerEnd(
-            D, InitializerResult.get(), OmpPrivParm);
+            D, InitializerResult.get(), AccPrivParm);
         if (InitializerResult.isInvalid() && Tok.isNot(tok::r_paren) &&
-            Tok.isNot(tok::annot_pragma_openmp_end)) {
+            Tok.isNot(tok::annot_pragma_openacc_end)) {
           TPA.Commit();
           IsCorrect = false;
           break;
@@ -380,15 +380,15 @@ Parser::ParseOpenACCDeclareReductionDirective(AccessSpecifier AS) {
                                                          IsCorrect);
 }
 
-void Parser::ParseOpenACCReductionInitializerForDecl(VarDecl *OmpPrivParm) {
+void Parser::ParseOpenACCReductionInitializerForDecl(VarDecl *AccPrivParm) {
   // Parse declarator '=' initializer.
   // If a '==' or '+=' is found, suggest a fixit to '='.
   if (isTokenEqualOrEqualTypo()) {
     ConsumeToken();
 
     if (Tok.is(tok::code_completion)) {
-      Actions.CodeCompleteInitializer(getCurScope(), OmpPrivParm);
-      Actions.FinalizeDeclaration(OmpPrivParm);
+      Actions.CodeCompleteInitializer(getCurScope(), AccPrivParm);
+      Actions.FinalizeDeclaration(AccPrivParm);
       cutOffParsing();
       return;
     }
@@ -396,10 +396,10 @@ void Parser::ParseOpenACCReductionInitializerForDecl(VarDecl *OmpPrivParm) {
     ExprResult Init(ParseInitializer());
 
     if (Init.isInvalid()) {
-      SkipUntil(tok::r_paren, tok::annot_pragma_openmp_end, StopBeforeMatch);
-      Actions.ActOnInitializerError(OmpPrivParm);
+      SkipUntil(tok::r_paren, tok::annot_pragma_openacc_end, StopBeforeMatch);
+      Actions.ActOnInitializerError(AccPrivParm);
     } else {
-      Actions.AddInitializerToDecl(OmpPrivParm, Init.get(),
+      Actions.AddInitializerToDecl(AccPrivParm, Init.get(),
                                    /*DirectInit=*/false);
     }
   } else if (Tok.is(tok::l_paren)) {
@@ -410,13 +410,13 @@ void Parser::ParseOpenACCReductionInitializerForDecl(VarDecl *OmpPrivParm) {
     ExprVector Exprs;
     CommaLocsTy CommaLocs;
 
-    if (ParseExpressionList(Exprs, CommaLocs, [this, OmpPrivParm, &Exprs] {
+    if (ParseExpressionList(Exprs, CommaLocs, [this, AccPrivParm, &Exprs] {
           Actions.CodeCompleteConstructor(
-              getCurScope(), OmpPrivParm->getType()->getCanonicalTypeInternal(),
-              OmpPrivParm->getLocation(), Exprs);
+              getCurScope(), AccPrivParm->getType()->getCanonicalTypeInternal(),
+              AccPrivParm->getLocation(), Exprs);
         })) {
-      Actions.ActOnInitializerError(OmpPrivParm);
-      SkipUntil(tok::r_paren, tok::annot_pragma_openmp_end, StopBeforeMatch);
+      Actions.ActOnInitializerError(AccPrivParm);
+      SkipUntil(tok::r_paren, tok::annot_pragma_openacc_end, StopBeforeMatch);
     } else {
       // Match the ')'.
       T.consumeClose();
@@ -426,7 +426,7 @@ void Parser::ParseOpenACCReductionInitializerForDecl(VarDecl *OmpPrivParm) {
 
       ExprResult Initializer = Actions.ActOnParenListExpr(
           T.getOpenLocation(), T.getCloseLocation(), Exprs);
-      Actions.AddInitializerToDecl(OmpPrivParm, Initializer.get(),
+      Actions.AddInitializerToDecl(AccPrivParm, Initializer.get(),
                                    /*DirectInit=*/true);
     }
   } else if (getLangOpts().CPlusPlus11 && Tok.is(tok::l_brace)) {
@@ -436,13 +436,13 @@ void Parser::ParseOpenACCReductionInitializerForDecl(VarDecl *OmpPrivParm) {
     ExprResult Init(ParseBraceInitializer());
 
     if (Init.isInvalid()) {
-      Actions.ActOnInitializerError(OmpPrivParm);
+      Actions.ActOnInitializerError(AccPrivParm);
     } else {
-      Actions.AddInitializerToDecl(OmpPrivParm, Init.get(),
+      Actions.AddInitializerToDecl(AccPrivParm, Init.get(),
                                    /*DirectInit=*/true);
     }
   } else {
-    Actions.ActOnUninitializedDecl(OmpPrivParm);
+    Actions.ActOnUninitializedDecl(AccPrivParm);
   }
 }
 
@@ -518,7 +518,7 @@ static bool parseDeclareSimdClauses(
   SourceRange BSRange;
   const Token &Tok = P.getCurToken();
   bool IsError = false;
-  while (Tok.isNot(tok::annot_pragma_openmp_end)) {
+  while (Tok.isNot(tok::annot_pragma_openacc_end)) {
     if (Tok.isNot(tok::identifier))
       break;
     ACCDeclareSimdDeclAttr::BranchStateTy Out;
@@ -527,7 +527,7 @@ static bool parseDeclareSimdClauses(
     // Parse 'inranch|notinbranch' clauses.
     if (ACCDeclareSimdDeclAttr::ConvertStrToBranchStateTy(ClauseName, Out)) {
       if (BS != ACCDeclareSimdDeclAttr::BS_Undefined && BS != Out) {
-        P.Diag(Tok, diag::err_omp_declare_simd_inbranch_notinbranch)
+        P.Diag(Tok, diag::err_acc_declare_simd_inbranch_notinbranch)
             << ClauseName
             << ACCDeclareSimdDeclAttr::ConvertBranchStateTyToStr(BS) << BSRange;
         IsError = true;
@@ -537,7 +537,7 @@ static bool parseDeclareSimdClauses(
       P.ConsumeToken();
     } else if (ClauseName.equals("simdlen")) {
       if (SimdLen.isUsable()) {
-        P.Diag(Tok, diag::err_omp_more_one_clause)
+        P.Diag(Tok, diag::err_acc_more_one_clause)
             << getOpenACCDirectiveName(ACCD_declare_simd) << ClauseName << 0;
         IsError = true;
       }
@@ -605,13 +605,13 @@ Parser::ParseACCDeclareSimdClauses(Parser::DeclGroupPtrTy Ptr,
       parseDeclareSimdClauses(*this, BS, Simdlen, Uniforms, Aligneds,
                               Alignments, Linears, LinModifiers, Steps);
   // Need to check for extra tokens.
-  if (Tok.isNot(tok::annot_pragma_openmp_end)) {
-    Diag(Tok, diag::warn_omp_extra_tokens_at_eol)
+  if (Tok.isNot(tok::annot_pragma_openacc_end)) {
+    Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
         << getOpenACCDirectiveName(ACCD_declare_simd);
-    while (Tok.isNot(tok::annot_pragma_openmp_end))
+    while (Tok.isNot(tok::annot_pragma_openacc_end))
       ConsumeAnyToken();
   }
-  // Skip the last annot_pragma_openmp_end.
+  // Skip the last annot_pragma_openacc_end.
   SourceLocation EndLoc = ConsumeAnnotationToken();
   if (!IsError) {
     return Actions.ActOnOpenACCDeclareSimdDirective(
@@ -624,22 +624,22 @@ Parser::ParseACCDeclareSimdClauses(Parser::DeclGroupPtrTy Ptr,
 /// \brief Parsing of declarative OpenACC directives.
 ///
 ///       threadprivate-directive:
-///         annot_pragma_openmp 'threadprivate' simple-variable-list
-///         annot_pragma_openmp_end
+///         annot_pragma_openacc 'threadprivate' simple-variable-list
+///         annot_pragma_openacc_end
 ///
 ///       declare-reduction-directive:
-///        annot_pragma_openmp 'declare' 'reduction' [...]
-///        annot_pragma_openmp_end
+///        annot_pragma_openacc 'declare' 'reduction' [...]
+///        annot_pragma_openacc_end
 ///
 ///       declare-simd-directive:
-///         annot_pragma_openmp 'declare simd' {<clause> [,]}
-///         annot_pragma_openmp_end
+///         annot_pragma_openacc 'declare simd' {<clause> [,]}
+///         annot_pragma_openacc_end
 ///         <function declaration/definition>
 ///
 Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
     AccessSpecifier &AS, ParsedAttributesWithRange &Attrs,
     DeclSpec::TST TagType, Decl *Tag) {
-  assert(Tok.is(tok::annot_pragma_openmp) && "Not an OpenACC directive!");
+  assert(Tok.is(tok::annot_pragma_openacc) && "Not an OpenACC directive!");
   ParenBraceBracketBalancer BalancerRAIIObj(*this);
 
   SourceLocation Loc = ConsumeAnnotationToken();
@@ -650,14 +650,14 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
     ConsumeToken();
     ThreadprivateListParserHelper Helper(this);
     if (!ParseOpenACCSimpleVarList(ACCD_threadprivate, Helper, true)) {
-      // The last seen token is annot_pragma_openmp_end - need to check for
+      // The last seen token is annot_pragma_openacc_end - need to check for
       // extra tokens.
-      if (Tok.isNot(tok::annot_pragma_openmp_end)) {
-        Diag(Tok, diag::warn_omp_extra_tokens_at_eol)
+      if (Tok.isNot(tok::annot_pragma_openacc_end)) {
+        Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
             << getOpenACCDirectiveName(ACCD_threadprivate);
-        SkipUntil(tok::annot_pragma_openmp_end, StopBeforeMatch);
+        SkipUntil(tok::annot_pragma_openacc_end, StopBeforeMatch);
       }
-      // Skip the last annot_pragma_openmp_end.
+      // Skip the last annot_pragma_openacc_end.
       ConsumeAnnotationToken();
       return Actions.ActOnOpenACCThreadprivateDirective(Loc,
                                                        Helper.getIdentifiers());
@@ -667,15 +667,15 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_declare_reduction:
     ConsumeToken();
     if (auto Res = ParseOpenACCDeclareReductionDirective(AS)) {
-      // The last seen token is annot_pragma_openmp_end - need to check for
+      // The last seen token is annot_pragma_openacc_end - need to check for
       // extra tokens.
-      if (Tok.isNot(tok::annot_pragma_openmp_end)) {
-        Diag(Tok, diag::warn_omp_extra_tokens_at_eol)
+      if (Tok.isNot(tok::annot_pragma_openacc_end)) {
+        Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
             << getOpenACCDirectiveName(ACCD_declare_reduction);
-        while (Tok.isNot(tok::annot_pragma_openmp_end))
+        while (Tok.isNot(tok::annot_pragma_openacc_end))
           ConsumeAnyToken();
       }
-      // Skip the last annot_pragma_openmp_end.
+      // Skip the last annot_pragma_openacc_end.
       ConsumeAnnotationToken();
       return Res;
     }
@@ -687,7 +687,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
     //
     ConsumeToken();
     CachedTokens Toks;
-    while(Tok.isNot(tok::annot_pragma_openmp_end)) {
+    while(Tok.isNot(tok::annot_pragma_openacc_end)) {
       Toks.push_back(Tok);
       ConsumeAnyToken();
     }
@@ -695,7 +695,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
     ConsumeAnyToken();
 
     DeclGroupPtrTy Ptr;
-    if (Tok.is(tok::annot_pragma_openmp))
+    if (Tok.is(tok::annot_pragma_openacc))
       Ptr = ParseOpenACCDeclarativeDirectiveWithExtDecl(AS, Attrs, TagType, Tag);
     else if (Tok.isNot(tok::r_brace) && !isEofOrEom()) {
       // Here we expect to see some function declaration.
@@ -710,17 +710,17 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
       }
     }
     if (!Ptr) {
-      Diag(Loc, diag::err_omp_decl_in_declare_simd);
+      Diag(Loc, diag::err_acc_decl_in_declare_simd);
       return DeclGroupPtrTy();
     }
     return ParseACCDeclareSimdClauses(Ptr, Toks, Loc);
   }
   case ACCD_declare_target: {
     SourceLocation DTLoc = ConsumeAnyToken();
-    if (Tok.isNot(tok::annot_pragma_openmp_end)) {
+    if (Tok.isNot(tok::annot_pragma_openacc_end)) {
       // OpenACC 4.5 syntax with list of entities.
       llvm::SmallSetVector<const NamedDecl*, 16> SameDirectiveDecls;
-      while (Tok.isNot(tok::annot_pragma_openmp_end)) {
+      while (Tok.isNot(tok::annot_pragma_openacc_end)) {
         ACCDeclareTargetDeclAttr::MapTypeTy MT =
             ACCDeclareTargetDeclAttr::MT_To;
         if (Tok.is(tok::identifier)) {
@@ -729,7 +729,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
           // Parse 'to|link' clauses.
           if (!ACCDeclareTargetDeclAttr::ConvertStrToMapTypeTy(ClauseName,
                                                                MT)) {
-            Diag(Tok, diag::err_omp_declare_target_unexpected_clause)
+            Diag(Tok, diag::err_acc_declare_target_unexpected_clause)
                 << ClauseName;
             break;
           }
@@ -747,12 +747,12 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
         if (Tok.is(tok::comma))
           ConsumeToken();
       }
-      SkipUntil(tok::annot_pragma_openmp_end, StopBeforeMatch);
+      SkipUntil(tok::annot_pragma_openacc_end, StopBeforeMatch);
       ConsumeAnyToken();
       return DeclGroupPtrTy();
     }
 
-    // Skip the last annot_pragma_openmp_end.
+    // Skip the last annot_pragma_openacc_end.
     ConsumeAnyToken();
 
     if (!Actions.ActOnStartOpenACCDeclareTargetDirective(DTLoc))
@@ -772,7 +772,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
         Ptr =
             ParseCXXClassMemberDeclarationWithPragmas(AS, Attrs, TagType, Tag);
       }
-      if (Tok.isAnnotation() && Tok.is(tok::annot_pragma_openmp)) {
+      if (Tok.isAnnotation() && Tok.is(tok::annot_pragma_openacc)) {
         TentativeParsingAction TPA(*this);
         ConsumeAnnotationToken();
         DKind = ParseOpenACCDirectiveKind(*this);
@@ -785,22 +785,22 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
 
     if (DKind == ACCD_end_declare_target) {
       ConsumeAnyToken();
-      if (Tok.isNot(tok::annot_pragma_openmp_end)) {
-        Diag(Tok, diag::warn_omp_extra_tokens_at_eol)
+      if (Tok.isNot(tok::annot_pragma_openacc_end)) {
+        Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
             << getOpenACCDirectiveName(ACCD_end_declare_target);
-        SkipUntil(tok::annot_pragma_openmp_end, StopBeforeMatch);
+        SkipUntil(tok::annot_pragma_openacc_end, StopBeforeMatch);
       }
-      // Skip the last annot_pragma_openmp_end.
+      // Skip the last annot_pragma_openacc_end.
       ConsumeAnyToken();
     } else {
-      Diag(Tok, diag::err_expected_end_declare_target);
+      Diag(Tok, diag::err_acc_expected_end_declare_target);
       Diag(DTLoc, diag::note_matching) << "'#pragma acc declare target'";
     }
     Actions.ActOnFinishOpenACCDeclareTargetDirective();
     return DeclGroupPtrTy();
   }
   case ACCD_unknown:
-    Diag(Tok, diag::err_omp_unknown_directive);
+    Diag(Tok, diag::err_acc_unknown_directive);
     break;
   case ACCD_parallel:
   case ACCD_simd:
@@ -850,11 +850,11 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_target_teams_distribute_parallel_for:
   case ACCD_target_teams_distribute_parallel_for_simd:
   case ACCD_target_teams_distribute_simd:
-    Diag(Tok, diag::err_omp_unexpected_directive)
+    Diag(Tok, diag::err_acc_unexpected_directive)
         << 1 << getOpenACCDirectiveName(DKind);
     break;
   }
-  while (Tok.isNot(tok::annot_pragma_openmp_end))
+  while (Tok.isNot(tok::annot_pragma_openacc_end))
     ConsumeAnyToken();
   ConsumeAnyToken();
   return nullptr;
@@ -863,17 +863,17 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
 /// \brief Parsing of declarative or executable OpenACC directives.
 ///
 ///       threadprivate-directive:
-///         annot_pragma_openmp 'threadprivate' simple-variable-list
-///         annot_pragma_openmp_end
+///         annot_pragma_openacc 'threadprivate' simple-variable-list
+///         annot_pragma_openacc_end
 ///
 ///       declare-reduction-directive:
-///         annot_pragma_openmp 'declare' 'reduction' '(' <reduction_id> ':'
+///         annot_pragma_openacc 'declare' 'reduction' '(' <reduction_id> ':'
 ///         <type> {',' <type>} ':' <expression> ')' ['initializer' '('
-///         ('omp_priv' '=' <expression>|<function_call>) ')']
-///         annot_pragma_openmp_end
+///         ('acc_priv' '=' <expression>|<function_call>) ')']
+///         annot_pragma_openacc_end
 ///
 ///       executable-directive:
-///         annot_pragma_openmp 'parallel' | 'simd' | 'for' | 'sections' |
+///         annot_pragma_openacc 'parallel' | 'simd' | 'for' | 'sections' |
 ///         'section' | 'single' | 'master' | 'critical' [ '(' <name> ')' ] |
 ///         'parallel for' | 'parallel sections' | 'task' | 'taskyield' |
 ///         'barrier' | 'taskwait' | 'flush' | 'ordered' | 'atomic' |
@@ -891,11 +891,11 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
 ///         'target teams distribute parallel for' |
 ///         'target teams distribute parallel for simd' |
 ///         'target teams distribute simd' {clause}
-///         annot_pragma_openmp_end
+///         annot_pragma_openacc_end
 ///
 StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     AllowedConstructsKind Allowed) {
-  assert(Tok.is(tok::annot_pragma_openmp) && "Not an OpenACC directive!");
+  assert(Tok.is(tok::annot_pragma_openacc) && "Not an OpenACC directive!");
   ParenBraceBracketBalancer BalancerRAIIObj(*this);
   SmallVector<ACCClause *, 5> Clauses;
   SmallVector<llvm::PointerIntPair<ACCClause *, 1, bool>, ACCC_unknown + 1>
@@ -911,44 +911,46 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   bool HasAssociatedStatement = true;
   bool FlushHasClause = false;
 
+  llvm::outs() << "Directive Kind is: " << getOpenACCDirectiveName(DKind) << "\n";
+
   switch (DKind) {
   case ACCD_threadprivate: {
     if (Allowed != ACK_Any) {
-      Diag(Tok, diag::err_omp_immediate_directive)
+      Diag(Tok, diag::err_acc_immediate_directive)
           << getOpenACCDirectiveName(DKind) << 0;
     }
     ConsumeToken();
     ThreadprivateListParserHelper Helper(this);
     if (!ParseOpenACCSimpleVarList(ACCD_threadprivate, Helper, false)) {
-      // The last seen token is annot_pragma_openmp_end - need to check for
+      // The last seen token is annot_pragma_openacc_end - need to check for
       // extra tokens.
-      if (Tok.isNot(tok::annot_pragma_openmp_end)) {
-        Diag(Tok, diag::warn_omp_extra_tokens_at_eol)
+      if (Tok.isNot(tok::annot_pragma_openacc_end)) {
+        Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
             << getOpenACCDirectiveName(ACCD_threadprivate);
-        SkipUntil(tok::annot_pragma_openmp_end, StopBeforeMatch);
+        SkipUntil(tok::annot_pragma_openacc_end, StopBeforeMatch);
       }
       DeclGroupPtrTy Res = Actions.ActOnOpenACCThreadprivateDirective(
           Loc, Helper.getIdentifiers());
       Directive = Actions.ActOnDeclStmt(Res, Loc, Tok.getLocation());
     }
-    SkipUntil(tok::annot_pragma_openmp_end);
+    SkipUntil(tok::annot_pragma_openacc_end);
     break;
   }
   case ACCD_declare_reduction:
     ConsumeToken();
     if (auto Res = ParseOpenACCDeclareReductionDirective(/*AS=*/AS_none)) {
-      // The last seen token is annot_pragma_openmp_end - need to check for
+      // The last seen token is annot_pragma_openacc_end - need to check for
       // extra tokens.
-      if (Tok.isNot(tok::annot_pragma_openmp_end)) {
-        Diag(Tok, diag::warn_omp_extra_tokens_at_eol)
+      if (Tok.isNot(tok::annot_pragma_openacc_end)) {
+        Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
             << getOpenACCDirectiveName(ACCD_declare_reduction);
-        while (Tok.isNot(tok::annot_pragma_openmp_end))
+        while (Tok.isNot(tok::annot_pragma_openacc_end))
           ConsumeAnyToken();
       }
       ConsumeAnyToken();
       Directive = Actions.ActOnDeclStmt(Res, Loc, Tok.getLocation());
     } else
-      SkipUntil(tok::annot_pragma_openmp_end);
+      SkipUntil(tok::annot_pragma_openacc_end);
     break;
   case ACCD_flush:
     if (PP.LookAhead(0).is(tok::l_paren)) {
@@ -967,7 +969,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_target_exit_data:
   case ACCD_target_update:
     if (Allowed == ACK_StatementsOpenACCNonStandalone) {
-      Diag(Tok, diag::err_omp_immediate_directive)
+      Diag(Tok, diag::err_acc_immediate_directive)
           << getOpenACCDirectiveName(DKind) << 0;
     }
     HasAssociatedStatement = false;
@@ -1015,20 +1017,20 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     // Parse directive name of the 'critical' directive if any.
     if (DKind == ACCD_critical) {
       BalancedDelimiterTracker T(*this, tok::l_paren,
-                                 tok::annot_pragma_openmp_end);
+                                 tok::annot_pragma_openacc_end);
       if (!T.consumeOpen()) {
         if (Tok.isAnyIdentifier()) {
           DirName =
               DeclarationNameInfo(Tok.getIdentifierInfo(), Tok.getLocation());
           ConsumeAnyToken();
         } else {
-          Diag(Tok, diag::err_omp_expected_identifier_for_critical);
+          Diag(Tok, diag::err_acc_expected_identifier_for_critical);
         }
         T.consumeClose();
       }
     } else if (DKind == ACCD_cancellation_point || DKind == ACCD_cancel) {
       CancelRegion = ParseOpenACCDirectiveKind(*this);
-      if (Tok.isNot(tok::annot_pragma_openmp_end))
+      if (Tok.isNot(tok::annot_pragma_openacc_end))
         ConsumeToken();
     }
 
@@ -1039,7 +1041,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     ParseScope ACCDirectiveScope(this, ScopeFlags);
     Actions.StartOpenACCDSABlock(DKind, DirName, Actions.getCurScope(), Loc);
 
-    while (Tok.isNot(tok::annot_pragma_openmp_end)) {
+    while (Tok.isNot(tok::annot_pragma_openacc_end)) {
       OpenACCClauseKind CKind =
           Tok.isAnnotation()
               ? ACCC_unknown
@@ -1062,7 +1064,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     }
     // End location of the directive.
     EndLoc = Tok.getLocation();
-    // Consume final annot_pragma_openmp_end.
+    // Consume final annot_pragma_openacc_end.
     ConsumeAnnotationToken();
 
     // OpenACC [2.13.8, ordered Construct, Syntax]
@@ -1070,7 +1072,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     // directive.
     if (DKind == ACCD_ordered && FirstClauses[ACCC_depend].getInt()) {
       if (Allowed == ACK_StatementsOpenACCNonStandalone) {
-        Diag(Loc, diag::err_omp_immediate_directive)
+        Diag(Loc, diag::err_acc_immediate_directive)
             << getOpenACCDirectiveName(DKind) << 1
             << getOpenACCClauseName(ACCC_depend);
       }
@@ -1106,13 +1108,13 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_declare_simd:
   case ACCD_declare_target:
   case ACCD_end_declare_target:
-    Diag(Tok, diag::err_omp_unexpected_directive)
+    Diag(Tok, diag::err_acc_unexpected_directive)
         << 1 << getOpenACCDirectiveName(DKind);
-    SkipUntil(tok::annot_pragma_openmp_end);
+    SkipUntil(tok::annot_pragma_openacc_end);
     break;
   case ACCD_unknown:
-    Diag(Tok, diag::err_omp_unknown_directive);
-    SkipUntil(tok::annot_pragma_openmp_end);
+    Diag(Tok, diag::err_acc_unknown_directive);
+    SkipUntil(tok::annot_pragma_openacc_end);
     break;
   }
   return Directive;
@@ -1128,15 +1130,15 @@ bool Parser::ParseOpenACCSimpleVarList(
         Callback,
     bool AllowScopeSpecifier) {
   // Parse '('.
-  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openmp_end);
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openacc_end);
   if (T.expectAndConsume(diag::err_expected_lparen_after,
                          getOpenACCDirectiveName(Kind)))
     return true;
   bool IsCorrect = true;
   bool NoIdentIsFound = true;
 
-  // Read tokens while ')' or annot_pragma_openmp_end is not found.
-  while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::annot_pragma_openmp_end)) {
+  // Read tokens while ')' or annot_pragma_openacc_end is not found.
+  while (Tok.isNot(tok::r_paren) && Tok.isNot(tok::annot_pragma_openacc_end)) {
     CXXScopeSpec SS;
     SourceLocation TemplateKWLoc;
     UnqualifiedId Name;
@@ -1147,17 +1149,17 @@ bool Parser::ParseOpenACCSimpleVarList(
     if (AllowScopeSpecifier && getLangOpts().CPlusPlus &&
         ParseOptionalCXXScopeSpecifier(SS, nullptr, false)) {
       IsCorrect = false;
-      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
     } else if (ParseUnqualifiedId(SS, false, false, false, false, nullptr,
                                   TemplateKWLoc, Name)) {
       IsCorrect = false;
-      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
     } else if (Tok.isNot(tok::comma) && Tok.isNot(tok::r_paren) &&
-               Tok.isNot(tok::annot_pragma_openmp_end)) {
+               Tok.isNot(tok::annot_pragma_openacc_end)) {
       IsCorrect = false;
-      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
       Diag(PrevTok.getLocation(), diag::err_expected)
           << tok::identifier
@@ -1205,7 +1207,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
   bool WrongDirective = false;
   // Check if clause is allowed for the given directive.
   if (CKind != ACCC_unknown && !isAllowedClauseForDirective(DKind, CKind)) {
-    Diag(Tok, diag::err_omp_unexpected_clause) << getOpenACCClauseName(CKind)
+    Diag(Tok, diag::err_acc_unexpected_clause) << getOpenACCClauseName(CKind)
                                                << getOpenACCDirectiveName(DKind);
     ErrorFound = true;
     WrongDirective = true;
@@ -1246,7 +1248,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
     // OpenACC [2.9.2, taskloop Construct, Restrictions]
     // At most one num_tasks clause can appear on the directive.
     if (!FirstClause) {
-      Diag(Tok, diag::err_omp_more_one_clause)
+      Diag(Tok, diag::err_acc_more_one_clause)
           << getOpenACCDirectiveName(DKind) << getOpenACCClauseName(CKind) << 0;
       ErrorFound = true;
     }
@@ -1264,7 +1266,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
     // OpenACC [2.5, parallel Construct, Restrictions]
     //  At most one proc_bind clause can appear on the directive.
     if (!FirstClause) {
-      Diag(Tok, diag::err_omp_more_one_clause)
+      Diag(Tok, diag::err_acc_more_one_clause)
           << getOpenACCDirectiveName(DKind) << getOpenACCClauseName(CKind) << 0;
       ErrorFound = true;
     }
@@ -1279,7 +1281,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
     // OpenACC [2.10.4, Restrictions, p. 106]
     //  At most one defaultmap clause can appear on the directive.
     if (!FirstClause) {
-      Diag(Tok, diag::err_omp_more_one_clause)
+      Diag(Tok, diag::err_acc_more_one_clause)
           << getOpenACCDirectiveName(DKind) << getOpenACCClauseName(CKind) << 0;
       ErrorFound = true;
     }
@@ -1304,7 +1306,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
     // OpenACC [2.7.1, Restrictions, C/C++, p. 4]
     //  Only one nowait clause can appear on a for directive.
     if (!FirstClause) {
-      Diag(Tok, diag::err_omp_more_one_clause)
+      Diag(Tok, diag::err_acc_more_one_clause)
           << getOpenACCDirectiveName(DKind) << getOpenACCClauseName(CKind) << 0;
       ErrorFound = true;
     }
@@ -1332,16 +1334,16 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
     Clause = ParseOpenACCVarListClause(DKind, CKind, WrongDirective);
     break;
   case ACCC_unknown:
-    Diag(Tok, diag::warn_omp_extra_tokens_at_eol)
+    Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
         << getOpenACCDirectiveName(DKind);
-    SkipUntil(tok::annot_pragma_openmp_end, StopBeforeMatch);
+    SkipUntil(tok::annot_pragma_openacc_end, StopBeforeMatch);
     break;
   case ACCC_threadprivate:
   case ACCC_uniform:
     if (!WrongDirective)
-      Diag(Tok, diag::err_omp_unexpected_clause)
+      Diag(Tok, diag::err_acc_unexpected_clause)
           << getOpenACCClauseName(CKind) << getOpenACCDirectiveName(DKind);
-    SkipUntil(tok::comma, tok::annot_pragma_openmp_end, StopBeforeMatch);
+    SkipUntil(tok::comma, tok::annot_pragma_openacc_end, StopBeforeMatch);
     break;
   }
   return ErrorFound ? nullptr : Clause;
@@ -1352,7 +1354,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
 /// \param RLoc Returned location of right paren.
 ExprResult Parser::ParseOpenACCParensExpr(StringRef ClauseName,
                                          SourceLocation &RLoc) {
-  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openmp_end);
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openacc_end);
   if (T.expectAndConsume(diag::err_expected_lparen_after, ClauseName.data()))
     return ExprError();
 
@@ -1429,7 +1431,7 @@ ACCClause *Parser::ParseOpenACCSimpleClause(OpenACCClauseKind Kind,
   SourceLocation Loc = Tok.getLocation();
   SourceLocation LOpen = ConsumeToken();
   // Parse '('.
-  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openmp_end);
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openacc_end);
   if (T.expectAndConsume(diag::err_expected_lparen_after,
                          getOpenACCClauseName(Kind)))
     return nullptr;
@@ -1438,7 +1440,7 @@ ACCClause *Parser::ParseOpenACCSimpleClause(OpenACCClauseKind Kind,
       Kind, Tok.isAnnotation() ? "" : PP.getSpelling(Tok));
   SourceLocation TypeLoc = Tok.getLocation();
   if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
-      Tok.isNot(tok::annot_pragma_openmp_end))
+      Tok.isNot(tok::annot_pragma_openacc_end))
     ConsumeAnyToken();
 
   // Parse ')'.
@@ -1504,7 +1506,7 @@ ACCClause *Parser::ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
   SourceLocation Loc = ConsumeToken();
   SourceLocation DelimLoc;
   // Parse '('.
-  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openmp_end);
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openacc_end);
   if (T.expectAndConsume(diag::err_expected_lparen_after,
                          getOpenACCClauseName(Kind)))
     return nullptr;
@@ -1526,7 +1528,7 @@ ACCClause *Parser::ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
       Arg[Modifier1] = KindModifier;
       KLoc[Modifier1] = Tok.getLocation();
       if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
-          Tok.isNot(tok::annot_pragma_openmp_end))
+          Tok.isNot(tok::annot_pragma_openacc_end))
         ConsumeAnyToken();
       if (Tok.is(tok::comma)) {
         // Parse ',' 'modifier'
@@ -1538,7 +1540,7 @@ ACCClause *Parser::ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
                              : (unsigned)ACCC_SCHEDULE_unknown;
         KLoc[Modifier2] = Tok.getLocation();
         if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
-            Tok.isNot(tok::annot_pragma_openmp_end))
+            Tok.isNot(tok::annot_pragma_openacc_end))
           ConsumeAnyToken();
       }
       // Parse ':'
@@ -1552,7 +1554,7 @@ ACCClause *Parser::ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
     Arg[ScheduleKind] = KindModifier;
     KLoc[ScheduleKind] = Tok.getLocation();
     if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
-        Tok.isNot(tok::annot_pragma_openmp_end))
+        Tok.isNot(tok::annot_pragma_openacc_end))
       ConsumeAnyToken();
     if ((Arg[ScheduleKind] == ACCC_SCHEDULE_static ||
          Arg[ScheduleKind] == ACCC_SCHEDULE_dynamic ||
@@ -1564,7 +1566,7 @@ ACCClause *Parser::ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
         Kind, Tok.isAnnotation() ? "" : PP.getSpelling(Tok)));
     KLoc.push_back(Tok.getLocation());
     if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
-        Tok.isNot(tok::annot_pragma_openmp_end))
+        Tok.isNot(tok::annot_pragma_openacc_end))
       ConsumeAnyToken();
     if (Arg.back() == ACCC_DIST_SCHEDULE_static && Tok.is(tok::comma))
       DelimLoc = ConsumeAnyToken();
@@ -1574,7 +1576,7 @@ ACCClause *Parser::ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
         Kind, Tok.isAnnotation() ? "" : PP.getSpelling(Tok)));
     KLoc.push_back(Tok.getLocation());
     if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
-        Tok.isNot(tok::annot_pragma_openmp_end))
+        Tok.isNot(tok::annot_pragma_openacc_end))
       ConsumeAnyToken();
     // Parse ':'
     if (Tok.is(tok::colon))
@@ -1586,7 +1588,7 @@ ACCClause *Parser::ParseOpenACCSingleExprWithArgClause(OpenACCClauseKind Kind,
         Kind, Tok.isAnnotation() ? "" : PP.getSpelling(Tok)));
     KLoc.push_back(Tok.getLocation());
     if (Tok.isNot(tok::r_paren) && Tok.isNot(tok::comma) &&
-        Tok.isNot(tok::annot_pragma_openmp_end))
+        Tok.isNot(tok::annot_pragma_openacc_end))
       ConsumeAnyToken();
   } else {
     assert(Kind == ACCC_if);
@@ -1686,14 +1688,14 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
   bool MapTypeModifierSpecified = false;
 
   // Parse '('.
-  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openmp_end);
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_openacc_end);
   if (T.expectAndConsume(diag::err_expected_lparen_after,
                          getOpenACCClauseName(Kind)))
     return true;
 
   bool NeedRParenForLinear = false;
   BalancedDelimiterTracker LinearT(*this, tok::l_paren,
-                                  tok::annot_pragma_openmp_end);
+                                  tok::annot_pragma_openacc_end);
   // Handle reduction-identifier for reduction clause.
   if (Kind == ACCC_reduction || Kind == ACCC_task_reduction ||
       Kind == ACCC_in_reduction) {
@@ -1705,7 +1707,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     InvalidReductionId = ParseReductionId(*this, Data.ReductionIdScopeSpec,
                                           UnqualifiedReductionId);
     if (InvalidReductionId) {
-      SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
     }
     if (Tok.is(tok::colon))
@@ -1724,7 +1726,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     Data.DepLinMapLoc = Tok.getLocation();
 
     if (Data.DepKind == ACCC_DEPEND_unknown) {
-      SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
     } else {
       ConsumeToken();
@@ -1738,7 +1740,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     if (Tok.is(tok::colon))
       Data.ColonLoc = ConsumeToken();
     else {
-      Diag(Tok, DKind == ACCD_ordered ? diag::warn_pragma_expected_colon_r_paren
+      Diag(Tok, DKind == ACCD_ordered ? diag::warn_pragma_acc_expected_colon_r_paren
                                       : diag::warn_pragma_expected_colon)
           << "dependency type";
     }
@@ -1775,16 +1777,16 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     if (IsMapClauseModifierToken(Tok)) {
       if (PP.LookAhead(0).is(tok::colon)) {
         if (Data.MapType == ACCC_MAP_unknown)
-          Diag(Tok, diag::err_omp_unknown_map_type);
+          Diag(Tok, diag::err_acc_unknown_map_type);
         else if (Data.MapType == ACCC_MAP_always)
-          Diag(Tok, diag::err_omp_map_type_missing);
+          Diag(Tok, diag::err_acc_map_type_missing);
         ConsumeToken();
       } else if (PP.LookAhead(0).is(tok::comma)) {
         if (IsMapClauseModifierToken(PP.LookAhead(1)) &&
             PP.LookAhead(2).is(tok::colon)) {
           Data.MapTypeModifier = Data.MapType;
           if (Data.MapTypeModifier != ACCC_MAP_always) {
-            Diag(Tok, diag::err_omp_unknown_map_type_modifier);
+            Diag(Tok, diag::err_acc_unknown_map_type_modifier);
             Data.MapTypeModifier = ACCC_MAP_unknown;
           } else
             MapTypeModifierSpecified = true;
@@ -1799,7 +1801,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
                   : ACCC_MAP_unknown;
           if (Data.MapType == ACCC_MAP_unknown ||
               Data.MapType == ACCC_MAP_always)
-            Diag(Tok, diag::err_omp_unknown_map_type);
+            Diag(Tok, diag::err_acc_unknown_map_type);
           ConsumeToken();
         } else {
           Data.MapType = ACCC_MAP_tofrom;
@@ -1809,7 +1811,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
         if (PP.LookAhead(1).is(tok::colon)) {
           Data.MapTypeModifier = Data.MapType;
           if (Data.MapTypeModifier != ACCC_MAP_always) {
-            Diag(Tok, diag::err_omp_unknown_map_type_modifier);
+            Diag(Tok, diag::err_acc_unknown_map_type_modifier);
             Data.MapTypeModifier = ACCC_MAP_unknown;
           } else
             MapTypeModifierSpecified = true;
@@ -1823,7 +1825,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
                   : ACCC_MAP_unknown;
           if (Data.MapType == ACCC_MAP_unknown ||
               Data.MapType == ACCC_MAP_always)
-            Diag(Tok, diag::err_omp_unknown_map_type);
+            Diag(Tok, diag::err_acc_unknown_map_type);
           ConsumeToken();
         } else {
           Data.MapType = ACCC_MAP_tofrom;
@@ -1854,7 +1856,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
       (Kind == ACCC_depend && Data.DepKind != ACCC_DEPEND_unknown);
   const bool MayHaveTail = (Kind == ACCC_linear || Kind == ACCC_aligned);
   while (IsComma || (Tok.isNot(tok::r_paren) && Tok.isNot(tok::colon) &&
-                     Tok.isNot(tok::annot_pragma_openmp_end))) {
+                     Tok.isNot(tok::annot_pragma_openacc_end))) {
     ColonProtectionRAIIObject ColonRAII(*this, MayHaveTail);
     // Parse variable
     ExprResult VarExpr =
@@ -1862,7 +1864,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     if (VarExpr.isUsable())
       Vars.push_back(VarExpr.get());
     else {
-      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
     }
     // Skip ',' if any
@@ -1870,9 +1872,9 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     if (IsComma)
       ConsumeToken();
     else if (Tok.isNot(tok::r_paren) &&
-             Tok.isNot(tok::annot_pragma_openmp_end) &&
+             Tok.isNot(tok::annot_pragma_openacc_end) &&
              (!MayHaveTail || Tok.isNot(tok::colon)))
-      Diag(Tok, diag::err_omp_expected_punc)
+      Diag(Tok, diag::err_acc_expected_punc)
           << ((Kind == ACCC_flush) ? getOpenACCDirectiveName(ACCD_flush)
                                    : getOpenACCClauseName(Kind))
           << (Kind == ACCC_flush);
@@ -1892,7 +1894,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     if (Tail.isUsable())
       Data.TailExpr = Tail.get();
     else
-      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openmp_end,
+      SkipUntil(tok::comma, tok::r_paren, tok::annot_pragma_openacc_end,
                 StopBeforeMatch);
   }
 

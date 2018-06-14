@@ -2247,7 +2247,7 @@ void CGOpenMPRuntimeNVPTX::emitReduction(
   // 4. Build res = __kmpc_reduce{_nowait}(<gtid>, <n>, sizeof(RedList),
   // RedList, shuffle_reduce_func, interwarp_copy_func);
   auto *ThreadId = getThreadID(CGF, Loc);
-  auto *ReductionArrayTySize = CGF.getTypeSize(ReductionArrayTy);
+  auto *ReductionArrayTySize = CGF.getOMPTypeSize(ReductionArrayTy);
   auto *RL = CGF.Builder.CreatePointerBitCastOrAddrSpaceCast(
       ReductionList.getPointer(), CGF.VoidPtrTy);
 

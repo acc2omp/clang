@@ -16,6 +16,7 @@
 #include "CGCleanup.h"
 #include "CGDebugInfo.h"
 #include "CGOpenCLRuntime.h"
+#include "CGOpenACCRuntime.h"
 #include "CGOpenMPRuntime.h"
 #include "CodeGenFunction.h"
 #include "CodeGenModule.h"
@@ -25,6 +26,7 @@
 #include "clang/AST/CharUnits.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclOpenACC.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TargetInfo.h"
@@ -102,8 +104,8 @@ void CodeGenFunction::EmitDecl(const Decl &D) {
   case Decl::StaticAssert: // static_assert(X, ""); [C++0x]
   case Decl::Label:        // __label__ x;
   case Decl::Import:
-//  case Decl::ACCThreadPrivate:
-//  case Decl::ACCCapturedExpr:
+  case Decl::ACCThreadPrivate:
+  case Decl::ACCCapturedExpr:
   case Decl::OMPThreadPrivate:
   case Decl::OMPCapturedExpr:
   case Decl::Empty:
@@ -138,6 +140,9 @@ void CodeGenFunction::EmitDecl(const Decl &D) {
           EmitVarDecl(*HD);
     return;
   }
+
+  case Decl::ACCDeclareReduction:
+    return CGM.EmitACCDeclareReduction(cast<ACCDeclareReductionDecl>(&D), this);
 
   case Decl::OMPDeclareReduction:
     return CGM.EmitOMPDeclareReduction(cast<OMPDeclareReductionDecl>(&D), this);
@@ -1979,6 +1984,13 @@ void CodeGenFunction::EmitParmDecl(const VarDecl &D, ParamValue Arg,
                             Builder.CreateIsNotNull(Arg.getAnyValue()));
     }
   }
+}
+
+void CodeGenModule::EmitACCDeclareReduction(const ACCDeclareReductionDecl *D,
+                                            CodeGenFunction *CGF) {
+  if (!LangOpts.OpenACC || (!LangOpts.EmitAllDecls && !D->isUsed()))
+    return;
+  getOpenACCRuntime().emitUserDefinedReduction(CGF, D);
 }
 
 void CodeGenModule::EmitOMPDeclareReduction(const OMPDeclareReductionDecl *D,

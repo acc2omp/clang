@@ -942,6 +942,12 @@ def ASM : DiagGroup<"asm", [
     ASMOperandWidths, ASMIgnoredQualifier
   ]>;
 
+// OpenACC warnings.
+def SourceUsesOpenACC : DiagGroup<"source-uses-openacc">;
+def OpenACCClauses : DiagGroup<"openacc-clauses">;
+def OpenACCLoopForm : DiagGroup<"openacc-loop-form">;
+def OpenACCTarget : DiagGroup<"openacc-target">;
+
 // OpenMP warnings.
 def SourceUsesOpenMP : DiagGroup<"source-uses-openmp">;
 def OpenMPClauses : DiagGroup<"openmp-clauses">;

@@ -793,7 +793,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenMPDeclarativeDirectiveWithExtDecl(
       // Skip the last annot_pragma_openmp_end.
       ConsumeAnyToken();
     } else {
-      Diag(Tok, diag::err_expected_end_declare_target);
+      Diag(Tok, diag::err_omp_expected_end_declare_target);
       Diag(DTLoc, diag::note_matching) << "'#pragma omp declare target'";
     }
     Actions.ActOnFinishOpenMPDeclareTargetDirective();
@@ -1738,7 +1738,7 @@ bool Parser::ParseOpenMPVarList(OpenMPDirectiveKind DKind,
     if (Tok.is(tok::colon))
       Data.ColonLoc = ConsumeToken();
     else {
-      Diag(Tok, DKind == OMPD_ordered ? diag::warn_pragma_expected_colon_r_paren
+      Diag(Tok, DKind == OMPD_ordered ? diag::warn_pragma_omp_expected_colon_r_paren
                                       : diag::warn_pragma_expected_colon)
           << "dependency type";
     }

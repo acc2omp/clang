@@ -952,7 +952,7 @@ void OMPReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N) {
   bool AsArraySection = isa<OMPArraySectionExpr>(ClausesData[N].Ref);
   if (!PrivateType->isVariablyModifiedType()) {
     Sizes.emplace_back(
-        CGF.getTypeSize(
+        CGF.getOMPTypeSize(
             SharedAddresses[N].first.getType().getNonReferenceType()),
         nullptr);
     return;
@@ -970,7 +970,7 @@ void OMPReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N) {
         Size, llvm::ConstantInt::get(Size->getType(), /*V=*/1));
     SizeInChars = CGF.Builder.CreateNUWMul(Size, ElemSizeOf);
   } else {
-    SizeInChars = CGF.getTypeSize(
+    SizeInChars = CGF.getOMPTypeSize(
         SharedAddresses[N].first.getType().getNonReferenceType());
     Size = CGF.Builder.CreateExactUDiv(SizeInChars, ElemSizeOf);
   }
@@ -2495,7 +2495,7 @@ Address CGOpenMPRuntime::getAddrOfArtificialThreadPrivate(CodeGenFunction &CGF,
       emitUpdateLocation(CGF, SourceLocation()),
       getThreadID(CGF, SourceLocation()),
       CGF.Builder.CreatePointerBitCastOrAddrSpaceCast(GAddr, CGM.VoidPtrTy),
-      CGF.Builder.CreateIntCast(CGF.getTypeSize(VarType), CGM.SizeTy,
+      CGF.Builder.CreateIntCast(CGF.getOMPTypeSize(VarType), CGM.SizeTy,
                                 /*IsSigned=*/false),
       getOrCreateInternalVariable(CGM.VoidPtrPtrTy, VarName + ".cache.")};
   return Address(
@@ -2898,7 +2898,7 @@ void CGOpenMPRuntime::emitSingleRegion(CodeGenFunction &CGF,
     auto *CpyFn = emitCopyprivateCopyFunction(
         CGM, CGF.ConvertTypeForMem(CopyprivateArrayTy)->getPointerTo(),
         CopyprivateVars, SrcExprs, DstExprs, AssignmentOps, Loc);
-    auto *BufSize = CGF.getTypeSize(CopyprivateArrayTy);
+    auto *BufSize = CGF.getOMPTypeSize(CopyprivateArrayTy);
     Address CL =
       CGF.Builder.CreatePointerBitCastOrAddrSpaceCast(CopyprivateList,
                                                       CGF.VoidPtrTy);
@@ -4455,7 +4455,7 @@ CGOpenMPRuntime::emitTaskInit(CodeGenFunction &CGF, SourceLocation Loc,
       C.getPointerType(KmpTaskTWithPrivatesQTy);
   auto *KmpTaskTWithPrivatesTy = CGF.ConvertType(KmpTaskTWithPrivatesQTy);
   auto *KmpTaskTWithPrivatesPtrTy = KmpTaskTWithPrivatesTy->getPointerTo();
-  auto *KmpTaskTWithPrivatesTySize = CGF.getTypeSize(KmpTaskTWithPrivatesQTy);
+  auto *KmpTaskTWithPrivatesTySize = CGF.getOMPTypeSize(KmpTaskTWithPrivatesQTy);
   QualType SharedsPtrTy = C.getPointerType(SharedsTy);
 
   // Emit initial values for private copies (if any).
@@ -4644,7 +4644,7 @@ void CGOpenMPRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
         llvm::Value *UpIntPtr = CGF.Builder.CreatePtrToInt(UpAddr, CGM.SizeTy);
         Size = CGF.Builder.CreateNUWSub(UpIntPtr, LowIntPtr);
       } else
-        Size = CGF.getTypeSize(Ty);
+        Size = CGF.getOMPTypeSize(Ty);
       auto Base = CGF.MakeAddrLValue(
           CGF.Builder.CreateConstArrayGEP(DependenciesArray, i, DependencySize),
           KmpDependInfoTy);
@@ -5173,7 +5173,7 @@ void CGOpenMPRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
   // RedList, reduce_func, &<lock>);
   auto *IdentTLoc = emitUpdateLocation(CGF, Loc, OMP_ATOMIC_REDUCE);
   auto *ThreadId = getThreadID(CGF, Loc);
-  auto *ReductionArrayTySize = CGF.getTypeSize(ReductionArrayTy);
+  auto *ReductionArrayTySize = CGF.getOMPTypeSize(ReductionArrayTy);
   auto *RL = CGF.Builder.CreatePointerBitCastOrAddrSpaceCast(
       ReductionList.getPointer(), CGF.VoidPtrTy);
   llvm::Value *Args[] = {
@@ -6196,7 +6196,7 @@ private:
 
     // Given that an array section is considered a built-in type, we need to
     // do the calculation based on the length of the section instead of relying
-    // on CGF.getTypeSize(E->getType()).
+    // on CGF.getOMPTypeSize(E->getType()).
     if (const auto *OAE = dyn_cast<OMPArraySectionExpr>(E)) {
       QualType BaseTy = OMPArraySectionExpr::getBaseOriginalType(
                             OAE->getBase()->IgnoreParenImpCasts())
@@ -6205,15 +6205,15 @@ private:
       // If there is no length associated with the expression, that means we
       // are using the whole length of the base.
       if (!OAE->getLength() && OAE->getColonLoc().isValid())
-        return CGF.getTypeSize(BaseTy);
+        return CGF.getOMPTypeSize(BaseTy);
 
       llvm::Value *ElemSize;
       if (auto *PTy = BaseTy->getAs<PointerType>())
-        ElemSize = CGF.getTypeSize(PTy->getPointeeType().getCanonicalType());
+        ElemSize = CGF.getOMPTypeSize(PTy->getPointeeType().getCanonicalType());
       else {
         auto *ATy = cast<ArrayType>(BaseTy.getTypePtr());
         assert(ATy && "Expecting array type if not a pointer type.");
-        ElemSize = CGF.getTypeSize(ATy->getElementType().getCanonicalType());
+        ElemSize = CGF.getOMPTypeSize(ATy->getElementType().getCanonicalType());
       }
 
       // If we don't have a length at this point, that is because we have an
@@ -6226,7 +6226,7 @@ private:
           CGF.Builder.CreateIntCast(LengthVal, CGF.SizeTy, /*isSigned=*/false);
       return CGF.Builder.CreateNUWMul(LengthVal, ElemSize);
     }
-    return CGF.getTypeSize(ExprTy);
+    return CGF.getOMPTypeSize(ExprTy);
   }
 
   /// \brief Return the corresponding bits for a given map clause modifier. Add
@@ -6520,7 +6520,7 @@ private:
 
           BasePointers.push_back(BP);
           Pointers.push_back(RefAddr);
-          Sizes.push_back(CGF.getTypeSize(CGF.getContext().VoidPtrTy));
+          Sizes.push_back(CGF.getOMPTypeSize(CGF.getContext().VoidPtrTy));
           Types.push_back(DefaultFlags |
                           getMapTypeBits(
                               /*MapType*/ OMPC_MAP_alloc,
@@ -6809,7 +6809,7 @@ public:
     } else if (DevPointersMap.count(VD)) {
       BasePointers.push_back({Arg, VD});
       Pointers.push_back(Arg);
-      Sizes.push_back(CGF.getTypeSize(CGF.getContext().VoidPtrTy));
+      Sizes.push_back(CGF.getOMPTypeSize(CGF.getContext().VoidPtrTy));
       Types.push_back(OMP_MAP_LITERAL | OMP_MAP_TARGET_PARAM);
       return;
     }
@@ -6844,7 +6844,7 @@ public:
       CurBasePointers.push_back(CV);
       CurPointers.push_back(CV);
       const PointerType *PtrTy = cast<PointerType>(RI.getType().getTypePtr());
-      CurSizes.push_back(CGF.getTypeSize(PtrTy->getPointeeType()));
+      CurSizes.push_back(CGF.getOMPTypeSize(PtrTy->getPointeeType()));
       // Default map type.
       CurMapTypes.push_back(OMP_MAP_TO | OMP_MAP_FROM);
     } else if (CI.capturesVariableByCopy()) {
@@ -6854,7 +6854,7 @@ public:
         // We have to signal to the runtime captures passed by value that are
         // not pointers.
         CurMapTypes.push_back(OMP_MAP_LITERAL);
-        CurSizes.push_back(CGF.getTypeSize(RI.getType()));
+        CurSizes.push_back(CGF.getOMPTypeSize(RI.getType()));
       } else {
         // Pointers are implicitly mapped with a zero size and no flags
         // (other than first map that is added for all implicit maps).
@@ -6869,7 +6869,7 @@ public:
       const ReferenceType *PtrTy =
           cast<ReferenceType>(RI.getType().getTypePtr());
       QualType ElementType = PtrTy->getPointeeType();
-      CurSizes.push_back(CGF.getTypeSize(ElementType));
+      CurSizes.push_back(CGF.getOMPTypeSize(ElementType));
       // The default map type for a scalar/complex type is 'to' because by
       // default the value doesn't have to be retrieved. For an aggregate
       // type, the default is 'tofrom'.
@@ -7215,7 +7215,7 @@ void CGOpenMPRuntime::emitTargetCall(CodeGenFunction &CGF,
       if (CI->capturesVariableArrayType()) {
         CurBasePointers.push_back(*CV);
         CurPointers.push_back(*CV);
-        CurSizes.push_back(CGF.getTypeSize(RI->getType()));
+        CurSizes.push_back(CGF.getOMPTypeSize(RI->getType()));
         // Copy to the device as an argument. No need to retrieve it.
         CurMapTypes.push_back(MappableExprsHandler::OMP_MAP_LITERAL |
                               MappableExprsHandler::OMP_MAP_TARGET_PARAM);
