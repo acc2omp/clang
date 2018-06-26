@@ -20,6 +20,9 @@
 /* Default objcopy to use */
 #define CLANG_DEFAULT_OBJCOPY "${CLANG_DEFAULT_OBJCOPY}"
 
+/* Default OpenACC runtime used by -fopenacc. */
+#define CLANG_DEFAULT_OPENACC_RUNTIME "${CLANG_DEFAULT_OPENACC_RUNTIME}"
+
 /* Default OpenMP runtime used by -fopenmp. */
 #define CLANG_DEFAULT_OPENMP_RUNTIME "${CLANG_DEFAULT_OPENMP_RUNTIME}"
 

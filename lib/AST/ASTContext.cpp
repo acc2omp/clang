@@ -1189,7 +1189,7 @@ void ASTContext::InitBuiltinTypes(const TargetInfo &Target,
   // Placeholder type for ACC array sections.
   if (LangOpts.OpenACC)
     InitBuiltinType(ACCArraySectionTy, BuiltinType::ACCArraySection);
-  
+
   // Placeholder type for OMP array sections.
   if (LangOpts.OpenMP)
     InitBuiltinType(OMPArraySectionTy, BuiltinType::OMPArraySection);
@@ -9396,6 +9396,12 @@ GVALinkage ASTContext::GetGVALinkageForVariable(const VarDecl *VD) {
 }
 
 bool ASTContext::DeclMustBeEmitted(const Decl *D) {
+
+  //llvm::outs() << "\n<< ----------------///\\\\\\------------------- \n";
+  //llvm::outs() << "<< DEBUG >> DeclMustBeEmitted: DeclKind is " << D->getDeclKindName() << "\n";
+  D->dumpColor();
+  //llvm::outs() << "<< ----------------\\\\\\///------------------- \n\n";
+
   if (const VarDecl *VD = dyn_cast<VarDecl>(D)) {
     if (!VD->isFileVarDecl())
       return false;
@@ -9412,18 +9418,18 @@ bool ASTContext::DeclMustBeEmitted(const Decl *D) {
   } else if (isa<PragmaCommentDecl>(D))
     return true;
 
-// OpenACC copy
-  else if (isa<ACCThreadPrivateDecl>(D) ||
-           D->hasAttr<ACCDeclareTargetDeclAttr>())
-    return true;
-// TODO acc2mp
-// Probably do something about this construct. It doesn't make much sense two replicate else if
-  else if (isa<PragmaDetectMismatchDecl>(D))
-    return true;
-  else if (isa<ACCThreadPrivateDecl>(D))
-    return !D->getDeclContext()->isDependentContext();
-  else if (isa<ACCDeclareReductionDecl>(D))
-    return !D->getDeclContext()->isDependentContext();
+/* // OpenACC copy */
+/*   else if (isa<ACCThreadPrivateDecl>(D) || */
+/*            D->hasAttr<ACCDeclareTargetDeclAttr>()) */
+/*     return true; */
+/* // TODO acc2mp */
+/* // Probably do something about this construct. It doesn't make much sense two replicate else if */
+/*   else if (isa<PragmaDetectMismatchDecl>(D)) */
+/*     return true; */
+/*   else if (isa<ACCThreadPrivateDecl>(D)) */
+/*     return !D->getDeclContext()->isDependentContext(); */
+/*   else if (isa<ACCDeclareReductionDecl>(D)) */
+/*     return !D->getDeclContext()->isDependentContext(); */
 
   else if (isa<OMPThreadPrivateDecl>(D) ||
            D->hasAttr<OMPDeclareTargetDeclAttr>())
@@ -9459,7 +9465,7 @@ bool ASTContext::DeclMustBeEmitted(const Decl *D) {
     // Constructors and destructors are required.
     if (FD->hasAttr<ConstructorAttr>() || FD->hasAttr<DestructorAttr>())
       return true;
-    
+
     // The key function for a class is required.  This rule only comes
     // into play when inline functions can be key functions, though.
     if (getTargetInfo().getCXXABI().canKeyFunctionBeInline()) {
@@ -9480,7 +9486,7 @@ bool ASTContext::DeclMustBeEmitted(const Decl *D) {
     // Implicit template instantiations can also be deferred in C++.
     return !isDiscardableGVALinkage(Linkage);
   }
-  
+
   const VarDecl *VD = cast<VarDecl>(D);
   assert(VD->isFileVarDecl() && "Expected file scoped var");
 

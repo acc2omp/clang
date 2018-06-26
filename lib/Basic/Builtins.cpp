@@ -75,9 +75,10 @@ bool Builtin::Context::builtinIsSupported(const Builtin::Info &BuiltinInfo,
                           (BuiltinInfo.Langs & ALL_OCLC_LANGUAGES) == OCLC20_LANG;
   bool OclCUnsupported = !LangOpts.OpenCL &&
                          (BuiltinInfo.Langs & ALL_OCLC_LANGUAGES);
+  bool OpenACCUnsupported = !LangOpts.OpenACC && BuiltinInfo.Langs == ACC_LANG;
   bool OpenMPUnsupported = !LangOpts.OpenMP && BuiltinInfo.Langs == OMP_LANG;
   return !BuiltinsUnsupported && !MathBuiltinsUnsupported && !OclCUnsupported &&
-         !OclC1Unsupported && !OclC2Unsupported && !OpenMPUnsupported &&
+         !OclC1Unsupported && !OclC2Unsupported && !OpenACCUnsupported && !OpenMPUnsupported &&
          !GnuModeUnsupported && !MSModeUnsupported && !ObjCUnsupported;
 }
 

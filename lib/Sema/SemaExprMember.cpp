@@ -1805,6 +1805,17 @@ Sema::BuildFieldReferenceExpr(Expr *BaseExpr, bool IsArrow,
     return ExprError();
 
   // Build a reference to a private copy for non-static data members in
+  // non-static member functions, privatized by OpenACC constructs.
+  if (getLangOpts().OpenACC && IsArrow &&
+      !CurContext->isDependentContext() &&
+      isa<CXXThisExpr>(Base.get()->IgnoreParenImpCasts())) {
+    if (auto *PrivateCopy = IsOpenACCCapturedDecl(Field)) {
+      return getOpenACCCapturedExpr(PrivateCopy, VK, OK,
+                                   MemberNameInfo.getLoc());
+    }
+  }
+
+  // Build a reference to a private copy for non-static data members in
   // non-static member functions, privatized by OpenMP constructs.
   if (getLangOpts().OpenMP && IsArrow &&
       !CurContext->isDependentContext() &&

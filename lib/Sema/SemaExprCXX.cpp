@@ -703,6 +703,9 @@ ExprResult Sema::BuildCXXThrow(SourceLocation OpLoc, Expr *Ex,
     CUDADiagIfDeviceCode(OpLoc, diag::err_cuda_device_exceptions)
         << "throw" << CurrentCUDATarget();
 
+  if (getCurScope() && getCurScope()->isOpenACCSimdDirectiveScope())
+    Diag(OpLoc, diag::err_acc_simd_region_cannot_use_stmt) << "throw";
+
   if (getCurScope() && getCurScope()->isOpenMPSimdDirectiveScope())
     Diag(OpLoc, diag::err_omp_simd_region_cannot_use_stmt) << "throw";
 

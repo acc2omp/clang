@@ -2370,8 +2370,10 @@ LValue CodeGenFunction::EmitDeclRefLValue(const DeclRefExpr *E) {
   const NamedDecl *ND = E->getDecl();
   QualType T = E->getType();
 
-  if (const auto *VD = dyn_cast<VarDecl>(ND)) {
-    // Global Named registers access via intrinsics only
+// MARK acc2mp investigate further EmitDeclRefLValue
+//  llvm::outs() <<   
+
+  if (const auto *VD = dyn_cast<VarDecl>(ND)) { // Global Named registers access via intrinsics only
     if (VD->getStorageClass() == SC_Register &&
         VD->hasAttr<AsmLabelAttr>() && !VD->isLocalVarDecl())
       return EmitGlobalNamedRegister(VD, CGM);

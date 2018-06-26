@@ -839,6 +839,9 @@ Sema::ActOnDecompositionDeclarator(Scope *S, Declarator &D,
     CurContext->addHiddenDecl(New);
   }
 
+  if (isInOpenACCDeclareTargetContext())
+    checkDeclIsAllowedInOpenACCTarget(nullptr, New);
+
   if (isInOpenMPDeclareTargetContext())
     checkDeclIsAllowedInOpenMPTarget(nullptr, New);
 

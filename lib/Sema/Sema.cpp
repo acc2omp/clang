@@ -165,7 +165,10 @@ Sema::Sema(Preprocessor &pp, ASTContext &ctxt, ASTConsumer &consumer,
   FunctionScopes.push_back(new FunctionScopeInfo(Diags));
 
   // Initilization of data sharing attributes stack for OpenMP
-  InitDataSharingAttributesStack();
+  InitOpenMPDataSharingAttributesStack();
+
+  // Initilization of data sharing attributes stack for OpenACC
+  InitOpenACCDataSharingAttributesStack();
 
   std::unique_ptr<sema::SemaPPCallbacks> Callbacks =
       llvm::make_unique<sema::SemaPPCallbacks>();
@@ -353,8 +356,10 @@ Sema::~Sema() {
 
   threadSafety::threadSafetyCleanup(ThreadSafetyDeclCache);
 
+  // Destroys data sharing attributes stack for OpenACC
+  DestroyOpenACCDataSharingAttributesStack();
   // Destroys data sharing attributes stack for OpenMP
-  DestroyDataSharingAttributesStack();
+  DestroyOpenMPDataSharingAttributesStack();
 
   // Detach from the PP callback handler which outlives Sema since it's owned
   // by the preprocessor.
@@ -1345,12 +1350,16 @@ void Sema::PushFunctionScope() {
     // memory for a new scope.
     FunctionScopes.back()->Clear();
     FunctionScopes.push_back(FunctionScopes.back());
+    if (LangOpts.OpenACC)
+      pushOpenACCFunctionRegion();
     if (LangOpts.OpenMP)
       pushOpenMPFunctionRegion();
     return;
   }
 
   FunctionScopes.push_back(new FunctionScopeInfo(getDiagnostics()));
+  if (LangOpts.OpenACC)
+    pushOpenACCFunctionRegion();
   if (LangOpts.OpenMP)
     pushOpenMPFunctionRegion();
 }
@@ -1380,6 +1389,8 @@ void Sema::PopFunctionScopeInfo(const AnalysisBasedWarnings::Policy *WP,
   FunctionScopeInfo *Scope = FunctionScopes.pop_back_val();
   assert(!FunctionScopes.empty() && "mismatched push/pop!");
 
+  if (LangOpts.OpenACC)
+    popOpenACCFunctionRegion(Scope);
   if (LangOpts.OpenMP)
     popOpenMPFunctionRegion(Scope);
 
@@ -1746,7 +1757,7 @@ void Sema::PushCapturedRegionScope(Scope *S, CapturedDecl *CD, RecordDecl *RD,
                                    CapturedRegionKind K) {
   CapturingScopeInfo *CSI = new CapturedRegionScopeInfo(
       getDiagnostics(), S, CD, RD, CD->getContextParam(), K,
-      (getLangOpts().OpenMP && K == CR_OpenMP) ? getOpenMPNestingLevel() : 
+      (getLangOpts().OpenMP && K == CR_OpenMP) ? getOpenMPNestingLevel() :
 	( (getLangOpts().OpenACC && K == CR_OpenACC) ? getOpenACCNestingLevel() : 0));
   CSI->ReturnType = Context.VoidTy;
   FunctionScopes.push_back(CSI);

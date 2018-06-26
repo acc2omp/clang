@@ -132,6 +132,13 @@ forAllAssociatedToolChains(Compilation &C, const JobAction &JA,
   else if (JA.isDeviceOffloading(Action::OFK_Cuda))
     Work(*C.getSingleOffloadToolChain<Action::OFK_Host>());
 
+  if (JA.isHostOffloading(Action::OFK_OpenACC)) {
+    auto TCs = C.getOffloadToolChains<Action::OFK_OpenACC>();
+    for (auto II = TCs.first, IE = TCs.second; II != IE; ++II)
+      Work(*II->second);
+  } else if (JA.isDeviceOffloading(Action::OFK_OpenACC))
+    Work(*C.getSingleOffloadToolChain<Action::OFK_Host>());
+
   if (JA.isHostOffloading(Action::OFK_OpenMP)) {
     auto TCs = C.getOffloadToolChains<Action::OFK_OpenMP>();
     for (auto II = TCs.first, IE = TCs.second; II != IE; ++II)
@@ -3076,13 +3083,16 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   assert(Inputs.size() >= 1 && "Must have at least one input.");
   const InputInfo &Input = Inputs[0];
   // CUDA compilation may have multiple inputs (source file + results of
-  // device-side compilations). OpenMP device jobs also take the host IR as a
+  // device-side compilations).
+  // OpenMP and OpenACC device jobs also take the host IR as a
   // second input. All other jobs are expected to have exactly one
   // input.
   bool IsCuda = JA.isOffloading(Action::OFK_Cuda);
+  bool IsOpenACCDevice = JA.isDeviceOffloading(Action::OFK_OpenACC);
   bool IsOpenMPDevice = JA.isDeviceOffloading(Action::OFK_OpenMP);
-  assert((IsCuda || (IsOpenMPDevice && Inputs.size() == 2) ||
-          Inputs.size() == 1) &&
+  assert((IsCuda
+         ||(Input.size() == 2 && (IsOpenACCDevice || IsOpenMPDevice))
+         || Inputs.size() == 1) &&
          "Unable to handle multiple inputs.");
 
   const llvm::Triple *AuxTriple =
@@ -3137,8 +3147,8 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(Args.MakeArgString(NormalizedTriple));
   }
 
-  if (IsOpenMPDevice) {
-    // We have to pass the triple of the host if compiling for an OpenMP device.
+  if (IsOpenMPDevice || IsOpenACCDevice) {
+    // We have to pass the triple of the host if compiling for an OpenMP or OpenACC device.
     std::string NormalizedTriple =
         C.getSingleOffloadToolChain<Action::OFK_Host>()
             ->getTriple()
@@ -3934,6 +3944,7 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddLastArg(CmdArgs, options::OPT_fdiagnostics_show_template_tree);
   Args.AddLastArg(CmdArgs, options::OPT_fno_elide_type);
 
+  // TODO acc2mp this duplication is incomplete
   // Forward flags for OpenACC.
   if (Args.hasFlag(options::OPT_fopenacc, options::OPT_fno_openacc, false)) {
     CmdArgs.push_back("-fopenacc");

@@ -276,14 +276,25 @@ bool Sema::DiagnoseUseOfDecl(NamedDecl *D, SourceLocation Loc,
       return true;
   }
 
+  // [OpenACC 4.0], 2.15 declare reduction Directive, Restrictions
+  // Only the variables acc_in and acc_out are allowed in the combiner.
+  // Only the variables acc_priv and acc_orig are allowed in the
+  // initializer-clause.
+  auto *DRD_ACC = dyn_cast<ACCDeclareReductionDecl>(CurContext);
+  if (LangOpts.OpenACC && DRD_ACC && !CurContext->containsDecl(D) &&
+      isa<VarDecl>(D)) {
+    Diag(Loc, diag::err_acc_wrong_var_in_declare_reduction)
+        << getCurFunction()->HasACCDeclareReductionCombiner;
+    Diag(D->getLocation(), diag::note_entity_declared_at) << D;
+    return true;
+  }
 
-// TODO acc2mp Figure out if we need to copy this
   // [OpenMP 4.0], 2.15 declare reduction Directive, Restrictions
   // Only the variables omp_in and omp_out are allowed in the combiner.
   // Only the variables omp_priv and omp_orig are allowed in the
   // initializer-clause.
-  auto *DRD = dyn_cast<OMPDeclareReductionDecl>(CurContext);
-  if (LangOpts.OpenMP && DRD && !CurContext->containsDecl(D) &&
+  auto *DRD_OMP = dyn_cast<OMPDeclareReductionDecl>(CurContext);
+  if (LangOpts.OpenMP && DRD_OMP && !CurContext->containsDecl(D) &&
       isa<VarDecl>(D)) {
     Diag(Loc, diag::err_omp_wrong_var_in_declare_reduction)
         << getCurFunction()->HasOMPDeclareReductionCombiner;
@@ -4184,16 +4195,13 @@ Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
   return CreateBuiltinArraySubscriptExpr(base, lbLoc, idx, rbLoc);
 }
 
+//TODO acc2mp This section was commented before bug. Ivestigate if there is still a problem
 ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                           Expr *LowerBound,
                                           SourceLocation ColonLoc, Expr *Length,
                                           SourceLocation RBLoc) {
-  
-  /*
- *  TODO acc2mp Figure out what to do with semantics on our OpenACC mod
- *   *
   if (Base->getType()->isPlaceholderType() &&
-      !Base->g0etType()->isSpecificPlaceholderType(
+      !Base->getType()->isSpecificPlaceholderType(
           BuiltinType::ACCArraySection)) {
     ExprResult Result = CheckPlaceholderExpr(Base);
     if (Result.isInvalid())
@@ -4238,7 +4246,7 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
     ResultTy = OriginalTy->getAsArrayTypeUnsafe()->getElementType();
   } else {
     return ExprError(
-        Diag(Base->getExprLoc(), diag::err_omp_typecheck_section_value)
+        Diag(Base->getExprLoc(), diag::err_acc_typecheck_section_value)
         << Base->getSourceRange());
   }
   // C99 6.5.2.1p1
@@ -4247,13 +4255,13 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                                       LowerBound);
     if (Res.isInvalid())
       return ExprError(Diag(LowerBound->getExprLoc(),
-                            diag::err_omp_typecheck_section_not_integer)
+                            diag::err_acc_typecheck_section_not_integer)
                        << 0 << LowerBound->getSourceRange());
     LowerBound = Res.get();
 
     if (LowerBound->getType()->isSpecificBuiltinType(BuiltinType::Char_S) ||
         LowerBound->getType()->isSpecificBuiltinType(BuiltinType::Char_U))
-      Diag(LowerBound->getExprLoc(), diag::warn_omp_section_is_char)
+      Diag(LowerBound->getExprLoc(), diag::warn_acc_section_is_char)
           << 0 << LowerBound->getSourceRange();
   }
   if (Length) {
@@ -4261,13 +4269,13 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
         PerformOpenACCImplicitIntegerConversion(Length->getExprLoc(), Length);
     if (Res.isInvalid())
       return ExprError(Diag(Length->getExprLoc(),
-                            diag::err_omp_typecheck_section_not_integer)
+                            diag::err_acc_typecheck_section_not_integer)
                        << 1 << Length->getSourceRange());
     Length = Res.get();
 
     if (Length->getType()->isSpecificBuiltinType(BuiltinType::Char_S) ||
         Length->getType()->isSpecificBuiltinType(BuiltinType::Char_U))
-      Diag(Length->getExprLoc(), diag::warn_omp_section_is_char)
+      Diag(Length->getExprLoc(), diag::warn_acc_section_is_char)
           << 1 << Length->getSourceRange();
   }
 
@@ -4276,13 +4284,13 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
   // type. Note that functions are not objects, and that (in C99 parlance)
   // incomplete types are not object types.
   if (ResultTy->isFunctionType()) {
-    Diag(Base->getExprLoc(), diag::err_omp_section_function_type)
+    Diag(Base->getExprLoc(), diag::err_acc_section_function_type)
         << ResultTy << Base->getSourceRange();
     return ExprError();
   }
 
   if (RequireCompleteType(Base->getExprLoc(), ResultTy,
-                          diag::err_omp_section_incomplete_type, Base))
+                          diag::err_acc_section_incomplete_type, Base))
     return ExprError();
 
   if (LowerBound && !OriginalTy->isAnyPointerType()) {
@@ -4291,7 +4299,7 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
       // OpenACC 4.5, [2.4 Array Sections]
       // The array section must be a subset of the original array.
       if (LowerBoundValue.isNegative()) {
-        Diag(LowerBound->getExprLoc(), diag::err_omp_section_not_subset_of_array)
+        Diag(LowerBound->getExprLoc(), diag::err_acc_section_not_subset_of_array)
             << LowerBound->getSourceRange();
         return ExprError();
       }
@@ -4304,9 +4312,9 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
       // OpenACC 4.5, [2.4 Array Sections]
       // The length must evaluate to non-negative integers.
       if (LengthValue.isNegative()) {
-        Diag(Length->getExprLoc(), diag::err_omp_section_length_negative)
-*///            << LengthValue.toString(/*Radix=*/10, /*Signed=*/true)
-/*            << Length->getSourceRange();
+        Diag(Length->getExprLoc(), diag::err_acc_section_length_negative)
+            << LengthValue.toString(/*Radix=*/10, /*Signed=*/true)
+            << Length->getSourceRange();
         return ExprError();
       }
     }
@@ -4316,7 +4324,7 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
     // OpenACC 4.5, [2.4 Array Sections]
     // When the size of the array dimension is not known, the length must be
     // specified explicitly.
-    Diag(ColonLoc, diag::err_omp_section_length_undefined)
+    Diag(ColonLoc, diag::err_acc_section_length_undefined)
         << (!OriginalTy.isNull() && OriginalTy->isArrayType());
     return ExprError();
   }
@@ -4331,8 +4339,6 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
   return new (Context)
       ACCArraySectionExpr(Base, LowerBound, Length, Context.ACCArraySectionTy,
                           VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
-*/
-  return ExprError();
 }
 
 ExprResult Sema::ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,
@@ -14295,14 +14301,18 @@ static bool isVariableAlreadyCapturedInScopeInfo(CapturingScopeInfo *CSI, VarDec
     // Compute the type of an expression that refers to this variable.
     DeclRefType = CaptureType.getNonReferenceType();
 
-    // Similarly to mutable captures in lambda, all the OpenMP captures by copy
+    // Similarly to mutable captures in lambda, all the OpenMP and OpenACC captures by copy
     // are mutable in the sense that user can change their value - they are
     // private instances of the captured declarations.
     const CapturingScopeInfo::Capture &Cap = CSI->getCapture(Var);
     if (Cap.isCopyCapture() &&
         !(isa<LambdaScopeInfo>(CSI) && cast<LambdaScopeInfo>(CSI)->Mutable) &&
         !(isa<CapturedRegionScopeInfo>(CSI) &&
-          cast<CapturedRegionScopeInfo>(CSI)->CapRegionKind == CR_OpenMP))
+         (
+          cast<CapturedRegionScopeInfo>(CSI)->CapRegionKind == CR_OpenACC
+          ||
+          cast<CapturedRegionScopeInfo>(CSI)->CapRegionKind == CR_OpenMP
+         )))
       DeclRefType.addConst();
     return true;
   }
@@ -14394,21 +14404,21 @@ static bool isVariableCapturable(CapturingScopeInfo *CSI, VarDecl *Var,
 }
 
 // Returns true if the capture by block was successful.
-static bool captureInBlock(BlockScopeInfo *BSI, VarDecl *Var, 
-                                 SourceLocation Loc, 
-                                 const bool BuildAndDiagnose, 
+static bool captureInBlock(BlockScopeInfo *BSI, VarDecl *Var,
+                                 SourceLocation Loc,
+                                 const bool BuildAndDiagnose,
                                  QualType &CaptureType,
-                                 QualType &DeclRefType, 
+                                 QualType &DeclRefType,
                                  const bool Nested,
                                  Sema &S) {
   Expr *CopyExpr = nullptr;
   bool ByRef = false;
-      
+
   // Blocks are not allowed to capture arrays.
   if (CaptureType->isArrayType()) {
     if (BuildAndDiagnose) {
       S.Diag(Loc, diag::err_ref_array_type);
-      S.Diag(Var->getLocation(), diag::note_previous_decl) 
+      S.Diag(Var->getLocation(), diag::note_previous_decl)
       << Var->getDeclName();
     }
     return false;
@@ -14482,7 +14492,10 @@ static bool captureInBlock(BlockScopeInfo *BSI, VarDecl *Var,
 
   const bool HasBlocksAttr = Var->hasAttr<BlocksAttr>();
   if (HasBlocksAttr || CaptureType->isReferenceType() ||
-      (S.getLangOpts().OpenMP && S.IsOpenMPCapturedDecl(Var))) {
+      (S.getLangOpts().OpenACC && S.IsOpenACCCapturedDecl(Var))
+      ||
+      (S.getLangOpts().OpenMP && S.IsOpenMPCapturedDecl(Var))
+      ) {
     // Block capture by reference does not change the capture or
     // declaration reference types.
     ByRef = true;
@@ -14490,7 +14503,7 @@ static bool captureInBlock(BlockScopeInfo *BSI, VarDecl *Var,
     // Block capture by copy introduces 'const'.
     CaptureType = CaptureType.getNonReferenceType().withConst();
     DeclRefType = CaptureType;
-                
+
     if (S.getLangOpts().CPlusPlus && BuildAndDiagnose) {
       if (const RecordType *Record = DeclRefType->getAs<RecordType>()) {
         // The capture logic needs the destructor, so make sure we mark it.
@@ -14512,13 +14525,13 @@ static bool captureInBlock(BlockScopeInfo *BSI, VarDecl *Var,
         Expr *DeclRef = new (S.Context) DeclRefExpr(Var, Nested,
                                                   DeclRefType.withConst(), 
                                                   VK_LValue, Loc);
-            
+
         ExprResult Result
           = S.PerformCopyInitialization(
               InitializedEntity::InitializeBlock(Var->getLocation(),
                                                   CaptureType, false),
               Loc, DeclRef);
-            
+
         // Build a full-expression copy expression if initialization
         // succeeded and used a non-trivial constructor.  Recover from
         // errors by pretending that the copy isn't necessary.
@@ -14554,6 +14567,16 @@ static bool captureInCapturedRegion(CapturedRegionScopeInfo *RSI,
   // By default, capture variables by reference.
   bool ByRef = true;
   // Using an LValue reference type is consistent with Lambdas (see below).
+  if (S.getLangOpts().OpenACC && RSI->CapRegionKind == CR_OpenACC) {
+    if (S.IsOpenACCCapturedDecl(Var)) {
+      bool HasConst = DeclRefType.isConstQualified();
+      DeclRefType = DeclRefType.getUnqualifiedType();
+      // Don't lose diagnostics about assignments to const.
+      if (HasConst)
+        DeclRefType.addConst();
+    }
+    ByRef = S.IsOpenACCCapturedByRef(Var, RSI->OpenACCLevel);
+  }
   if (S.getLangOpts().OpenMP && RSI->CapRegionKind == CR_OpenMP) {
     if (S.IsOpenMPCapturedDecl(Var)) {
       bool HasConst = DeclRefType.isConstQualified();
@@ -14584,9 +14607,11 @@ static bool captureInCapturedRegion(CapturedRegionScopeInfo *RSI,
     Field->setImplicit(true);
     Field->setAccess(AS_private);
     RD->addDecl(Field);
+    if (S.getLangOpts().OpenACC && RSI->CapRegionKind == CR_OpenACC)
+      S.setOpenACCCaptureKind(Field, Var, RSI->OpenACCLevel);
     if (S.getLangOpts().OpenMP && RSI->CapRegionKind == CR_OpenMP)
       S.setOpenMPCaptureKind(Field, Var, RSI->OpenMPLevel);
- 
+
     CopyExpr = new (S.Context) DeclRefExpr(Var, RefersToCapturedVariable,
                                             DeclRefType, VK_LValue, Loc);
     Var->setReferenced(true);
@@ -14597,8 +14622,8 @@ static bool captureInCapturedRegion(CapturedRegionScopeInfo *RSI,
   if (BuildAndDiagnose)
     RSI->addCapture(Var, /*isBlock*/false, ByRef, RefersToCapturedVariable, Loc,
                     SourceLocation(), CaptureType, CopyExpr);
-  
-  
+
+
   return true;
 }
 
@@ -14746,7 +14771,7 @@ bool Sema::tryCaptureVariable(
     }
   }
 
-  
+
   // If the variable is declared in the current context, there is no need to
   // capture it.
   if (VarDC == DC) return true;
@@ -14754,7 +14779,11 @@ bool Sema::tryCaptureVariable(
   // Capture global variables if it is required to use private copy of this
   // variable.
   bool IsGlobal = !Var->hasLocalStorage();
-  if (IsGlobal && !(LangOpts.OpenMP && IsOpenMPCapturedDecl(Var)))
+  if (IsGlobal &&
+          !(LangOpts.OpenACC && IsOpenACCCapturedDecl(Var))
+          &&
+          !(LangOpts.OpenMP && IsOpenMPCapturedDecl(Var))
+          )
     return true;
   Var = Var->getCanonicalDecl();
 
@@ -14794,29 +14823,29 @@ bool Sema::tryCaptureVariable(
 
 
     // Check whether we've already captured it.
-    if (isVariableAlreadyCapturedInScopeInfo(CSI, Var, Nested, CaptureType, 
+    if (isVariableAlreadyCapturedInScopeInfo(CSI, Var, Nested, CaptureType,
                                              DeclRefType)) {
       CSI->getCapture(Var).markUsed(BuildAndDiagnose);
       break;
     }
-    // If we are instantiating a generic lambda call operator body, 
+    // If we are instantiating a generic lambda call operator body,
     // we do not want to capture new variables.  What was captured
     // during either a lambdas transformation or initial parsing
-    // should be used. 
+    // should be used.
     if (isGenericLambdaCallOperatorSpecialization(DC)) {
       if (BuildAndDiagnose) {
-        LambdaScopeInfo *LSI = cast<LambdaScopeInfo>(CSI);   
+        LambdaScopeInfo *LSI = cast<LambdaScopeInfo>(CSI);
         if (LSI->ImpCaptureStyle == CapturingScopeInfo::ImpCap_None) {
           Diag(ExprLoc, diag::err_lambda_impcap) << Var->getDeclName();
-          Diag(Var->getLocation(), diag::note_previous_decl) 
+          Diag(Var->getLocation(), diag::note_previous_decl)
              << Var->getDeclName();
-          Diag(LSI->Lambda->getLocStart(), diag::note_lambda_decl);          
+          Diag(LSI->Lambda->getLocStart(), diag::note_lambda_decl);
         } else
           diagnoseUncapturableValueReference(*this, ExprLoc, Var, DC);
       }
       return true;
     }
-    // Certain capturing entities (lambdas, blocks etc.) are not allowed to capture 
+    // Certain capturing entities (lambdas, blocks etc.) are not allowed to capture
     // certain types of variables (unnamed, variably modified types etc.)
     // so check for eligibility.
     if (!isVariableCapturable(CSI, Var, ExprLoc, BuildAndDiagnose, *this))
@@ -14830,6 +14859,30 @@ bool Sema::tryCaptureVariable(
       if (ParmVarDecl *PVD = dyn_cast_or_null<ParmVarDecl>(Var))
         QTy = PVD->getOriginalType();
       captureVariablyModifiedType(Context, QTy, CSI);
+    }
+    if (getLangOpts().OpenACC) {
+      if (auto *RSI = dyn_cast<CapturedRegionScopeInfo>(CSI)) {
+        // OpenACC private variables should not be captured in outer scope, so
+        // just break here. Similarly, global variables that are captured in a
+        // target region should not be captured outside the scope of the region.
+        if (RSI->CapRegionKind == CR_OpenACC) {
+          bool IsOpenACCPrivateDecl = isOpenACCPrivateDecl(Var, RSI->OpenACCLevel);
+          auto IsTargetCap = !IsOpenACCPrivateDecl &&
+                             isOpenACCTargetCapturedDecl(Var, RSI->OpenACCLevel);
+          // When we detect target captures we are looking from inside the
+          // target region, therefore we need to propagate the capture from the
+          // enclosing region. Therefore, the capture is not initially nested.
+          if (IsTargetCap)
+            adjustOpenACCTargetScopeIndex(FunctionScopesIndex, RSI->OpenACCLevel);
+
+          if (IsTargetCap || IsOpenACCPrivateDecl) {
+            Nested = !IsTargetCap;
+            DeclRefType = DeclRefType.getUnqualifiedType();
+            CaptureType = Context.getLValueReferenceType(DeclRefType);
+            break;
+          }
+        }
+      }
     }
 
     if (getLangOpts().OpenMP) {
@@ -14857,11 +14910,11 @@ bool Sema::tryCaptureVariable(
       }
     }
     if (CSI->ImpCaptureStyle == CapturingScopeInfo::ImpCap_None && !Explicit) {
-      // No capture-default, and this is not an explicit capture 
-      // so cannot capture this variable.  
+      // No capture-default, and this is not an explicit capture
+      // so cannot capture this variable.
       if (BuildAndDiagnose) {
         Diag(ExprLoc, diag::err_lambda_impcap) << Var->getDeclName();
-        Diag(Var->getLocation(), diag::note_previous_decl) 
+        Diag(Var->getLocation(), diag::note_previous_decl)
           << Var->getDeclName();
         if (cast<LambdaScopeInfo>(CSI)->Lambda)
           Diag(cast<LambdaScopeInfo>(CSI)->Lambda->getLocStart(),
@@ -15119,7 +15172,10 @@ static void DoMarkVarDeclReferenced(Sema &SemaRef, SourceLocation Loc,
     // A reference initialized by a constant expression can never be
     // odr-used, so simply ignore it.
     if (!Var->getType()->isReferenceType() ||
-        (SemaRef.LangOpts.OpenMP && SemaRef.IsOpenMPCapturedDecl(Var)))
+        (SemaRef.LangOpts.OpenACC && SemaRef.IsOpenACCCapturedDecl(Var))
+        ||
+        (SemaRef.LangOpts.OpenMP && SemaRef.IsOpenMPCapturedDecl(Var))
+        )
       SemaRef.MaybeODRUseExprs.insert(E);
   } else if (OdrUseContext) {
     MarkVarDeclODRUsed(Var, Loc, SemaRef,
@@ -15163,6 +15219,8 @@ void Sema::MarkVariableReferenced(SourceLocation Loc, VarDecl *Var) {
 
 static void MarkExprReferenced(Sema &SemaRef, SourceLocation Loc,
                                Decl *D, Expr *E, bool MightBeOdrUse) {
+  if (SemaRef.isInOpenACCDeclareTargetContext())
+    SemaRef.checkDeclIsAllowedInOpenACCTarget(E, D);
   if (SemaRef.isInOpenMPDeclareTargetContext())
     SemaRef.checkDeclIsAllowedInOpenMPTarget(E, D);
 
@@ -16234,6 +16292,11 @@ ExprResult Sema::CheckPlaceholderExpr(Expr *E) {
     Diag(E->getLocStart(), diag::err_builtin_fn_use);
     return ExprError();
   }
+
+  // Expressions of unknown type.
+  case BuiltinType::ACCArraySection:
+    Diag(E->getLocStart(), diag::err_acc_array_section_use);
+    return ExprError();
 
   // Expressions of unknown type.
   case BuiltinType::OMPArraySection:

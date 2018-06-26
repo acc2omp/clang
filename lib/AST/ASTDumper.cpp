@@ -1984,6 +1984,7 @@ void ASTDumper::VisitBlockDecl(const BlockDecl *D) {
 //===----------------------------------------------------------------------===//
 
 void ASTDumper::dumpStmt(const Stmt *S) {
+  //llvm::outs() << "\nDumping Stmt[" << S->getStmtClassName() << "] {\n";
   dumpChild([=] {
     if (!S) {
       ColorScope Color(*this, NullColor);
@@ -2006,10 +2007,11 @@ void ASTDumper::dumpStmt(const Stmt *S) {
     for (const Stmt *SubStmt : S->children())
       dumpStmt(SubStmt);
   });
+  //llvm::outs() << "\n} End Stmt\n";
 }
 
 void ASTDumper::VisitStmt(const Stmt *Node) {
-  {   
+  {
     ColorScope Color(*this, StmtColor);
     OS << Node->getStmtClassName();
   }
@@ -2060,6 +2062,7 @@ void ASTDumper::VisitCapturedStmt(const CapturedStmt *Node) {
 
 void ASTDumper::VisitACCExecutableDirective(
     const ACCExecutableDirective *Node) {
+  //llvm::outs() << "\n\n\n\n\nASTDumper::VisitACCExecutableDirective\n\n\n\n\n";
   VisitStmt(Node);
   for (auto *C : Node->clauses()) {
     dumpChild([=] {
@@ -2815,6 +2818,7 @@ LLVM_DUMP_METHOD void Decl::dumpColor() const {
   ASTDumper P(llvm::errs(), &Ctx.getCommentCommandTraits(),
               &Ctx.getSourceManager(), /*ShowColors*/ true,
               Ctx.getPrintingPolicy());
+  //llvm::outs() << "Dumping Decl[" << this->getDeclKindName() << "]\n";
   P.dumpDecl(this);
 }
 
@@ -2860,6 +2864,7 @@ LLVM_DUMP_METHOD void Stmt::dump() const {
 }
 
 LLVM_DUMP_METHOD void Stmt::dumpColor() const {
+
   ASTDumper P(llvm::errs(), nullptr, nullptr, /*ShowColors*/true);
   P.dumpStmt(this);
 }

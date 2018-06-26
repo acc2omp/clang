@@ -8597,6 +8597,396 @@ def ext_opencl_ext_vector_type_rgba_selector: ExtWarn<
   InGroup<OpenCLUnsupportedRGBA>;
 } // end of sema category
 
+let CategoryName = "OpenACC Issue" in {
+// OpenACC support.
+def err_acc_expected_var_arg : Error<
+  "%0 is not a global variable, static local variable or static data member">;
+def err_acc_expected_var_arg_suggest : Error<
+  "%0 is not a global variable, static local variable or static data member; "
+  "did you mean %1">;
+def err_acc_global_var_arg : Error<
+  "arguments of '#pragma acc %0' must have %select{global storage|static storage duration}1">;
+def err_acc_ref_type_arg : Error<
+  "arguments of '#pragma acc %0' cannot be of reference type %1">;
+def err_acc_region_not_file_context : Error<
+  "directive must be at file or namespace scope">;
+def err_acc_var_scope : Error<
+  "'#pragma acc %0' must appear in the scope of the %q1 variable declaration">;
+def err_acc_var_used : Error<
+  "'#pragma acc %0' must precede all references to variable %q1">;
+def err_acc_var_thread_local : Error<
+  "variable %0 cannot be threadprivate because it is %select{thread-local|a global named register variable}1">;
+def err_acc_private_incomplete_type : Error<
+  "a private variable with incomplete type %0">;
+def err_acc_firstprivate_incomplete_type : Error<
+  "a firstprivate variable with incomplete type %0">;
+def err_acc_lastprivate_incomplete_type : Error<
+  "a lastprivate variable with incomplete type %0">;
+def err_acc_reduction_incomplete_type : Error<
+  "a reduction list item with incomplete type %0">;
+def err_acc_unexpected_clause_value : Error<
+  "expected %0 in OpenACC clause '%1'">;
+def err_acc_expected_var_name_member_expr : Error<
+  "expected variable name%select{| or data member of current class}0">;
+def err_acc_expected_var_name_member_expr_or_array_item : Error<
+  "expected variable name%select{|, data member of current class}0, array element or array section">;
+def err_acc_expected_addressable_lvalue_or_array_item : Error<
+  "expected addressable lvalue expression, array element or array section">;
+def err_acc_expected_named_var_member_or_array_expression: Error<
+  "expected expression containing only member accesses and/or array sections based on named variables">;
+def err_acc_bit_fields_forbidden_in_clause : Error<
+  "bit fields cannot be used to specify storage in a '%0' clause">;
+def err_acc_array_section_does_not_specify_contiguous_storage : Error<
+  "acc array section does not specify contiguous storage">;
+def err_acc_union_type_not_allowed : Error<
+  "mapping of union members is not allowed">;
+def err_acc_expected_access_to_data_field : Error<
+  "expected access to data field">;
+def err_acc_multiple_array_items_in_map_clause : Error<
+  "multiple array elements associated with the same variable are not allowed in map clauses of the same construct">;
+def err_acc_pointer_mapped_along_with_derived_section : Error<
+  "pointer cannot be mapped along with a section derived from itself">;
+def err_acc_original_storage_is_shared_and_does_not_contain : Error<
+  "original storage of expression in data environment is shared but data environment do not fully contain mapped expression storage">;
+def err_acc_same_pointer_derreferenced : Error<
+  "same pointer derreferenced in multiple different ways in map clause expressions">;
+def note_acc_task_predetermined_firstprivate_here : Note<
+  "predetermined as a firstprivate in a task construct here">;
+def err_acc_threadprivate_incomplete_type : Error<
+  "threadprivate variable with incomplete type %0">;
+def err_acc_no_dsa_for_variable : Error<
+  "variable %0 must have explicitly specified data sharing attributes">;
+def err_acc_wrong_dsa : Error<
+  "%0 variable cannot be %1">;
+def err_acc_variably_modified_type_not_supported : Error<
+  "arguments of OpenACC clause '%0' in '#pragma acc %2' directive cannot be of variably-modified type %1">;
+def note_acc_explicit_dsa : Note<
+  "defined as %0">;
+def note_acc_predetermined_dsa : Note<
+  "%select{static data member is predetermined as shared|"
+  "variable with static storage duration is predetermined as shared|"
+  "loop iteration variable is predetermined as private|"
+  "loop iteration variable is predetermined as linear|"
+  "loop iteration variable is predetermined as lastprivate|"
+  "constant variable is predetermined as shared|"
+  "global variable is predetermined as shared|"
+  "non-shared variable in a task construct is predetermined as firstprivate|"
+  "variable with automatic storage duration is predetermined as private}0"
+  "%select{|; perhaps you forget to enclose 'acc %2' directive into a parallel or another task region?}1">;
+def note_acc_implicit_dsa : Note<
+  "implicitly determined as %0">;
+def err_acc_loop_var_dsa : Error<
+  "loop iteration variable in the associated loop of 'acc %1' directive may not be %0, predetermined as %2">;
+def err_acc_not_for : Error<
+  "%select{statement after '#pragma acc %1' must be a for loop|"
+  "expected %2 for loops after '#pragma acc %1'%select{|, but found only %4}3}0">;
+def note_acc_collapse_ordered_expr : Note<
+  "as specified in %select{'collapse'|'ordered'|'collapse' and 'ordered'}0 clause%select{||s}0">;
+def err_acc_negative_expression_in_clause : Error<
+  "argument to '%0' clause must be a %select{non-negative|strictly positive}1 integer value">;
+def err_acc_not_integral : Error<
+  "expression must have integral or unscoped enumeration "
+  "type, not %0">;
+def err_acc_threadprivate_in_target : Error<
+  "threadprivate variables cannot be used in target constructs">;
+def err_acc_incomplete_type : Error<
+  "expression has incomplete class type %0">;
+def err_acc_explicit_conversion : Error<
+  "expression requires explicit conversion from %0 to %1">;
+def note_acc_conversion_here : Note<
+  "conversion to %select{integral|enumeration}0 type %1 declared here">;
+def err_acc_ambiguous_conversion : Error<
+  "ambiguous conversion from type %0 to an integral or unscoped "
+  "enumeration type">;
+def err_acc_required_access : Error<
+  "%0 variable must be %1">;
+def err_acc_const_variable : Error<
+  "const-qualified variable cannot be %0">;
+def err_acc_const_reduction_list_item : Error<
+  "const-qualified list item cannot be reduction">;
+def err_acc_linear_incomplete_type : Error<
+  "a linear variable with incomplete type %0">;
+def err_acc_linear_expected_int_or_ptr : Error<
+  "argument of a linear clause should be of integral or pointer "
+  "type, not %0">;
+def warn_acc_linear_step_zero : Warning<
+  "zero linear step (%0 %select{|and other variables in clause }1should probably be const)">,
+  InGroup<OpenACCClauses>;
+def warn_acc_alignment_not_power_of_two : Warning<
+  "aligned clause will be ignored because the requested alignment is not a power of 2">,
+  InGroup<OpenACCClauses>;
+def err_acc_enclosed_declare_target : Error<
+  "declare target region may not be enclosed within another declare target region">;
+def err_acc_invalid_target_decl : Error<
+  "%0 used in declare target directive is not a variable or a function name">;
+def err_acc_declare_target_multiple : Error<
+  "%0 appears multiple times in clauses on the same declare target directive">;
+def err_acc_declare_target_to_and_link : Error<
+  "%0 must not appear in both clauses 'to' and 'link'">;
+def warn_acc_not_in_target_context : Warning<
+  "declaration is not declared in any declare target region">,
+  InGroup<OpenACCTarget>;
+def err_acc_function_in_link_clause : Error<
+  "function name is not allowed in 'link' clause">;
+def err_acc_aligned_expected_array_or_ptr : Error<
+  "argument of aligned clause should be array"
+  "%select{ or pointer|, pointer, reference to array or reference to pointer}1"
+  ", not %0">;
+def err_acc_aligned_twice : Error<
+  "%select{a variable|a parameter|'this'}0 cannot appear in more than one aligned clause">;
+def err_acc_local_var_in_threadprivate_init : Error<
+  "variable with local storage in initial value of threadprivate variable">;
+def err_acc_loop_not_canonical_init : Error<
+  "initialization clause of OpenACC for loop is not in canonical form "
+  "('var = init' or 'T var = init')">;
+def ext_acc_loop_not_canonical_init : ExtWarn<
+  "initialization clause of OpenACC for loop is not in canonical form "
+  "('var = init' or 'T var = init')">, InGroup<OpenACCLoopForm>;
+def err_acc_loop_not_canonical_cond : Error<
+  "condition of OpenACC for loop must be a relational comparison "
+  "('<', '<=', '>', or '>=') of loop variable %0">;
+def err_acc_loop_not_canonical_incr : Error<
+  "increment clause of OpenACC for loop must perform simple addition "
+  "or subtraction on loop variable %0">;
+def err_acc_loop_variable_type : Error<
+  "variable must be of integer or %select{pointer|random access iterator}0 type">;
+def err_acc_loop_incr_not_compatible : Error<
+  "increment expression must cause %0 to %select{decrease|increase}1 "
+  "on each iteration of OpenACC for loop">;
+def note_acc_loop_cond_requres_compatible_incr : Note<
+  "loop step is expected to be %select{negative|positive}0 due to this condition">;
+def err_acc_loop_diff_cxx : Error<
+  "could not calculate number of iterations calling 'operator-' with "
+  "upper and lower loop bounds">;
+def err_acc_loop_cannot_use_stmt : Error<
+  "'%0' statement cannot be used in OpenACC for loop">;
+def err_acc_simd_region_cannot_use_stmt : Error<
+  "'%0' statement cannot be used in OpenACC simd region">;
+def warn_acc_loop_64_bit_var : Warning<
+  "OpenACC loop iteration variable cannot have more than 64 bits size and will be narrowed">,
+  InGroup<OpenACCLoopForm>;
+def err_acc_unknown_reduction_identifier : Error<
+  "incorrect reduction identifier, expected one of '+', '-', '*', '&', '|', '^', "
+  "'&&', '||', 'min' or 'max' or declare reduction for type %0">;
+def err_acc_not_resolved_reduction_identifier : Error<
+  "unable to resolve declare reduction construct for type %0">;
+def err_acc_reduction_ref_type_arg : Error<
+  "argument of OpenACC clause '%0' must reference the same object in all threads">;
+def err_acc_clause_not_arithmetic_type_arg : Error<
+  "arguments of OpenACC clause '%0' for 'min' or 'max' must be of %select{scalar|arithmetic}1 type">;
+def err_acc_clause_floating_type_arg : Error<
+  "arguments of OpenACC clause '%0' with bitwise operators cannot be of floating type">;
+def err_acc_once_referenced : Error<
+  "variable can appear only once in OpenACC '%0' clause">;
+def err_acc_once_referenced_in_target_update : Error<
+  "variable can appear only once in OpenACC 'target update' construct">;
+def note_acc_referenced : Note<
+  "previously referenced here">;
+def err_acc_reduction_in_task : Error<
+  "reduction variables may not be accessed in an explicit task">;
+def err_acc_reduction_id_not_compatible : Error<
+  "list item of type %0 is not valid for specified reduction operation: unable to provide default initialization value">;
+def err_acc_in_reduction_not_task_reduction : Error<
+  "in_reduction variable must appear in a task_reduction clause">;
+def err_acc_reduction_identifier_mismatch : Error<
+  "in_reduction variable must have the same reduction operation as in a task_reduction clause">;
+def note_acc_previous_reduction_identifier : Note<
+  "previously marked as task_reduction with different reduction operation">;
+def err_acc_prohibited_region : Error<
+  "region cannot be%select{| closely}0 nested inside '%1' region"
+  "%select{|; perhaps you forget to enclose 'acc %3' directive into a parallel region?|"
+  "; perhaps you forget to enclose 'acc %3' directive into a for or a parallel for region with 'ordered' clause?|"
+  "; perhaps you forget to enclose 'acc %3' directive into a target region?|"
+  "; perhaps you forget to enclose 'acc %3' directive into a teams region?}2">;
+def err_acc_prohibited_region_simd : Error<
+  "OpenACC constructs may not be nested inside a simd region">;
+def err_acc_prohibited_region_atomic : Error<
+  "OpenACC constructs may not be nested inside an atomic region">;
+def err_acc_prohibited_region_critical_same_name : Error<
+  "cannot nest 'critical' regions having the same name %0">;
+def note_acc_previous_critical_region : Note<
+  "previous 'critical' region starts here">;
+def err_acc_sections_not_compound_stmt : Error<
+  "the statement for '#pragma acc sections' must be a compound statement">;
+def err_acc_parallel_sections_not_compound_stmt : Error<
+  "the statement for '#pragma acc parallel sections' must be a compound statement">;
+def err_acc_orphaned_section_directive : Error<
+  "%select{orphaned 'acc section' directives are prohibited, it|'acc section' directive}0"
+  " must be closely nested to a sections region%select{|, not a %1 region}0">;
+def err_acc_sections_substmt_not_section : Error<
+  "statement in 'acc sections' directive must be enclosed into a section region">;
+def err_acc_parallel_sections_substmt_not_section : Error<
+  "statement in 'acc parallel sections' directive must be enclosed into a section region">;
+def err_acc_parallel_reduction_in_task_firstprivate : Error<
+  "argument of a reduction clause of a %0 construct must not appear in a firstprivate clause on a task construct">;
+def err_acc_atomic_read_not_expression_statement : Error<
+  "the statement for 'atomic read' must be an expression statement of form 'v = x;',"
+  " where v and x are both lvalue expressions with scalar type">;
+def note_acc_atomic_read_write: Note<
+  "%select{expected an expression statement|expected built-in assignment operator|expected expression of scalar type|expected lvalue expression}0">;
+def err_acc_atomic_write_not_expression_statement : Error<
+  "the statement for 'atomic write' must be an expression statement of form 'x = expr;',"
+  " where x is a lvalue expression with scalar type">;
+def err_acc_atomic_update_not_expression_statement : Error<
+  "the statement for 'atomic update' must be an expression statement of form '++x;', '--x;', 'x++;', 'x--;', 'x binop= expr;', 'x = x binop expr' or 'x = expr binop x',"
+  " where x is an l-value expression with scalar type">;
+def err_acc_atomic_not_expression_statement : Error<
+  "the statement for 'atomic' must be an expression statement of form '++x;', '--x;', 'x++;', 'x--;', 'x binop= expr;', 'x = x binop expr' or 'x = expr binop x',"
+  " where x is an l-value expression with scalar type">;
+def note_acc_atomic_update: Note<
+  "%select{expected an expression statement|expected built-in binary or unary operator|expected unary decrement/increment operation|"
+  "expected expression of scalar type|expected assignment expression|expected built-in binary operator|"
+  "expected one of '+', '*', '-', '/', '&', '^', '%|', '<<', or '>>' built-in operations|expected in right hand side of expression}0">;
+def err_acc_atomic_capture_not_expression_statement : Error<
+  "the statement for 'atomic capture' must be an expression statement of form 'v = ++x;', 'v = --x;', 'v = x++;', 'v = x--;', 'v = x binop= expr;', 'v = x = x binop expr' or 'v = x = expr binop x',"
+  " where x and v are both l-value expressions with scalar type">;
+def err_acc_atomic_capture_not_compound_statement : Error<
+  "the statement for 'atomic capture' must be a compound statement of form '{v = x; x binop= expr;}', '{x binop= expr; v = x;}',"
+  " '{v = x; x = x binop expr;}', '{v = x; x = expr binop x;}', '{x = x binop expr; v = x;}', '{x = expr binop x; v = x;}' or '{v = x; x = expr;}',"
+  " '{v = x; x++;}', '{v = x; ++x;}', '{++x; v = x;}', '{x++; v = x;}', '{v = x; x--;}', '{v = x; --x;}', '{--x; v = x;}', '{x--; v = x;}'"
+  " where x is an l-value expression with scalar type">;
+def note_acc_atomic_capture: Note<
+  "%select{expected assignment expression|expected compound statement|expected exactly two expression statements|expected in right hand side of the first expression}0">;
+def err_acc_atomic_several_clauses : Error<
+  "directive '#pragma acc atomic' cannot contain more than one 'read', 'write', 'update' or 'capture' clause">;
+def note_acc_atomic_previous_clause : Note<
+  "'%0' clause used here">;
+def err_acc_target_contains_not_only_teams : Error<
+  "target construct with nested teams region contains statements outside of the teams construct">;
+def note_acc_nested_teams_construct_here : Note<
+  "nested teams construct here">;
+def note_acc_nested_statement_here : Note<
+  "%select{statement|directive}0 outside teams construct here">;
+def err_acc_single_copyprivate_with_nowait : Error<
+  "the 'copyprivate' clause must not be used with the 'nowait' clause">;
+def note_acc_nowait_clause_here : Note<
+  "'nowait' clause is here">;
+def err_acc_single_decl_in_declare_simd : Error<
+  "single declaration is expected after 'declare simd' directive">;
+def err_acc_function_expected : Error<
+  "'#pragma acc declare simd' can only be applied to functions">;
+def err_acc_wrong_cancel_region : Error<
+  "one of 'for', 'parallel', 'sections' or 'taskgroup' is expected">;
+def err_acc_parent_cancel_region_nowait : Error<
+  "parent region for 'acc %select{cancellation point|cancel}0' construct cannot be nowait">;
+def err_acc_parent_cancel_region_ordered : Error<
+  "parent region for 'acc %select{cancellation point|cancel}0' construct cannot be ordered">;
+def err_acc_reduction_wrong_type : Error<"reduction type cannot be %select{qualified with 'const', 'volatile' or 'restrict'|a function|a reference|an array}0 type">;
+def err_acc_wrong_var_in_declare_reduction : Error<"only %select{'acc_priv' or 'acc_orig'|'acc_in' or 'acc_out'}0 variables are allowed in %select{initializer|combiner}0 expression">;
+def err_acc_declare_reduction_redefinition : Error<"redefinition of user-defined reduction for type %0">;
+def err_acc_array_section_use : Error<"OpenACC array section is not allowed here">;
+def err_acc_typecheck_section_value : Error<
+  "subscripted value is not an array or pointer">;
+def err_acc_typecheck_section_not_integer : Error<
+  "array section %select{lower bound|length}0 is not an integer">;
+def err_acc_section_function_type : Error<
+  "section of pointer to function type %0">;
+def warn_acc_section_is_char : Warning<"array section %select{lower bound|length}0 is of type 'char'">,
+  InGroup<CharSubscript>, DefaultIgnore;
+def err_acc_section_incomplete_type : Error<
+  "section of pointer to incomplete type %0">;
+def err_acc_section_not_subset_of_array : Error<
+  "array section must be a subset of the original array">;
+def err_acc_section_length_negative : Error<
+  "section length is evaluated to a negative value %0">;
+def err_acc_section_length_undefined : Error<
+  "section length is unspecified and cannot be inferred because subscripted value is %select{not an array|an array of unknown bound}0">;
+def err_acc_wrong_linear_modifier : Error<
+  "expected %select{'val' modifier|one of 'ref', val' or 'uval' modifiers}0">;
+def err_acc_wrong_linear_modifier_non_reference : Error<
+  "variable of non-reference type %0 can be used only with 'val' modifier, but used with '%1'">;
+def err_acc_wrong_simdlen_safelen_values : Error<
+  "the value of 'simdlen' parameter must be less than or equal to the value of the 'safelen' parameter">;
+def err_acc_wrong_if_directive_name_modifier : Error<
+  "directive name modifier '%0' is not allowed for '#pragma acc %1'">;
+def err_acc_no_more_if_clause : Error<
+  "no more 'if' clause is allowed">;
+def err_acc_unnamed_if_clause : Error<
+  "expected %select{|one of}0 %1 directive name modifier%select{|s}0">;
+def note_acc_previous_named_if_clause : Note<
+  "previous clause with directive name modifier specified here">;
+def err_acc_ordered_directive_with_param : Error<
+  "'ordered' directive %select{without any clauses|with 'threads' clause}0 cannot be closely nested inside ordered region with specified parameter">;
+def err_acc_ordered_directive_without_param : Error<
+  "'ordered' directive with 'depend' clause cannot be closely nested inside ordered region without specified parameter">;
+def note_acc_ordered_param : Note<
+  "'ordered' clause with specified parameter">;
+def err_acc_expected_base_var_name : Error<
+  "expected variable name as a base of the array %select{subscript|section}0">;
+def err_acc_map_shared_storage : Error<
+  "variable already marked as mapped in current construct">;
+def err_acc_invalid_map_type_for_directive : Error<
+  "%select{map type '%1' is not allowed|map type must be specified}0 for '#pragma acc %2'">;
+def err_acc_no_clause_for_directive : Error<
+  "expected at least one %0 clause for '#pragma acc %1'">;
+def err_acc_threadprivate_in_clause : Error<
+  "threadprivate variables are not allowed in '%0' clause">;
+def err_acc_wrong_ordered_loop_count : Error<
+  "the parameter of the 'ordered' clause must be greater than or equal to the parameter of the 'collapse' clause">;
+def note_acc_collapse_loop_count : Note<
+  "parameter of the 'collapse' acc clause">;
+def err_acc_grainsize_num_tasks_mutually_exclusive : Error<
+  "'%0' and '%1' clause are mutually exclusive and may not appear on the same directive">;
+def note_acc_previous_grainsize_num_tasks : Note<
+  "'%0' clause is specified here">;
+def err_acc_hint_clause_no_name : Error<
+  "the name of the construct must be specified in presence of 'hint' clause">;
+def err_acc_critical_with_hint : Error<
+  "constructs with the same name must have a 'hint' clause with the same value">;
+def note_acc_critical_hint_here : Note<
+  "%select{|previous }0'hint' clause with value '%1'">;
+def note_acc_critical_no_hint : Note<
+  "%select{|previous }0directive with no 'hint' clause specified">;
+def err_acc_depend_clause_thread_simd : Error<
+  "'depend' clauses cannot be mixed with '%0' clause">;
+def err_acc_depend_sink_expected_loop_iteration : Error<
+  "expected%select{| %1}0 loop iteration variable">;
+def err_acc_depend_sink_unexpected_expr : Error<
+  "unexpected expression: number of expressions is larger than the number of associated loops">;
+def err_acc_depend_sink_expected_plus_minus : Error<
+  "expected '+' or '-' operation">;
+def err_acc_depend_sink_source_not_allowed : Error<
+  "'depend(%select{source|sink:vec}0)' clause%select{|s}0 cannot be mixed with 'depend(%select{sink:vec|source}0)' clause%select{s|}0">;
+def err_acc_linear_ordered : Error<
+  "'linear' clause cannot be specified along with 'ordered' clause with a parameter">;
+def err_acc_unexpected_schedule_modifier : Error<
+  "modifier '%0' cannot be used along with modifier '%1'">;
+def err_acc_schedule_nonmonotonic_static : Error<
+  "'nonmonotonic' modifier can only be specified with 'dynamic' or 'guided' schedule kind">;
+def err_acc_schedule_nonmonotonic_ordered : Error<
+  "'schedule' clause with 'nonmonotonic' modifier cannot be specified if an 'ordered' clause is specified">;
+def err_acc_ordered_simd : Error<
+  "'ordered' clause with a parameter can not be specified in '#pragma acc %0' directive">;
+def err_acc_variable_in_given_clause_and_dsa : Error<
+  "%0 variable cannot be in a %1 clause in '#pragma acc %2' directive">;
+def err_acc_param_or_this_in_clause : Error<
+  "expected reference to one of the parameters of function %0%select{| or 'this'}1">;
+def err_acc_expected_uniform_param : Error<
+  "expected a reference to a parameter specified in a 'uniform' clause">;
+def err_acc_expected_int_param : Error<
+  "expected a reference to an integer-typed parameter">;
+def err_acc_at_least_one_motion_clause_required : Error<
+  "expected at least one 'to' clause or 'from' clause specified to '#pragma acc target update'">;
+def err_acc_usedeviceptr_not_a_pointer : Error<
+  "expected pointer or reference to pointer in 'use_device_ptr' clause">;
+def err_acc_argument_type_isdeviceptr : Error <
+  "expected pointer, array, reference to pointer, or reference to array in 'is_device_ptr clause'">;
+def warn_acc_nesting_simd : Warning<
+  "OpenACC only allows an ordered construct with the simd clause nested in a simd construct">,
+  InGroup<SourceUsesOpenACC>;
+def err_acc_orphaned_device_directive : Error<
+  "orphaned 'acc %0' directives are prohibited"
+  "; perhaps you forget to enclose the directive into a %select{|||target |teams }1region?">;
+def err_acc_reduction_non_addressable_expression : Error<
+  "expected addressable reduction item for the task-based directives">;
+def err_acc_reduction_with_nogroup : Error<
+  "'reduction' clause cannot be used with 'nogroup' clause">;
+def err_acc_reduction_vla_unsupported : Error<
+  "cannot generate code for reduction on %select{|array section, which requires a }0variable length array">;
+def err_acc_linear_distribute_var_non_loop_iteration : Error<
+  "only loop iteration variables are allowed in 'linear' clause in distribute directives">;
+} // end of OpenACC category
+
 let CategoryName = "OpenMP Issue" in {
 // OpenMP support.
 def err_omp_expected_var_arg : Error<
@@ -8636,8 +9026,8 @@ def err_omp_expected_named_var_member_or_array_expression: Error<
   "expected expression containing only member accesses and/or array sections based on named variables">;
 def err_omp_bit_fields_forbidden_in_clause : Error<
   "bit fields cannot be used to specify storage in a '%0' clause">;
-def err_array_section_does_not_specify_contiguous_storage : Error<
-  "array section does not specify contiguous storage">;
+def err_omp_array_section_does_not_specify_contiguous_storage : Error<
+  "omp array section does not specify contiguous storage">;
 def err_omp_union_type_not_allowed : Error<
   "mapping of union members is not allowed">;
 def err_omp_expected_access_to_data_field : Error<
@@ -8923,8 +9313,8 @@ def err_omp_threadprivate_in_clause : Error<
   "threadprivate variables are not allowed in '%0' clause">;
 def err_omp_wrong_ordered_loop_count : Error<
   "the parameter of the 'ordered' clause must be greater than or equal to the parameter of the 'collapse' clause">;
-def note_collapse_loop_count : Note<
-  "parameter of the 'collapse' clause">;
+def note_omp_collapse_loop_count : Note<
+  "parameter of the 'collapse' omp clause">;
 def err_omp_grainsize_num_tasks_mutually_exclusive : Error<
   "'%0' and '%1' clause are mutually exclusive and may not appear on the same directive">;
 def note_omp_previous_grainsize_num_tasks : Note<

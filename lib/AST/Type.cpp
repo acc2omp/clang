@@ -2667,6 +2667,8 @@ StringRef BuiltinType::getName(const PrintingPolicy &Policy) const {
     return "queue_t";
   case OCLReserveID:
     return "reserve_id_t";
+  case ACCArraySection:
+    return "<OpenACC array section type>";
   case OMPArraySection:
     return "<OpenMP array section type>";
   }

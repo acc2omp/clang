@@ -20,6 +20,7 @@
 #include "clang/AST/Type.h"
 #include "clang/Basic/AttrKinds.h"
 #include "clang/Basic/LLVM.h"
+#include "clang/Basic/OpenACCKinds.h"
 #include "clang/Basic/OpenMPKinds.h"
 #include "clang/Basic/Sanitizers.h"
 #include "clang/Basic/SourceLocation.h"
@@ -86,7 +87,7 @@ public:
   attr::Kind getKind() const {
     return static_cast<attr::Kind>(AttrKind);
   }
-  
+
   unsigned getSpellingListIndex() const { return SpellingListIndex; }
   const char *getSpelling() const;
 

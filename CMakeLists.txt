@@ -238,6 +238,9 @@ endif()
 set(CLANG_DEFAULT_OBJCOPY "objcopy" CACHE STRING
   "Default objcopy executable to use.")
 
+set(CLANG_DEFAULT_OPENACC_RUNTIME "libomp" CACHE STRING
+  "Default OpenACC runtime used by -fopenacc.")
+
 set(CLANG_DEFAULT_OPENMP_RUNTIME "libomp" CACHE STRING
   "Default OpenMP runtime used by -fopenmp.")
 

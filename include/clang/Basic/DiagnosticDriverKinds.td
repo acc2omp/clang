@@ -74,6 +74,8 @@ def err_drv_invalid_Xarch_argument_isdriver : Error<
   "invalid Xarch argument: '%0', cannot change driver behavior inside Xarch argument">;
 def err_drv_Xopenmp_target_missing_triple : Error<
   "cannot deduce implicit triple value for -Xopenmp-target, specify triple using -Xopenmp-target=<triple>">;
+def err_drv_invalid_Xopenacc_target_with_args : Error<
+  "invalid -Xopenacc-target argument: '%0', options requiring arguments are unsupported">;
 def err_drv_invalid_Xopenmp_target_with_args : Error<
   "invalid -Xopenmp-target argument: '%0', options requiring arguments are unsupported">;
 def err_drv_argument_only_allowed_with : Error<
@@ -193,6 +195,16 @@ def err_drv_emit_llvm_link : Error<
 def err_drv_optimization_remark_pattern : Error<
   "%0 in '%1'">;
 def err_drv_no_neon_modifier : Error<"[no]neon is not accepted as modifier, please use [no]simd instead">;
+def err_drv_invalid_acc_target : Error<"OpenACC target is invalid: '%0'">;
+def err_drv_acc_host_ir_file_not_found : Error<
+  "The provided host compiler IR file '%0' is required to generate code for OpenACC target regions but cannot be found.">;
+def err_drv_acc_host_target_not_supported : Error<
+  "The target '%0' is not a supported OpenACC host target.">;
+def err_drv_expecting_fopenacc_with_fopenacc_targets : Error<
+  "The option -fopenacc-targets must be used in conjunction with a -fopenacc option compatible with offloading, please use -fopenacc=libomp or -fopenacc=libiomp5.">;
+def warn_drv_acc_offload_target_duplicate : Warning<
+  "The OpenACC offloading target '%0' is similar to target '%1' already specified - will be ignored.">, 
+  InGroup<OpenACCTarget>;
 def err_drv_invalid_omp_target : Error<"OpenMP target is invalid: '%0'">;
 def err_drv_omp_host_ir_file_not_found : Error<
   "The provided host compiler IR file '%0' is required to generate code for OpenMP target regions but cannot be found.">;

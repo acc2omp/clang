@@ -8583,8 +8583,8 @@ private:
   /// Set to true inside '#pragma omp declare target' region.
   bool IsInOpenACCDeclareTargetContext = false;
   /// \brief Initialization of data-sharing attributes stack.
-  void InitDataSharingAttributesStack();
-  void DestroyDataSharingAttributesStack();
+  void InitOpenACCDataSharingAttributesStack();
+  void DestroyOpenACCDataSharingAttributesStack();
   ExprResult
   VerifyPositiveIntegerConstantInClause(Expr *Op, OpenACCClauseKind CKind,
                                         bool StrictlyPositive = true);
@@ -9272,20 +9272,21 @@ public:
                                           SourceLocation LParenLoc,
                                           SourceLocation EndLoc);
 
+  // -- MYHEADER --
   //===--------------------------------------------------------------------===//
   // OpenMP directives and clauses.
   //
 
   //TODO acc2mp
-  //Uncomment variables and functions that were redeclared  
+  //Uncomment variables and functions that were redeclared
 
 private:
   //->void *VarDataSharingAttributesStack;
   /// Set to true inside '#pragma omp declare target' region.
   bool IsInOpenMPDeclareTargetContext = false;
   /// \brief Initialization of data-sharing attributes stack.
-  //->void InitDataSharingAttributesStack();
-  //->void DestroyDataSharingAttributesStack();
+  void InitOpenMPDataSharingAttributesStack();
+  void DestroyOpenMPDataSharingAttributesStack();
   ExprResult
   VerifyPositiveIntegerConstantInClause(Expr *Op, OpenMPClauseKind CKind,
                                         bool StrictlyPositive = true);
@@ -9312,11 +9313,13 @@ private:
   /// \param Selector selects diagnostic message: 0 for type and 1 for
   ///        declaration.
   /// \return true if the type or declaration is disabled.
-  /*->template <typename T, typename DiagLocT, typename DiagInfoT, typename MapT>
-  bool checkOpenCLDisabledTypeOrDecl(T D, DiagLocT DiagLoc, DiagInfoT DiagInfo,
-                                     MapT &Map, unsigned Selector = 0,
-                                     SourceRange SrcRange = SourceRange());
-  */
+  //TODO acc2mp investigate why this template is declared here in OpenMP region.
+  // Maybe there is a need for duplication. for now it is commented
+  /* template <typename T, typename DiagLocT, typename DiagInfoT, typename MapT> */
+  /* bool checkOpenCLDisabledTypeOrDecl(T D, DiagLocT DiagLoc, DiagInfoT DiagInfo, */
+  /*                                    MapT &Map, unsigned Selector = 0, */
+  /*                                    SourceRange SrcRange = SourceRange()); */
+
 
 public:
   /// \brief Return true if the provided declaration \a VD should be captured by

@@ -19,8 +19,6 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclOpenACC.h"
-// TODO acc2mp maybe this will fix a linkage error
-//#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/StmtCXX.h"
 #include "clang/AST/StmtOpenACC.h"
 #include "clang/AST/StmtVisitor.h"
@@ -1154,14 +1152,10 @@ bool DSAStackTy::hasDirective(
   return false;
 }
 
-
-//TODO acc2mp
-//Get this out 
-/*
-void Sema::InitDataSharingAttributesStack() {
+void Sema::InitOpenACCDataSharingAttributesStack() {
   VarDataSharingAttributesStack = new DSAStackTy(*this);
 }
-*/
+
 #define DSAStack static_cast<DSAStackTy *>(VarDataSharingAttributesStack)
 
 void Sema::pushOpenACCFunctionRegion() {
@@ -1438,8 +1432,7 @@ bool Sema::isOpenACCTargetCapturedDecl(ValueDecl *D, unsigned Level) {
                                         Level);
 }
 
-//TODO acc2mp
-//void Sema::DestroyDataSharingAttributesStack() { delete DSAStack; }
+void Sema::DestroyOpenACCDataSharingAttributesStack() { delete DSAStack; }
 
 void Sema::StartOpenACCDSABlock(OpenACCDirectiveKind DKind,
                                const DeclarationNameInfo &DirName,
@@ -1566,18 +1559,18 @@ ExprResult Sema::ActOnOpenACCIdExpression(Scope *CurScope,
       diagnoseTypo(Corrected,
                    PDiag(Lookup.empty()
                              ? diag::err_undeclared_var_use_suggest
-                             : diag::err_omp_expected_var_arg_suggest)
+                             : diag::err_acc_expected_var_arg_suggest)
                        << Id.getName());
       VD = Corrected.getCorrectionDeclAs<VarDecl>();
     } else {
       Diag(Id.getLoc(), Lookup.empty() ? diag::err_undeclared_var_use
-                                       : diag::err_omp_expected_var_arg)
+                                       : diag::err_acc_expected_var_arg)
           << Id.getName();
       return ExprError();
     }
   } else {
     if (!(VD = Lookup.getAsSingle<VarDecl>())) {
-      Diag(Id.getLoc(), diag::err_omp_expected_var_arg) << Id.getName();
+      Diag(Id.getLoc(), diag::err_acc_expected_var_arg) << Id.getName();
       Diag(Lookup.getFoundDecl()->getLocation(), diag::note_declared_at);
       return ExprError();
     }
@@ -1587,7 +1580,7 @@ ExprResult Sema::ActOnOpenACCIdExpression(Scope *CurScope,
   // OpenACC [2.9.2, Syntax, C/C++]
   //   Variables must be file-scope, namespace-scope, or static block-scope.
   if (!VD->hasGlobalStorage()) {
-    Diag(Id.getLoc(), diag::err_omp_global_var_arg)
+    Diag(Id.getLoc(), diag::err_acc_global_var_arg)
         << getOpenACCDirectiveName(ACCD_threadprivate) << !VD->isStaticLocal();
     bool IsDecl =
         VD->isThisDeclarationADefinition(Context) == VarDecl::DeclarationOnly;
@@ -1604,7 +1597,7 @@ ExprResult Sema::ActOnOpenACCIdExpression(Scope *CurScope,
   //   any definition or declaration.
   if (CanonicalVD->getDeclContext()->isTranslationUnit() &&
       !getCurLexicalContext()->isTranslationUnit()) {
-    Diag(Id.getLoc(), diag::err_omp_var_scope)
+    Diag(Id.getLoc(), diag::err_acc_var_scope)
         << getOpenACCDirectiveName(ACCD_threadprivate) << VD;
     bool IsDecl =
         VD->isThisDeclarationADefinition(Context) == VarDecl::DeclarationOnly;
@@ -1619,7 +1612,7 @@ ExprResult Sema::ActOnOpenACCIdExpression(Scope *CurScope,
   //   variables are declared.
   if (CanonicalVD->isStaticDataMember() &&
       !CanonicalVD->getDeclContext()->Equals(getCurLexicalContext())) {
-    Diag(Id.getLoc(), diag::err_omp_var_scope)
+    Diag(Id.getLoc(), diag::err_acc_var_scope)
         << getOpenACCDirectiveName(ACCD_threadprivate) << VD;
     bool IsDecl =
         VD->isThisDeclarationADefinition(Context) == VarDecl::DeclarationOnly;
@@ -1635,7 +1628,7 @@ ExprResult Sema::ActOnOpenACCIdExpression(Scope *CurScope,
   if (CanonicalVD->getDeclContext()->isNamespace() &&
       (!getCurLexicalContext()->isFileContext() ||
        !getCurLexicalContext()->Encloses(CanonicalVD->getDeclContext()))) {
-    Diag(Id.getLoc(), diag::err_omp_var_scope)
+    Diag(Id.getLoc(), diag::err_acc_var_scope)
         << getOpenACCDirectiveName(ACCD_threadprivate) << VD;
     bool IsDecl =
         VD->isThisDeclarationADefinition(Context) == VarDecl::DeclarationOnly;
@@ -1649,7 +1642,7 @@ ExprResult Sema::ActOnOpenACCIdExpression(Scope *CurScope,
   //   in the scope of the variable and not in a nested scope.
   if (CanonicalVD->isStaticLocal() && CurScope &&
       !isDeclInScope(ND, getCurLexicalContext(), CurScope)) {
-    Diag(Id.getLoc(), diag::err_omp_var_scope)
+    Diag(Id.getLoc(), diag::err_acc_var_scope)
         << getOpenACCDirectiveName(ACCD_threadprivate) << VD;
     bool IsDecl =
         VD->isThisDeclarationADefinition(Context) == VarDecl::DeclarationOnly;
@@ -1663,7 +1656,7 @@ ExprResult Sema::ActOnOpenACCIdExpression(Scope *CurScope,
   //   A threadprivate directive must lexically precede all references to any
   //   of the variables in its list.
   if (VD->isUsed() && !DSAStack->isThreadPrivate(VD)) {
-    Diag(Id.getLoc(), diag::err_omp_var_used)
+    Diag(Id.getLoc(), diag::err_acc_var_used)
         << getOpenACCDirectiveName(ACCD_threadprivate) << VD;
     return ExprError();
   }
@@ -1694,7 +1687,7 @@ public:
     if (auto *VD = dyn_cast<VarDecl>(E->getDecl())) {
       if (VD->hasLocalStorage()) {
         SemaRef.Diag(E->getLocStart(),
-                     diag::err_omp_local_var_in_threadprivate_init)
+                     diag::err_acc_local_var_in_threadprivate_init)
             << E->getSourceRange();
         SemaRef.Diag(VD->getLocation(), diag::note_defined_here)
             << VD << VD->getSourceRange();
@@ -1736,14 +1729,14 @@ Sema::CheckACCThreadPrivateDecl(SourceLocation Loc, ArrayRef<Expr *> VarList) {
     // OpenACC [2.9.2, Restrictions, C/C++, p.10]
     //   A threadprivate variable must not have an incomplete type.
     if (RequireCompleteType(ILoc, VD->getType(),
-                            diag::err_omp_threadprivate_incomplete_type)) {
+                            diag::err_acc_threadprivate_incomplete_type)) {
       continue;
     }
 
     // OpenACC [2.9.2, Restrictions, C/C++, p.10]
     //   A threadprivate variable must not have a reference type.
     if (VD->getType()->isReferenceType()) {
-      Diag(ILoc, diag::err_omp_ref_type_arg)
+      Diag(ILoc, diag::err_acc_ref_type_arg)
           << getOpenACCDirectiveName(ACCD_threadprivate) << VD->getType();
       bool IsDecl =
           VD->isThisDeclarationADefinition(Context) == VarDecl::DeclarationOnly;
@@ -1761,7 +1754,7 @@ Sema::CheckACCThreadPrivateDecl(SourceLocation Loc, ArrayRef<Expr *> VarList) {
            getASTContext().getTargetInfo().isTLSSupported())) ||
         (VD->getStorageClass() == SC_Register && VD->hasAttr<AsmLabelAttr>() &&
          !VD->isLocalVarDecl())) {
-      Diag(ILoc, diag::err_omp_var_thread_local)
+      Diag(ILoc, diag::err_acc_var_thread_local)
           << VD << ((VD->getTLSKind() != VarDecl::TLS_None) ? 0 : 1);
       bool IsDecl =
           VD->isThisDeclarationADefinition(Context) == VarDecl::DeclarationOnly;
@@ -1799,7 +1792,7 @@ static void ReportOriginalDSA(Sema &SemaRef, DSAStackTy *Stack,
                               const ValueDecl *D, DSAStackTy::DSAVarData DVar,
                               bool IsLoopIterVar = false) {
   if (DVar.RefExpr) {
-    SemaRef.Diag(DVar.RefExpr->getExprLoc(), diag::note_omp_explicit_dsa)
+    SemaRef.Diag(DVar.RefExpr->getExprLoc(), diag::note_acc_explicit_dsa)
         << getOpenACCClauseName(DVar.CKind);
     return;
   }
@@ -1842,11 +1835,11 @@ static void ReportOriginalDSA(Sema &SemaRef, DSAStackTy *Stack,
     Reason = PDSA_LocalVarPrivate;
   }
   if (Reason != PDSA_Implicit) {
-    SemaRef.Diag(ReportLoc, diag::note_omp_predetermined_dsa)
+    SemaRef.Diag(ReportLoc, diag::note_acc_predetermined_dsa)
         << Reason << ReportHint
         << getOpenACCDirectiveName(Stack->getCurrentDirective());
   } else if (DVar.ImplicitDSALoc.isValid()) {
-    SemaRef.Diag(DVar.ImplicitDSALoc, diag::note_omp_implicit_dsa)
+    SemaRef.Diag(DVar.ImplicitDSALoc, diag::note_acc_implicit_dsa)
         << getOpenACCClauseName(DVar.CKind);
   }
 }
@@ -1948,7 +1941,7 @@ public:
           /*FromParent=*/true);
       if (isOpenACCTaskingDirective(DKind) && DVar.CKind == ACCC_reduction) {
         ErrorFound = true;
-        SemaRef.Diag(ELoc, diag::err_omp_reduction_in_task);
+        SemaRef.Diag(ELoc, diag::err_acc_reduction_in_task);
         ReportOriginalDSA(SemaRef, Stack, VD, DVar);
         return;
       }
@@ -2011,7 +2004,7 @@ public:
           /*FromParent=*/true);
       if (isOpenACCTaskingDirective(DKind) && DVar.CKind == ACCC_reduction) {
         ErrorFound = true;
-        SemaRef.Diag(ELoc, diag::err_omp_reduction_in_task);
+        SemaRef.Diag(ELoc, diag::err_acc_reduction_in_task);
         ReportOriginalDSA(SemaRef, Stack, FD, DVar);
         return;
       }
@@ -2584,13 +2577,13 @@ StmtResult Sema::ActOnOpenACCRegionEnd(StmtResult S,
     Diag(SC->getFirstScheduleModifier() == ACCC_SCHEDULE_MODIFIER_nonmonotonic
              ? SC->getFirstScheduleModifierLoc()
              : SC->getSecondScheduleModifierLoc(),
-         diag::err_omp_schedule_nonmonotonic_ordered)
+         diag::err_acc_schedule_nonmonotonic_ordered)
         << SourceRange(OC->getLocStart(), OC->getLocEnd());
     ErrorFound = true;
   }
   if (!LCs.empty() && OC && OC->getNumForLoops()) {
     for (auto *C : LCs) {
-      Diag(C->getLocStart(), diag::err_omp_linear_ordered)
+      Diag(C->getLocStart(), diag::err_acc_linear_ordered)
           << SourceRange(OC->getLocStart(), OC->getLocEnd());
     }
     ErrorFound = true;
@@ -2598,7 +2591,7 @@ StmtResult Sema::ActOnOpenACCRegionEnd(StmtResult S,
   if (isOpenACCWorksharingDirective(DSAStack->getCurrentDirective()) &&
       isOpenACCSimdDirective(DSAStack->getCurrentDirective()) && OC &&
       OC->getNumForLoops()) {
-    Diag(OC->getLocStart(), diag::err_omp_ordered_simd)
+    Diag(OC->getLocStart(), diag::err_acc_ordered_simd)
         << getOpenACCDirectiveName(DSAStack->getCurrentDirective());
     ErrorFound = true;
   }
@@ -2643,7 +2636,7 @@ static bool checkCancelRegion(Sema &SemaRef, OpenACCDirectiveKind CurrentRegion,
       CancelRegion == ACCD_sections || CancelRegion == ACCD_taskgroup)
     return false;
 
-  SemaRef.Diag(StartLoc, diag::err_omp_wrong_cancel_region)
+  SemaRef.Diag(StartLoc, diag::err_acc_wrong_cancel_region)
       << getOpenACCDirectiveName(CancelRegion);
   return true;
 }
@@ -2676,14 +2669,14 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
       // extension. The OpenACC 4.5 spec does not allow it. Issue a warning
       // message.
       SemaRef.Diag(StartLoc, (CurrentRegion != ACCD_simd)
-                                 ? diag::err_omp_prohibited_region_simd
-                                 : diag::warn_omp_nesting_simd);
+                                 ? diag::err_acc_prohibited_region_simd
+                                 : diag::warn_acc_nesting_simd);
       return CurrentRegion != ACCD_simd;
     }
     if (ParentRegion == ACCD_atomic) {
       // OpenACC [2.16, Nesting of Regions]
       // OpenACC constructs may not be nested inside an atomic region.
-      SemaRef.Diag(StartLoc, diag::err_omp_prohibited_region_atomic);
+      SemaRef.Diag(StartLoc, diag::err_acc_prohibited_region_atomic);
       return true;
     }
     if (CurrentRegion == ACCD_section) {
@@ -2693,7 +2686,7 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
       // encountered elsewhere in the sections region.
       if (ParentRegion != ACCD_sections &&
           ParentRegion != ACCD_parallel_sections) {
-        SemaRef.Diag(StartLoc, diag::err_omp_orphaned_section_directive)
+        SemaRef.Diag(StartLoc, diag::err_acc_orphaned_section_directive)
             << (ParentRegion != ACCD_unknown)
             << getOpenACCDirectiveName(ParentRegion);
         return true;
@@ -2758,11 +2751,11 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
           false /* skip top directive */);
       if (DeadLock) {
         SemaRef.Diag(StartLoc,
-                     diag::err_omp_prohibited_region_critical_same_name)
+                     diag::err_acc_prohibited_region_critical_same_name)
             << CurrentName.getName();
         if (PreviousCriticalLoc.isValid())
           SemaRef.Diag(PreviousCriticalLoc,
-                       diag::note_omp_previous_critical_region);
+                       diag::note_acc_previous_critical_region);
         return true;
       }
     } else if (CurrentRegion == ACCD_barrier) {
@@ -2850,10 +2843,10 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
     }
     if (NestingProhibited) {
       if (OrphanSeen) {
-        SemaRef.Diag(StartLoc, diag::err_omp_orphaned_device_directive)
+        SemaRef.Diag(StartLoc, diag::err_acc_orphaned_device_directive)
             << getOpenACCDirectiveName(CurrentRegion) << Recommend;
       } else {
-        SemaRef.Diag(StartLoc, diag::err_omp_prohibited_region)
+        SemaRef.Diag(StartLoc, diag::err_acc_prohibited_region)
             << CloseNesting << getOpenACCDirectiveName(OffendingRegion)
             << Recommend << getOpenACCDirectiveName(CurrentRegion);
       }
@@ -2877,7 +2870,7 @@ static bool checkIfClauses(Sema &S, OpenACCDirectiveKind Kind,
       // the directive.
       OpenACCDirectiveKind CurNM = IC->getNameModifier();
       if (FoundNameModifiers[CurNM]) {
-        S.Diag(C->getLocStart(), diag::err_omp_more_one_clause)
+        S.Diag(C->getLocStart(), diag::err_acc_more_one_clause)
             << getOpenACCDirectiveName(Kind) << getOpenACCClauseName(ACCC_if)
             << (CurNM != ACCD_unknown) << getOpenACCDirectiveName(CurNM);
         ErrorFound = true;
@@ -2901,7 +2894,7 @@ static bool checkIfClauses(Sema &S, OpenACCDirectiveKind Kind,
       }
       if (!MatchFound) {
         S.Diag(IC->getNameModifierLoc(),
-               diag::err_omp_wrong_if_directive_name_modifier)
+               diag::err_acc_wrong_if_directive_name_modifier)
             << getOpenACCDirectiveName(CurNM) << getOpenACCDirectiveName(Kind);
         ErrorFound = true;
       }
@@ -2912,7 +2905,7 @@ static bool checkIfClauses(Sema &S, OpenACCDirectiveKind Kind,
   if (FoundNameModifiers[ACCD_unknown] && NamedModifiersNumber > 0) {
     if (NamedModifiersNumber == AllowedNameModifiers.size()) {
       S.Diag(FoundNameModifiers[ACCD_unknown]->getLocStart(),
-             diag::err_omp_no_more_if_clause);
+             diag::err_acc_no_more_if_clause);
     } else {
       std::string Values;
       std::string Sep(", ");
@@ -2934,11 +2927,11 @@ static bool checkIfClauses(Sema &S, OpenACCDirectiveKind Kind,
         }
       }
       S.Diag(FoundNameModifiers[ACCD_unknown]->getCondition()->getLocStart(),
-             diag::err_omp_unnamed_if_clause)
+             diag::err_acc_unnamed_if_clause)
           << (TotalAllowedNum > 1) << Values;
     }
     for (auto Loc : NameModifierLoc) {
-      S.Diag(Loc, diag::note_omp_previous_named_if_clause);
+      S.Diag(Loc, diag::note_acc_previous_named_if_clause);
     }
     ErrorFound = true;
   }
@@ -3261,7 +3254,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   }
 
   for (auto P : VarsWithInheritedDSA) {
-    Diag(P.second->getExprLoc(), diag::err_omp_no_dsa_for_variable)
+    Diag(P.second->getExprLoc(), diag::err_acc_no_dsa_for_variable)
         << P.first << P.second->getSourceRange();
   }
   ErrorFound = !VarsWithInheritedDSA.empty() || ErrorFound;
@@ -3287,7 +3280,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
     return DeclGroupPtrTy();
 
   if (!DG.get().isSingleDecl()) {
-    Diag(SR.getBegin(), diag::err_omp_single_decl_in_declare_simd);
+    Diag(SR.getBegin(), diag::err_acc_single_decl_in_declare_simd);
     return DG;
   }
   auto *ADecl = DG.get().getSingleDecl();
@@ -3296,7 +3289,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
 
   auto *FD = dyn_cast<FunctionDecl>(ADecl);
   if (!FD) {
-    Diag(ADecl->getLocation(), diag::err_omp_function_expected);
+    Diag(ADecl->getLocation(), diag::err_acc_function_expected);
     return DeclGroupPtrTy();
   }
 
@@ -3328,7 +3321,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
       UniformedLinearThis = E;
       continue;
     }
-    Diag(E->getExprLoc(), diag::err_omp_param_or_this_in_clause)
+    Diag(E->getExprLoc(), diag::err_acc_param_or_this_in_clause)
         << FD->getDeclName() << (isa<CXXMethodDecl>(ADecl) ? 1 : 0);
   }
   // OpenACC [2.8.2, declare simd construct, Description]
@@ -3352,10 +3345,10 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
           // OpenACC  [2.8.1, simd construct, Restrictions]
           // A list-item cannot appear in more than one aligned clause.
           if (AlignedArgs.count(CanonPVD) > 0) {
-            Diag(E->getExprLoc(), diag::err_omp_aligned_twice)
+            Diag(E->getExprLoc(), diag::err_acc_aligned_twice)
                 << 1 << E->getSourceRange();
             Diag(AlignedArgs[CanonPVD]->getExprLoc(),
-                 diag::note_omp_explicit_dsa)
+                 diag::note_acc_explicit_dsa)
                 << getOpenACCClauseName(ACCC_aligned);
             continue;
           }
@@ -3366,7 +3359,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
                              .getCanonicalType();
           const Type *Ty = QTy.getTypePtrOrNull();
           if (!Ty || (!Ty->isArrayType() && !Ty->isPointerType())) {
-            Diag(E->getExprLoc(), diag::err_omp_aligned_expected_array_or_ptr)
+            Diag(E->getExprLoc(), diag::err_acc_aligned_expected_array_or_ptr)
                 << QTy << getLangOpts().CPlusPlus << E->getSourceRange();
             Diag(PVD->getLocation(), diag::note_previous_decl) << PVD;
           }
@@ -3375,15 +3368,15 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
       }
     if (isa<CXXThisExpr>(E)) {
       if (AlignedThis) {
-        Diag(E->getExprLoc(), diag::err_omp_aligned_twice)
+        Diag(E->getExprLoc(), diag::err_acc_aligned_twice)
             << 2 << E->getSourceRange();
-        Diag(AlignedThis->getExprLoc(), diag::note_omp_explicit_dsa)
+        Diag(AlignedThis->getExprLoc(), diag::note_acc_explicit_dsa)
             << getOpenACCClauseName(ACCC_aligned);
       }
       AlignedThis = E;
       continue;
     }
-    Diag(E->getExprLoc(), diag::err_omp_param_or_this_in_clause)
+    Diag(E->getExprLoc(), diag::err_acc_param_or_this_in_clause)
         << FD->getDeclName() << (isa<CXXMethodDecl>(ADecl) ? 1 : 0);
   }
   // The optional parameter of the aligned clause, alignment, must be a constant
@@ -3422,21 +3415,21 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
           // OpenACC  [2.15.3.7, linear Clause, Restrictions]
           // A list-item cannot appear in more than one linear clause.
           if (LinearArgs.count(CanonPVD) > 0) {
-            Diag(E->getExprLoc(), diag::err_omp_wrong_dsa)
+            Diag(E->getExprLoc(), diag::err_acc_wrong_dsa)
                 << getOpenACCClauseName(ACCC_linear)
                 << getOpenACCClauseName(ACCC_linear) << E->getSourceRange();
             Diag(LinearArgs[CanonPVD]->getExprLoc(),
-                 diag::note_omp_explicit_dsa)
+                 diag::note_acc_explicit_dsa)
                 << getOpenACCClauseName(ACCC_linear);
             continue;
           }
           // Each argument can appear in at most one uniform or linear clause.
           if (UniformedArgs.count(CanonPVD) > 0) {
-            Diag(E->getExprLoc(), diag::err_omp_wrong_dsa)
+            Diag(E->getExprLoc(), diag::err_acc_wrong_dsa)
                 << getOpenACCClauseName(ACCC_linear)
                 << getOpenACCClauseName(ACCC_uniform) << E->getSourceRange();
             Diag(UniformedArgs[CanonPVD]->getExprLoc(),
-                 diag::note_omp_explicit_dsa)
+                 diag::note_acc_explicit_dsa)
                 << getOpenACCClauseName(ACCC_uniform);
             continue;
           }
@@ -3452,11 +3445,11 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
       }
     if (isa<CXXThisExpr>(E)) {
       if (UniformedLinearThis) {
-        Diag(E->getExprLoc(), diag::err_omp_wrong_dsa)
+        Diag(E->getExprLoc(), diag::err_acc_wrong_dsa)
             << getOpenACCClauseName(ACCC_linear)
             << getOpenACCClauseName(IsUniformedThis ? ACCC_uniform : ACCC_linear)
             << E->getSourceRange();
-        Diag(UniformedLinearThis->getExprLoc(), diag::note_omp_explicit_dsa)
+        Diag(UniformedLinearThis->getExprLoc(), diag::note_acc_explicit_dsa)
             << getOpenACCClauseName(IsUniformedThis ? ACCC_uniform
                                                    : ACCC_linear);
         continue;
@@ -3469,7 +3462,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
                                   E->getType());
       continue;
     }
-    Diag(E->getExprLoc(), diag::err_omp_param_or_this_in_clause)
+    Diag(E->getExprLoc(), diag::err_acc_param_or_this_in_clause)
         << FD->getDeclName() << (isa<CXXMethodDecl>(ADecl) ? 1 : 0);
   }
   Expr *Step = nullptr;
@@ -3486,7 +3479,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
       if (auto *PVD = dyn_cast<ParmVarDecl>(DRE->getDecl())) {
         auto *CanonPVD = PVD->getCanonicalDecl();
         if (UniformedArgs.count(CanonPVD) == 0) {
-          Diag(Step->getExprLoc(), diag::err_omp_expected_uniform_param)
+          Diag(Step->getExprLoc(), diag::err_acc_expected_uniform_param)
               << Step->getSourceRange();
         } else if (E->isValueDependent() || E->isTypeDependent() ||
                    E->isInstantiationDependent() ||
@@ -3494,7 +3487,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
                    CanonPVD->getType()->hasIntegerRepresentation())
           NewSteps.push_back(Step);
         else {
-          Diag(Step->getExprLoc(), diag::err_omp_expected_int_param)
+          Diag(Step->getExprLoc(), diag::err_acc_expected_int_param)
               << Step->getSourceRange();
         }
         continue;
@@ -3719,10 +3712,10 @@ bool OpenACCIterationSpaceChecker::SetStep(Expr *NewStep, bool Subtract) {
                (TestIsLessOp ? (IsConstNeg || (IsUnsigned && Subtract))
                              : (IsConstPos || (IsUnsigned && !Subtract))))) {
       SemaRef.Diag(NewStep->getExprLoc(),
-                   diag::err_omp_loop_incr_not_compatible)
+                   diag::err_acc_loop_incr_not_compatible)
           << LCDecl << TestIsLessOp << NewStep->getSourceRange();
       SemaRef.Diag(ConditionLoc,
-                   diag::note_omp_loop_cond_requres_compatible_incr)
+                   diag::note_acc_loop_cond_requres_compatible_incr)
           << TestIsLessOp << ConditionSrcRange;
       return true;
     }
@@ -3750,7 +3743,7 @@ bool OpenACCIterationSpaceChecker::CheckInit(Stmt *S, bool EmitDiags) {
   //
   if (!S) {
     if (EmitDiags) {
-      SemaRef.Diag(DefaultLoc, diag::err_omp_loop_not_canonical_init);
+      SemaRef.Diag(DefaultLoc, diag::err_acc_loop_not_canonical_init);
     }
     return true;
   }
@@ -3783,7 +3776,7 @@ bool OpenACCIterationSpaceChecker::CheckInit(Stmt *S, bool EmitDiags) {
           // Accept non-canonical init form here but emit ext. warning.
           if (Var->getInitStyle() != VarDecl::CInit && EmitDiags)
             SemaRef.Diag(S->getLocStart(),
-                         diag::ext_omp_loop_not_canonical_init)
+                         diag::ext_acc_loop_not_canonical_init)
                 << S->getSourceRange();
           return SetLCDeclAndLB(Var, nullptr, Var->getInit());
         }
@@ -3809,7 +3802,7 @@ bool OpenACCIterationSpaceChecker::CheckInit(Stmt *S, bool EmitDiags) {
   if (Dependent() || SemaRef.CurContext->isDependentContext())
     return false;
   if (EmitDiags) {
-    SemaRef.Diag(S->getLocStart(), diag::err_omp_loop_not_canonical_init)
+    SemaRef.Diag(S->getLocStart(), diag::err_acc_loop_not_canonical_init)
         << S->getSourceRange();
   }
   return true;
@@ -3845,7 +3838,7 @@ bool OpenACCIterationSpaceChecker::CheckCond(Expr *S) {
   //   b relational-op var
   //
   if (!S) {
-    SemaRef.Diag(DefaultLoc, diag::err_omp_loop_not_canonical_cond) << LCDecl;
+    SemaRef.Diag(DefaultLoc, diag::err_acc_loop_not_canonical_cond) << LCDecl;
     return true;
   }
   S = getExprAsWritten(S);
@@ -3887,7 +3880,7 @@ bool OpenACCIterationSpaceChecker::CheckCond(Expr *S) {
   }
   if (Dependent() || SemaRef.CurContext->isDependentContext())
     return false;
-  SemaRef.Diag(CondLoc, diag::err_omp_loop_not_canonical_cond)
+  SemaRef.Diag(CondLoc, diag::err_acc_loop_not_canonical_cond)
       << S->getSourceRange() << LCDecl;
   return true;
 }
@@ -3918,7 +3911,7 @@ bool OpenACCIterationSpaceChecker::CheckIncRHS(Expr *RHS) {
   }
   if (Dependent() || SemaRef.CurContext->isDependentContext())
     return false;
-  SemaRef.Diag(RHS->getLocStart(), diag::err_omp_loop_not_canonical_incr)
+  SemaRef.Diag(RHS->getLocStart(), diag::err_acc_loop_not_canonical_incr)
       << RHS->getSourceRange() << LCDecl;
   return true;
 }
@@ -3938,7 +3931,7 @@ bool OpenACCIterationSpaceChecker::CheckInc(Expr *S) {
   //   var = var - incr
   //
   if (!S) {
-    SemaRef.Diag(DefaultLoc, diag::err_omp_loop_not_canonical_incr) << LCDecl;
+    SemaRef.Diag(DefaultLoc, diag::err_acc_loop_not_canonical_incr) << LCDecl;
     return true;
   }
   if (auto *ExprTemp = dyn_cast<ExprWithCleanups>(S))
@@ -3996,7 +3989,7 @@ bool OpenACCIterationSpaceChecker::CheckInc(Expr *S) {
   }
   if (Dependent() || SemaRef.CurContext->isDependentContext())
     return false;
-  SemaRef.Diag(S->getLocStart(), diag::err_omp_loop_not_canonical_incr)
+  SemaRef.Diag(S->getLocStart(), diag::err_acc_loop_not_canonical_incr)
       << S->getSourceRange() << LCDecl;
   return true;
 }
@@ -4040,7 +4033,7 @@ Expr *OpenACCIterationSpaceChecker::BuildNumIterations(
     if (!Diff.isUsable() && VarType->getAsCXXRecordDecl()) {
       // BuildBinOp already emitted error, this one is to point user to upper
       // and lower bound, and to tell what is passed to 'operator-'.
-      SemaRef.Diag(Upper->getLocStart(), diag::err_omp_loop_diff_cxx)
+      SemaRef.Diag(Upper->getLocStart(), diag::err_acc_loop_diff_cxx)
           << Upper->getSourceRange() << Lower->getSourceRange();
       return nullptr;
     }
@@ -4098,7 +4091,7 @@ Expr *OpenACCIterationSpaceChecker::BuildNumIterations(
     if (NewSize != C.getTypeSize(Type)) {
       if (NewSize < C.getTypeSize(Type)) {
         assert(NewSize == 64 && "incorrect loop var size");
-        SemaRef.Diag(DefaultLoc, diag::warn_omp_loop_64_bit_var)
+        SemaRef.Diag(DefaultLoc, diag::warn_acc_loop_64_bit_var)
             << InitSrcRange << ConditionSrcRange;
       }
       QualType NewType = C.getIntTypeForBitwidth(
@@ -4249,23 +4242,23 @@ static bool CheckOpenACCIterationSpace(
   //   for (init-expr; test-expr; incr-expr) structured-block
   auto *For = dyn_cast_or_null<ForStmt>(S);
   if (!For) {
-    SemaRef.Diag(S->getLocStart(), diag::err_omp_not_for)
+    SemaRef.Diag(S->getLocStart(), diag::err_acc_not_for)
         << (CollapseLoopCountExpr != nullptr || OrderedLoopCountExpr != nullptr)
         << getOpenACCDirectiveName(DKind) << NestedLoopCount
         << (CurrentNestedLoopCount > 0) << CurrentNestedLoopCount;
     if (NestedLoopCount > 1) {
       if (CollapseLoopCountExpr && OrderedLoopCountExpr)
         SemaRef.Diag(DSA.getConstructLoc(),
-                     diag::note_omp_collapse_ordered_expr)
+                     diag::note_acc_collapse_ordered_expr)
             << 2 << CollapseLoopCountExpr->getSourceRange()
             << OrderedLoopCountExpr->getSourceRange();
       else if (CollapseLoopCountExpr)
         SemaRef.Diag(CollapseLoopCountExpr->getExprLoc(),
-                     diag::note_omp_collapse_ordered_expr)
+                     diag::note_acc_collapse_ordered_expr)
             << 0 << CollapseLoopCountExpr->getSourceRange();
       else
         SemaRef.Diag(OrderedLoopCountExpr->getExprLoc(),
-                     diag::note_omp_collapse_ordered_expr)
+                     diag::note_acc_collapse_ordered_expr)
             << 1 << OrderedLoopCountExpr->getSourceRange();
     }
     return true;
@@ -4294,7 +4287,7 @@ static bool CheckOpenACCIterationSpace(
     if (!VarType->isDependentType() && !VarType->isIntegerType() &&
         !VarType->isPointerType() &&
         !(SemaRef.getLangOpts().CPlusPlus && VarType->isOverloadableType())) {
-      SemaRef.Diag(Init->getLocStart(), diag::err_omp_loop_variable_type)
+      SemaRef.Diag(Init->getLocStart(), diag::err_acc_loop_variable_type)
           << SemaRef.getLangOpts().CPlusPlus;
       HasErrors = true;
     }
@@ -4332,7 +4325,7 @@ static bool CheckOpenACCIterationSpace(
           !isOpenACCSimdDirective(DKind) && DVar.CKind != ACCC_unknown &&
           DVar.CKind != ACCC_private && DVar.CKind != ACCC_lastprivate)) &&
         (DVar.CKind != ACCC_private || DVar.RefExpr != nullptr)) {
-      SemaRef.Diag(Init->getLocStart(), diag::err_omp_loop_var_dsa)
+      SemaRef.Diag(Init->getLocStart(), diag::err_acc_loop_var_dsa)
           << getOpenACCClauseName(DVar.CKind) << getOpenACCDirectiveName(DKind)
           << getOpenACCClauseName(PredeterminedCKind);
       if (DVar.RefExpr == nullptr)
@@ -4578,10 +4571,10 @@ CheckOpenACCLoop(OpenACCDirectiveKind DKind, Expr *CollapseLoopCountExpr,
     if (OrderedLoopCountExpr->EvaluateAsInt(Result, SemaRef.getASTContext())) {
       if (Result.getLimitedValue() < NestedLoopCount) {
         SemaRef.Diag(OrderedLoopCountExpr->getExprLoc(),
-                     diag::err_omp_wrong_ordered_loop_count)
+                     diag::err_acc_wrong_ordered_loop_count)
             << OrderedLoopCountExpr->getSourceRange();
         SemaRef.Diag(CollapseLoopCountExpr->getExprLoc(),
-                     diag::note_collapse_loop_count)
+                     diag::note_acc_collapse_loop_count)
             << CollapseLoopCountExpr->getSourceRange();
       }
       NestedLoopCount = Result.getLimitedValue();
@@ -5203,7 +5196,7 @@ static bool checkSimdlenSafelenSpecified(Sema &S,
     // parameter.
     if (SimdlenRes > SafelenRes) {
       S.Diag(SimdlenLength->getExprLoc(),
-             diag::err_omp_wrong_simdlen_safelen_values)
+             diag::err_acc_wrong_simdlen_safelen_values)
           << SimdlenLength->getSourceRange() << SafelenLength->getSourceRange();
       return true;
     }
@@ -5347,14 +5340,14 @@ StmtResult Sema::ActOnOpenACCSectionsDirective(ArrayRef<ACCClause *> Clauses,
       if (!SectionStmt || !isa<ACCSectionDirective>(SectionStmt)) {
         if (SectionStmt)
           Diag(SectionStmt->getLocStart(),
-               diag::err_omp_sections_substmt_not_section);
+               diag::err_acc_sections_substmt_not_section);
         return StmtError();
       }
       cast<ACCSectionDirective>(SectionStmt)
           ->setHasCancel(DSAStack->isCancelRegion());
     }
   } else {
-    Diag(AStmt->getLocStart(), diag::err_omp_sections_not_compound_stmt);
+    Diag(AStmt->getLocStart(), diag::err_acc_sections_not_compound_stmt);
     return StmtError();
   }
 
@@ -5401,8 +5394,8 @@ StmtResult Sema::ActOnOpenACCSingleDirective(ArrayRef<ACCClause *> Clauses,
       Copyprivate = Clause;
     if (Copyprivate && Nowait) {
       Diag(Copyprivate->getLocStart(),
-           diag::err_omp_single_copyprivate_with_nowait);
-      Diag(Nowait->getLocStart(), diag::note_omp_nowait_clause_here);
+           diag::err_acc_single_copyprivate_with_nowait);
+      Diag(Nowait->getLocStart(), diag::note_acc_nowait_clause_here);
       return StmtError();
     }
   }
@@ -5438,7 +5431,7 @@ StmtResult Sema::ActOnOpenACCCriticalDirective(
   for (auto *C : Clauses) {
     if (C->getClauseKind() == ACCC_hint) {
       if (!DirName.getName()) {
-        Diag(C->getLocStart(), diag::err_omp_hint_clause_no_name);
+        Diag(C->getLocStart(), diag::err_acc_hint_clause_no_name);
         ErrorFound = true;
       }
       Expr *E = cast<ACCHintClause>(C)->getHint();
@@ -5456,19 +5449,19 @@ StmtResult Sema::ActOnOpenACCCriticalDirective(
   auto Pair = DSAStack->getCriticalWithHint(DirName);
   if (Pair.first && DirName.getName() && !DependentHint) {
     if (llvm::APSInt::compareValues(Hint, Pair.second) != 0) {
-      Diag(StartLoc, diag::err_omp_critical_with_hint);
+      Diag(StartLoc, diag::err_acc_critical_with_hint);
       if (HintLoc.isValid()) {
-        Diag(HintLoc, diag::note_omp_critical_hint_here)
+        Diag(HintLoc, diag::note_acc_critical_hint_here)
             << 0 << Hint.toString(/*Radix=*/10, /*Signed=*/false);
       } else
-        Diag(StartLoc, diag::note_omp_critical_no_hint) << 0;
+        Diag(StartLoc, diag::note_acc_critical_no_hint) << 0;
       if (auto *C = Pair.first->getSingleClause<ACCHintClause>()) {
-        Diag(C->getLocStart(), diag::note_omp_critical_hint_here)
+        Diag(C->getLocStart(), diag::note_acc_critical_hint_here)
             << 1
             << C->getHint()->EvaluateKnownConstInt(Context).toString(
                    /*Radix=*/10, /*Signed=*/false);
       } else
-        Diag(Pair.first->getLocStart(), diag::note_omp_critical_no_hint) << 1;
+        Diag(Pair.first->getLocStart(), diag::note_acc_critical_no_hint) << 1;
     }
   }
 
@@ -5591,7 +5584,7 @@ Sema::ActOnOpenACCParallelSectionsDirective(ArrayRef<ACCClause *> Clauses,
       if (!SectionStmt || !isa<ACCSectionDirective>(SectionStmt)) {
         if (SectionStmt)
           Diag(SectionStmt->getLocStart(),
-               diag::err_omp_parallel_sections_substmt_not_section);
+               diag::err_acc_parallel_sections_substmt_not_section);
         return StmtError();
       }
       cast<ACCSectionDirective>(SectionStmt)
@@ -5599,7 +5592,7 @@ Sema::ActOnOpenACCParallelSectionsDirective(ArrayRef<ACCClause *> Clauses,
     }
   } else {
     Diag(AStmt->getLocStart(),
-         diag::err_omp_parallel_sections_not_compound_stmt);
+         diag::err_acc_parallel_sections_not_compound_stmt);
     return StmtError();
   }
 
@@ -5682,20 +5675,20 @@ StmtResult Sema::ActOnOpenACCOrderedDirective(ArrayRef<ACCClause *> Clauses,
       DependFound = C;
       if (DC->getDependencyKind() == ACCC_DEPEND_source) {
         if (DependSourceClause) {
-          Diag(C->getLocStart(), diag::err_omp_more_one_clause)
+          Diag(C->getLocStart(), diag::err_acc_more_one_clause)
               << getOpenACCDirectiveName(ACCD_ordered)
               << getOpenACCClauseName(ACCC_depend) << 2;
           ErrorFound = true;
         } else
           DependSourceClause = C;
         if (DependSinkClause) {
-          Diag(C->getLocStart(), diag::err_omp_depend_sink_source_not_allowed)
+          Diag(C->getLocStart(), diag::err_acc_depend_sink_source_not_allowed)
               << 0;
           ErrorFound = true;
         }
       } else if (DC->getDependencyKind() == ACCC_DEPEND_sink) {
         if (DependSourceClause) {
-          Diag(C->getLocStart(), diag::err_omp_depend_sink_source_not_allowed)
+          Diag(C->getLocStart(), diag::err_acc_depend_sink_source_not_allowed)
               << 1;
           ErrorFound = true;
         }
@@ -5711,22 +5704,22 @@ StmtResult Sema::ActOnOpenACCOrderedDirective(ArrayRef<ACCClause *> Clauses,
     // OpenACC [2.8.1,simd Construct, Restrictions]
     // An ordered construct with the simd clause is the only OpenACC construct
     // that can appear in the simd region.
-    Diag(StartLoc, diag::err_omp_prohibited_region_simd);
+    Diag(StartLoc, diag::err_acc_prohibited_region_simd);
     ErrorFound = true;
   } else if (DependFound && (TC || SC)) {
-    Diag(DependFound->getLocStart(), diag::err_omp_depend_clause_thread_simd)
+    Diag(DependFound->getLocStart(), diag::err_acc_depend_clause_thread_simd)
         << getOpenACCClauseName(TC ? TC->getClauseKind() : SC->getClauseKind());
     ErrorFound = true;
   } else if (DependFound && !DSAStack->getParentOrderedRegionParam()) {
     Diag(DependFound->getLocStart(),
-         diag::err_omp_ordered_directive_without_param);
+         diag::err_acc_ordered_directive_without_param);
     ErrorFound = true;
   } else if (TC || Clauses.empty()) {
     if (auto *Param = DSAStack->getParentOrderedRegionParam()) {
       SourceLocation ErrLoc = TC ? TC->getLocStart() : StartLoc;
-      Diag(ErrLoc, diag::err_omp_ordered_directive_with_param)
+      Diag(ErrLoc, diag::err_acc_ordered_directive_with_param)
           << (TC != nullptr);
-      Diag(Param->getLocStart(), diag::note_omp_ordered_param);
+      Diag(Param->getLocStart(), diag::note_acc_ordered_param);
       ErrorFound = true;
     }
   }
@@ -6002,9 +5995,9 @@ StmtResult Sema::ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
         C->getClauseKind() == ACCC_update ||
         C->getClauseKind() == ACCC_capture) {
       if (AtomicKind != ACCC_unknown) {
-        Diag(C->getLocStart(), diag::err_omp_atomic_several_clauses)
+        Diag(C->getLocStart(), diag::err_acc_atomic_several_clauses)
             << SourceRange(C->getLocStart(), C->getLocEnd());
-        Diag(AtomicKindLoc, diag::note_omp_atomic_previous_clause)
+        Diag(AtomicKindLoc, diag::note_acc_atomic_previous_clause)
             << getOpenACCClauseName(AtomicKind);
       } else {
         AtomicKind = C->getClauseKind();
@@ -6100,9 +6093,9 @@ StmtResult Sema::ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
       NoteRange = ErrorRange = SourceRange(NoteLoc, NoteLoc);
     }
     if (ErrorFound != NoError) {
-      Diag(ErrorLoc, diag::err_omp_atomic_read_not_expression_statement)
+      Diag(ErrorLoc, diag::err_acc_atomic_read_not_expression_statement)
           << ErrorRange;
-      Diag(NoteLoc, diag::note_omp_atomic_read_write) << ErrorFound
+      Diag(NoteLoc, diag::note_acc_atomic_read_write) << ErrorFound
                                                       << NoteRange;
       return StmtError();
     } else if (CurContext->isDependentContext())
@@ -6161,9 +6154,9 @@ StmtResult Sema::ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
       NoteRange = ErrorRange = SourceRange(NoteLoc, NoteLoc);
     }
     if (ErrorFound != NoError) {
-      Diag(ErrorLoc, diag::err_omp_atomic_write_not_expression_statement)
+      Diag(ErrorLoc, diag::err_acc_atomic_write_not_expression_statement)
           << ErrorRange;
-      Diag(NoteLoc, diag::note_omp_atomic_read_write) << ErrorFound
+      Diag(NoteLoc, diag::note_acc_atomic_read_write) << ErrorFound
                                                       << NoteRange;
       return StmtError();
     } else if (CurContext->isDependentContext())
@@ -6180,9 +6173,9 @@ StmtResult Sema::ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
     OpenACCAtomicUpdateChecker Checker(*this);
     if (Checker.checkStatement(
             Body, (AtomicKind == ACCC_update)
-                      ? diag::err_omp_atomic_update_not_expression_statement
-                      : diag::err_omp_atomic_not_expression_statement,
-            diag::note_omp_atomic_update))
+                      ? diag::err_acc_atomic_update_not_expression_statement
+                      : diag::err_acc_atomic_not_expression_statement,
+            diag::note_acc_atomic_update))
       return StmtError();
     if (!CurContext->isDependentContext()) {
       E = Checker.getExpr();
@@ -6216,8 +6209,8 @@ StmtResult Sema::ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
         Body = AtomicBinOp->getRHS()->IgnoreParenImpCasts();
         OpenACCAtomicUpdateChecker Checker(*this);
         if (Checker.checkStatement(
-                Body, diag::err_omp_atomic_capture_not_expression_statement,
-                diag::note_omp_atomic_update))
+                Body, diag::err_acc_atomic_capture_not_expression_statement,
+                diag::note_acc_atomic_update))
           return StmtError();
         E = Checker.getExpr();
         X = Checker.getX();
@@ -6234,9 +6227,9 @@ StmtResult Sema::ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
         ErrorFound = NotAnAssignmentOp;
       }
       if (ErrorFound != NoError) {
-        Diag(ErrorLoc, diag::err_omp_atomic_capture_not_expression_statement)
+        Diag(ErrorLoc, diag::err_acc_atomic_capture_not_expression_statement)
             << ErrorRange;
-        Diag(NoteLoc, diag::note_omp_atomic_capture) << ErrorFound << NoteRange;
+        Diag(NoteLoc, diag::note_acc_atomic_capture) << ErrorFound << NoteRange;
         return StmtError();
       } else if (CurContext->isDependentContext()) {
         UE = V = E = X = nullptr;
@@ -6396,9 +6389,9 @@ StmtResult Sema::ActOnOpenACCAtomicDirective(ArrayRef<ACCClause *> Clauses,
         ErrorFound = NotACompoundStatement;
       }
       if (ErrorFound != NoError) {
-        Diag(ErrorLoc, diag::err_omp_atomic_capture_not_compound_statement)
+        Diag(ErrorLoc, diag::err_acc_atomic_capture_not_compound_statement)
             << ErrorRange;
-        Diag(NoteLoc, diag::note_omp_atomic_capture) << ErrorFound << NoteRange;
+        Diag(NoteLoc, diag::note_acc_atomic_capture) << ErrorFound << NoteRange;
         return StmtError();
       } else if (CurContext->isDependentContext()) {
         UE = V = E = X = nullptr;
@@ -6462,10 +6455,10 @@ StmtResult Sema::ActOnOpenACCTargetDirective(ArrayRef<ACCClause *> Clauses,
       ACCTeamsFound = OED && isOpenACCTeamsDirective(OED->getDirectiveKind());
     }
     if (!ACCTeamsFound) {
-      Diag(StartLoc, diag::err_omp_target_contains_not_only_teams);
+      Diag(StartLoc, diag::err_acc_target_contains_not_only_teams);
       Diag(DSAStack->getInnerTeamsRegionLoc(),
-           diag::note_omp_nested_teams_construct_here);
-      Diag(S->getLocStart(), diag::note_omp_nested_statement_here)
+           diag::note_acc_nested_teams_construct_here);
+      Diag(S->getLocStart(), diag::note_acc_nested_statement_here)
           << isa<ACCExecutableDirective>(S);
       return StmtError();
     }
@@ -6587,7 +6580,7 @@ StmtResult Sema::ActOnOpenACCTargetDataDirective(ArrayRef<ACCClause *> Clauses,
   // OpenACC [2.10.1, Restrictions, p. 97]
   // At least one map clause must appear on the directive.
   if (!hasClauses(Clauses, ACCC_map, ACCC_use_device_ptr)) {
-    Diag(StartLoc, diag::err_omp_no_clause_for_directive)
+    Diag(StartLoc, diag::err_acc_no_clause_for_directive)
         << "'map' or 'use_device_ptr'"
         << getOpenACCDirectiveName(ACCD_target_data);
     return StmtError();
@@ -6627,7 +6620,7 @@ Sema::ActOnOpenACCTargetEnterDataDirective(ArrayRef<ACCClause *> Clauses,
   // OpenACC [2.10.2, Restrictions, p. 99]
   // At least one map clause must appear on the directive.
   if (!hasClauses(Clauses, ACCC_map)) {
-    Diag(StartLoc, diag::err_omp_no_clause_for_directive)
+    Diag(StartLoc, diag::err_acc_no_clause_for_directive)
         << "'map'" << getOpenACCDirectiveName(ACCD_target_enter_data);
     return StmtError();
   }
@@ -6664,7 +6657,7 @@ Sema::ActOnOpenACCTargetExitDataDirective(ArrayRef<ACCClause *> Clauses,
   // OpenACC [2.10.3, Restrictions, p. 102]
   // At least one map clause must appear on the directive.
   if (!hasClauses(Clauses, ACCC_map)) {
-    Diag(StartLoc, diag::err_omp_no_clause_for_directive)
+    Diag(StartLoc, diag::err_acc_no_clause_for_directive)
         << "'map'" << getOpenACCDirectiveName(ACCD_target_exit_data);
     return StmtError();
   }
@@ -6699,7 +6692,7 @@ StmtResult Sema::ActOnOpenACCTargetUpdateDirective(ArrayRef<ACCClause *> Clauses
   }
 
   if (!hasClauses(Clauses, ACCC_to, ACCC_from)) {
-    Diag(StartLoc, diag::err_omp_at_least_one_motion_clause_required);
+    Diag(StartLoc, diag::err_acc_at_least_one_motion_clause_required);
     return StmtError();
   }
   return ACCTargetUpdateDirective::Create(Context, StartLoc, EndLoc, Clauses,
@@ -6732,11 +6725,11 @@ Sema::ActOnOpenACCCancellationPointDirective(SourceLocation StartLoc,
                                             SourceLocation EndLoc,
                                             OpenACCDirectiveKind CancelRegion) {
   if (DSAStack->isParentNowaitRegion()) {
-    Diag(StartLoc, diag::err_omp_parent_cancel_region_nowait) << 0;
+    Diag(StartLoc, diag::err_acc_parent_cancel_region_nowait) << 0;
     return StmtError();
   }
   if (DSAStack->isParentOrderedRegion()) {
-    Diag(StartLoc, diag::err_omp_parent_cancel_region_ordered) << 0;
+    Diag(StartLoc, diag::err_acc_parent_cancel_region_ordered) << 0;
     return StmtError();
   }
   return ACCCancellationPointDirective::Create(Context, StartLoc, EndLoc,
@@ -6748,11 +6741,11 @@ StmtResult Sema::ActOnOpenACCCancelDirective(ArrayRef<ACCClause *> Clauses,
                                             SourceLocation EndLoc,
                                             OpenACCDirectiveKind CancelRegion) {
   if (DSAStack->isParentNowaitRegion()) {
-    Diag(StartLoc, diag::err_omp_parent_cancel_region_nowait) << 1;
+    Diag(StartLoc, diag::err_acc_parent_cancel_region_nowait) << 1;
     return StmtError();
   }
   if (DSAStack->isParentOrderedRegion()) {
-    Diag(StartLoc, diag::err_omp_parent_cancel_region_ordered) << 1;
+    Diag(StartLoc, diag::err_acc_parent_cancel_region_ordered) << 1;
     return StmtError();
   }
   DSAStack->setParentCancelRegion(/*Cancel=*/true);
@@ -6771,11 +6764,11 @@ static bool checkGrainsizeNumTasksClauses(Sema &S,
         PrevClause = C;
       else if (PrevClause->getClauseKind() != C->getClauseKind()) {
         S.Diag(C->getLocStart(),
-               diag::err_omp_grainsize_num_tasks_mutually_exclusive)
+               diag::err_acc_grainsize_num_tasks_mutually_exclusive)
             << getOpenACCClauseName(C->getClauseKind())
             << getOpenACCClauseName(PrevClause->getClauseKind());
         S.Diag(PrevClause->getLocStart(),
-               diag::note_omp_previous_grainsize_num_tasks)
+               diag::note_acc_previous_grainsize_num_tasks)
             << getOpenACCClauseName(PrevClause->getClauseKind());
         ErrorFound = true;
       }
@@ -6803,7 +6796,7 @@ static bool checkReductionClauseWithNogroup(Sema &S,
     }
   }
   if (ReductionClause && NogroupClause) {
-    S.Diag(ReductionClause->getLocStart(), diag::err_omp_reduction_with_nogroup)
+    S.Diag(ReductionClause->getLocStart(), diag::err_acc_reduction_with_nogroup)
         << SourceRange(NogroupClause->getLocStart(),
                        NogroupClause->getLocEnd());
     return true;
@@ -8332,29 +8325,29 @@ ExprResult Sema::PerformOpenACCImplicitIntegerConversion(SourceLocation Loc,
         : ICEConvertDiagnoser(/*AllowScopedEnumerations*/ false, false, true) {}
     SemaDiagnosticBuilder diagnoseNotInt(Sema &S, SourceLocation Loc,
                                          QualType T) override {
-      return S.Diag(Loc, diag::err_omp_not_integral) << T;
+      return S.Diag(Loc, diag::err_acc_not_integral) << T;
     }
     SemaDiagnosticBuilder diagnoseIncomplete(Sema &S, SourceLocation Loc,
                                              QualType T) override {
-      return S.Diag(Loc, diag::err_omp_incomplete_type) << T;
+      return S.Diag(Loc, diag::err_acc_incomplete_type) << T;
     }
     SemaDiagnosticBuilder diagnoseExplicitConv(Sema &S, SourceLocation Loc,
                                                QualType T,
                                                QualType ConvTy) override {
-      return S.Diag(Loc, diag::err_omp_explicit_conversion) << T << ConvTy;
+      return S.Diag(Loc, diag::err_acc_explicit_conversion) << T << ConvTy;
     }
     SemaDiagnosticBuilder noteExplicitConv(Sema &S, CXXConversionDecl *Conv,
                                            QualType ConvTy) override {
-      return S.Diag(Conv->getLocation(), diag::note_omp_conversion_here)
+      return S.Diag(Conv->getLocation(), diag::note_acc_conversion_here)
              << ConvTy->isEnumeralType() << ConvTy;
     }
     SemaDiagnosticBuilder diagnoseAmbiguous(Sema &S, SourceLocation Loc,
                                             QualType T) override {
-      return S.Diag(Loc, diag::err_omp_ambiguous_conversion) << T;
+      return S.Diag(Loc, diag::err_acc_ambiguous_conversion) << T;
     }
     SemaDiagnosticBuilder noteAmbiguous(Sema &S, CXXConversionDecl *Conv,
                                         QualType ConvTy) override {
-      return S.Diag(Conv->getLocation(), diag::note_omp_conversion_here)
+      return S.Diag(Conv->getLocation(), diag::note_acc_conversion_here)
              << ConvTy->isEnumeralType() << ConvTy;
     }
     SemaDiagnosticBuilder diagnoseConversion(Sema &, SourceLocation, QualType,
@@ -8383,7 +8376,7 @@ static bool IsNonNegativeIntegerValue(Expr *&ValExpr, Sema &SemaRef,
         Result.isSigned() &&
         !((!StrictlyPositive && Result.isNonNegative()) ||
           (StrictlyPositive && Result.isStrictlyPositive()))) {
-      SemaRef.Diag(Loc, diag::err_omp_negative_expression_in_clause)
+      SemaRef.Diag(Loc, diag::err_acc_negative_expression_in_clause)
           << getOpenACCClauseName(CKind) << (StrictlyPositive ? 1 : 0)
           << ValExpr->getSourceRange();
       return false;
@@ -8433,13 +8426,13 @@ ExprResult Sema::VerifyPositiveIntegerConstantInClause(Expr *E,
     return ExprError();
   if ((StrictlyPositive && !Result.isStrictlyPositive()) ||
       (!StrictlyPositive && !Result.isNonNegative())) {
-    Diag(E->getExprLoc(), diag::err_omp_negative_expression_in_clause)
+    Diag(E->getExprLoc(), diag::err_acc_negative_expression_in_clause)
         << getOpenACCClauseName(CKind) << (StrictlyPositive ? 1 : 0)
         << E->getSourceRange();
     return ExprError();
   }
   if (CKind == ACCC_aligned && !Result.isPowerOf2()) {
-    Diag(E->getExprLoc(), diag::warn_omp_alignment_not_power_of_two)
+    Diag(E->getExprLoc(), diag::warn_acc_alignment_not_power_of_two)
         << E->getSourceRange();
     return ExprError();
   }
@@ -8615,7 +8608,7 @@ ACCClause *Sema::ActOnOpenACCDefaultClause(OpenACCDefaultClauseKind Kind,
   if (Kind == ACCC_DEFAULT_unknown) {
     static_assert(ACCC_DEFAULT_unknown > 0,
                   "ACCC_DEFAULT_unknown not greater than 0");
-    Diag(KindKwLoc, diag::err_omp_unexpected_clause_value)
+    Diag(KindKwLoc, diag::err_acc_unexpected_clause_value)
         << getListOfPossibleValues(ACCC_default, /*First=*/0,
                                    /*Last=*/ACCC_DEFAULT_unknown)
         << getOpenACCClauseName(ACCC_default);
@@ -8642,7 +8635,7 @@ ACCClause *Sema::ActOnOpenACCProcBindClause(OpenACCProcBindClauseKind Kind,
                                            SourceLocation LParenLoc,
                                            SourceLocation EndLoc) {
   if (Kind == ACCC_PROC_BIND_unknown) {
-    Diag(KindKwLoc, diag::err_omp_unexpected_clause_value)
+    Diag(KindKwLoc, diag::err_acc_unexpected_clause_value)
         << getListOfPossibleValues(ACCC_proc_bind, /*First=*/0,
                                    /*Last=*/ACCC_PROC_BIND_unknown)
         << getOpenACCClauseName(ACCC_proc_bind);
@@ -8752,7 +8745,7 @@ static bool checkScheduleModifiers(Sema &S, OpenACCScheduleClauseModifier M1,
       Excluded.push_back(ACCC_SCHEDULE_MODIFIER_monotonic);
     if (M2 == ACCC_SCHEDULE_MODIFIER_monotonic)
       Excluded.push_back(ACCC_SCHEDULE_MODIFIER_nonmonotonic);
-    S.Diag(M1Loc, diag::err_omp_unexpected_clause_value)
+    S.Diag(M1Loc, diag::err_acc_unexpected_clause_value)
         << getListOfPossibleValues(ACCC_schedule,
                                    /*First=*/ACCC_SCHEDULE_MODIFIER_unknown + 1,
                                    /*Last=*/ACCC_SCHEDULE_MODIFIER_last,
@@ -8779,7 +8772,7 @@ ACCClause *Sema::ActOnOpenACCScheduleClause(
        M2 == ACCC_SCHEDULE_MODIFIER_nonmonotonic) ||
       (M1 == ACCC_SCHEDULE_MODIFIER_nonmonotonic &&
        M2 == ACCC_SCHEDULE_MODIFIER_monotonic)) {
-    Diag(M2Loc, diag::err_omp_unexpected_schedule_modifier)
+    Diag(M2Loc, diag::err_acc_unexpected_schedule_modifier)
         << getOpenACCSimpleClauseTypeName(ACCC_schedule, M2)
         << getOpenACCSimpleClauseTypeName(ACCC_schedule, M1);
     return nullptr;
@@ -8795,7 +8788,7 @@ ACCClause *Sema::ActOnOpenACCScheduleClause(
       Values = getListOfPossibleValues(ACCC_schedule, /*First=*/0,
                                        /*Last=*/ACCC_SCHEDULE_unknown);
     }
-    Diag(KindLoc, diag::err_omp_unexpected_clause_value)
+    Diag(KindLoc, diag::err_acc_unexpected_clause_value)
         << Values << getOpenACCClauseName(ACCC_schedule);
     return nullptr;
   }
@@ -8806,7 +8799,7 @@ ACCClause *Sema::ActOnOpenACCScheduleClause(
        M2 == ACCC_SCHEDULE_MODIFIER_nonmonotonic) &&
       Kind != ACCC_SCHEDULE_dynamic && Kind != ACCC_SCHEDULE_guided) {
     Diag(M1 == ACCC_SCHEDULE_MODIFIER_nonmonotonic ? M1Loc : M2Loc,
-         diag::err_omp_schedule_nonmonotonic_static);
+         diag::err_acc_schedule_nonmonotonic_static);
     return nullptr;
   }
   Expr *ValExpr = ChunkSize;
@@ -8829,7 +8822,7 @@ ACCClause *Sema::ActOnOpenACCScheduleClause(
       llvm::APSInt Result;
       if (ValExpr->isIntegerConstantExpr(Result, Context)) {
         if (Result.isSigned() && !Result.isStrictlyPositive()) {
-          Diag(ChunkSizeLoc, diag::err_omp_negative_expression_in_clause)
+          Diag(ChunkSizeLoc, diag::err_acc_negative_expression_in_clause)
               << "schedule" << 1 << ChunkSize->getSourceRange();
           return nullptr;
         }
@@ -9167,13 +9160,13 @@ getPrivateItem(Sema &S, Expr *&RefExpr, SourceLocation &ELoc,
        !isa<CXXThisExpr>(ME->getBase()->IgnoreParenImpCasts()) ||
        !isa<FieldDecl>(ME->getMemberDecl()))) {
     if (IsArrayExpr != NoArrayExpr)
-      S.Diag(ELoc, diag::err_omp_expected_base_var_name) << IsArrayExpr
+      S.Diag(ELoc, diag::err_acc_expected_base_var_name) << IsArrayExpr
                                                          << ERange;
     else {
       S.Diag(ELoc,
              AllowArraySection
-                 ? diag::err_omp_expected_var_name_member_expr_or_array_item
-                 : diag::err_omp_expected_var_name_member_expr)
+                 ? diag::err_acc_expected_var_name_member_expr_or_array_item
+                 : diag::err_acc_expected_var_name_member_expr)
           << (S.getCurrentThisType().isNull() ? 0 : 1) << ERange;
     }
     return std::make_pair(nullptr, false);
@@ -9209,7 +9202,7 @@ ACCClause *Sema::ActOnOpenACCPrivateClause(ArrayRef<Expr *> VarList,
     // OpenACC [2.9.3.3, Restrictions, C/C++, p.3]
     //  A variable that appears in a private clause must not have an incomplete
     //  type or a reference type.
-    if (RequireCompleteType(ELoc, Type, diag::err_omp_private_incomplete_type))
+    if (RequireCompleteType(ELoc, Type, diag::err_acc_private_incomplete_type))
       continue;
     Type = Type.getNonReferenceType();
 
@@ -9222,7 +9215,7 @@ ACCClause *Sema::ActOnOpenACCPrivateClause(ArrayRef<Expr *> VarList,
     //  the variable's predetermined data-sharing attributes.
     DSAStackTy::DSAVarData DVar = DSAStack->getTopDSA(D, false);
     if (DVar.CKind != ACCC_unknown && DVar.CKind != ACCC_private) {
-      Diag(ELoc, diag::err_omp_wrong_dsa) << getOpenACCClauseName(DVar.CKind)
+      Diag(ELoc, diag::err_acc_wrong_dsa) << getOpenACCClauseName(DVar.CKind)
                                           << getOpenACCClauseName(ACCC_private);
       ReportOriginalDSA(*this, DSAStack, D, DVar);
       continue;
@@ -9232,7 +9225,7 @@ ACCClause *Sema::ActOnOpenACCPrivateClause(ArrayRef<Expr *> VarList,
     // Variably modified types are not supported for tasks.
     if (!Type->isAnyPointerType() && Type->isVariablyModifiedType() &&
         isOpenACCTaskingDirective(CurrDir)) {
-      Diag(ELoc, diag::err_omp_variably_modified_type_not_supported)
+      Diag(ELoc, diag::err_acc_variably_modified_type_not_supported)
           << getOpenACCClauseName(ACCC_private) << Type
           << getOpenACCDirectiveName(CurrDir);
       bool IsDecl =
@@ -9263,7 +9256,7 @@ ACCClause *Sema::ActOnOpenACCPrivateClause(ArrayRef<Expr *> VarList,
                 ConflictKind = WhereFoundClauseKind;
                 return true;
               })) {
-        Diag(ELoc, diag::err_omp_variable_in_given_clause_and_dsa)
+        Diag(ELoc, diag::err_acc_variable_in_given_clause_and_dsa)
             << getOpenACCClauseName(ACCC_private)
             << getOpenACCClauseName(ConflictKind)
             << getOpenACCDirectiveName(CurrDir);
@@ -9366,7 +9359,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
     //  A variable that appears in a private clause must not have an incomplete
     //  type or a reference type.
     if (RequireCompleteType(ELoc, Type,
-                            diag::err_omp_firstprivate_incomplete_type))
+                            diag::err_acc_firstprivate_incomplete_type))
       continue;
     Type = Type.getNonReferenceType();
 
@@ -9394,7 +9387,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
           (isOpenACCDistributeDirective(CurrDir) ||
            DVar.CKind != ACCC_lastprivate) &&
           DVar.RefExpr) {
-        Diag(ELoc, diag::err_omp_wrong_dsa)
+        Diag(ELoc, diag::err_acc_wrong_dsa)
             << getOpenACCClauseName(DVar.CKind)
             << getOpenACCClauseName(ACCC_firstprivate);
         ReportOriginalDSA(*this, DSAStack, D, DVar);
@@ -9414,7 +9407,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
       //  listed in a firstprivate clause, even if they are static data members.
       if (!(IsConstant || (VD && VD->isStaticDataMember())) && !DVar.RefExpr &&
           DVar.CKind != ACCC_unknown && DVar.CKind != ACCC_shared) {
-        Diag(ELoc, diag::err_omp_wrong_dsa)
+        Diag(ELoc, diag::err_acc_wrong_dsa)
             << getOpenACCClauseName(DVar.CKind)
             << getOpenACCClauseName(ACCC_firstprivate);
         ReportOriginalDSA(*this, DSAStack, D, DVar);
@@ -9445,7 +9438,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
             (isOpenACCParallelDirective(DVar.DKind) ||
              isOpenACCTeamsDirective(DVar.DKind) ||
              DVar.DKind == ACCD_unknown)) {
-          Diag(ELoc, diag::err_omp_required_access)
+          Diag(ELoc, diag::err_acc_required_access)
               << getOpenACCClauseName(ACCC_firstprivate)
               << getOpenACCClauseName(ACCC_shared);
           ReportOriginalDSA(*this, DSAStack, D, DVar);
@@ -9476,7 +9469,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
             (isOpenACCParallelDirective(DVar.DKind) ||
              isOpenACCWorksharingDirective(DVar.DKind) ||
              isOpenACCTeamsDirective(DVar.DKind))) {
-          Diag(ELoc, diag::err_omp_parallel_reduction_in_task_firstprivate)
+          Diag(ELoc, diag::err_acc_parallel_reduction_in_task_firstprivate)
               << getOpenACCDirectiveName(DVar.DKind);
           ReportOriginalDSA(*this, DSAStack, D, DVar);
           continue;
@@ -9495,7 +9488,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
                   ConflictKind = WhereFoundClauseKind;
                   return true;
                 })) {
-          Diag(ELoc, diag::err_omp_variable_in_given_clause_and_dsa)
+          Diag(ELoc, diag::err_acc_variable_in_given_clause_and_dsa)
               << getOpenACCClauseName(ACCC_firstprivate)
               << getOpenACCClauseName(ConflictKind)
               << getOpenACCDirectiveName(DSAStack->getCurrentDirective());
@@ -9508,7 +9501,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
     // Variably modified types are not supported for tasks.
     if (!Type->isAnyPointerType() && Type->isVariablyModifiedType() &&
         isOpenACCTaskingDirective(DSAStack->getCurrentDirective())) {
-      Diag(ELoc, diag::err_omp_variably_modified_type_not_supported)
+      Diag(ELoc, diag::err_acc_variably_modified_type_not_supported)
           << getOpenACCClauseName(ACCC_firstprivate) << Type
           << getOpenACCDirectiveName(DSAStack->getCurrentDirective());
       bool IsDecl =
@@ -9563,7 +9556,7 @@ ACCClause *Sema::ActOnOpenACCFirstprivateClause(ArrayRef<Expr *> VarList,
     if (VDPrivate->isInvalidDecl()) {
       if (IsImplicitClause) {
         Diag(RefExpr->getExprLoc(),
-             diag::note_omp_task_predetermined_firstprivate_here);
+             diag::note_acc_task_predetermined_firstprivate_here);
       }
       continue;
     }
@@ -9631,7 +9624,7 @@ ACCClause *Sema::ActOnOpenACCLastprivateClause(ArrayRef<Expr *> VarList,
     //  A variable that appears in a lastprivate clause must not have an
     //  incomplete type or a reference type.
     if (RequireCompleteType(ELoc, Type,
-                            diag::err_omp_lastprivate_incomplete_type))
+                            diag::err_acc_lastprivate_incomplete_type))
       continue;
     Type = Type.getNonReferenceType();
 
@@ -9649,7 +9642,7 @@ ACCClause *Sema::ActOnOpenACCLastprivateClause(ArrayRef<Expr *> VarList,
         (isOpenACCDistributeDirective(CurrDir) ||
          DVar.CKind != ACCC_firstprivate) &&
         (DVar.CKind != ACCC_private || DVar.RefExpr != nullptr)) {
-      Diag(ELoc, diag::err_omp_wrong_dsa)
+      Diag(ELoc, diag::err_acc_wrong_dsa)
           << getOpenACCClauseName(DVar.CKind)
           << getOpenACCClauseName(ACCC_lastprivate);
       ReportOriginalDSA(*this, DSAStack, D, DVar);
@@ -9668,7 +9661,7 @@ ACCClause *Sema::ActOnOpenACCLastprivateClause(ArrayRef<Expr *> VarList,
         !isOpenACCTeamsDirective(CurrDir)) {
       DVar = DSAStack->getImplicitDSA(D, true);
       if (DVar.CKind != ACCC_shared) {
-        Diag(ELoc, diag::err_omp_required_access)
+        Diag(ELoc, diag::err_acc_required_access)
             << getOpenACCClauseName(ACCC_lastprivate)
             << getOpenACCClauseName(ACCC_shared);
         ReportOriginalDSA(*this, DSAStack, D, DVar);
@@ -9777,7 +9770,7 @@ ACCClause *Sema::ActOnOpenACCSharedClause(ArrayRef<Expr *> VarList,
     DSAStackTy::DSAVarData DVar = DSAStack->getTopDSA(D, false);
     if (DVar.CKind != ACCC_unknown && DVar.CKind != ACCC_shared &&
         DVar.RefExpr) {
-      Diag(ELoc, diag::err_omp_wrong_dsa) << getOpenACCClauseName(DVar.CKind)
+      Diag(ELoc, diag::err_acc_wrong_dsa) << getOpenACCClauseName(DVar.CKind)
                                           << getOpenACCClauseName(ACCC_shared);
       ReportOriginalDSA(*this, DSAStack, D, DVar);
       continue;
@@ -9951,7 +9944,7 @@ buildDeclareReductionRef(Sema &SemaRef, SourceLocation Loc, SourceRange Range,
     }
   }
   if (ReductionIdScopeSpec.isSet()) {
-    SemaRef.Diag(Loc, diag::err_omp_not_resolved_reduction_identifier) << Range;
+    SemaRef.Diag(Loc, diag::err_acc_not_resolved_reduction_identifier) << Range;
     return ExprError();
   }
   return ExprEmpty();
@@ -10230,13 +10223,13 @@ static bool ActOnACCReductionKindClause(
     //  A variable that appears in a private clause must not have an incomplete
     //  type or a reference type.
     if (S.RequireCompleteType(ELoc, Type,
-                              diag::err_omp_reduction_incomplete_type))
+                              diag::err_acc_reduction_incomplete_type))
       continue;
     // OpenACC [2.14.3.6, reduction clause, Restrictions]
     // A list item that appears in a reduction clause must not be
     // const-qualified.
     if (Type.getNonReferenceType().isConstant(Context)) {
-      S.Diag(ELoc, diag::err_omp_const_reduction_list_item) << ERange;
+      S.Diag(ELoc, diag::err_acc_const_reduction_list_item) << ERange;
       if (!ASE && !OASE) {
         bool IsDecl = !VD || VD->isThisDeclarationADefinition(Context) ==
                                  VarDecl::DeclarationOnly;
@@ -10254,7 +10247,7 @@ static bool ActOnACCReductionKindClause(
       if (VD->getType()->isReferenceType() && VDDef && VDDef->hasInit()) {
         DSARefChecker Check(Stack);
         if (Check.Visit(VDDef->getInit())) {
-          S.Diag(ELoc, diag::err_omp_reduction_ref_type_arg)
+          S.Diag(ELoc, diag::err_acc_reduction_ref_type_arg)
               << getOpenACCClauseName(ClauseKind) << ERange;
           S.Diag(VDDef->getLocation(), diag::note_defined_here) << VDDef;
           continue;
@@ -10276,13 +10269,13 @@ static bool ActOnACCReductionKindClause(
     DSAStackTy::DSAVarData DVar;
     DVar = Stack->getTopDSA(D, false);
     if (DVar.CKind == ACCC_reduction) {
-      S.Diag(ELoc, diag::err_omp_once_referenced)
+      S.Diag(ELoc, diag::err_acc_once_referenced)
           << getOpenACCClauseName(ClauseKind);
       if (DVar.RefExpr)
-        S.Diag(DVar.RefExpr->getExprLoc(), diag::note_omp_referenced);
+        S.Diag(DVar.RefExpr->getExprLoc(), diag::note_acc_referenced);
       continue;
     } else if (DVar.CKind != ACCC_unknown) {
-      S.Diag(ELoc, diag::err_omp_wrong_dsa)
+      S.Diag(ELoc, diag::err_acc_wrong_dsa)
           << getOpenACCClauseName(DVar.CKind)
           << getOpenACCClauseName(ACCC_reduction);
       ReportOriginalDSA(S, Stack, D, DVar);
@@ -10299,7 +10292,7 @@ static bool ActOnACCReductionKindClause(
         !isOpenACCTeamsDirective(CurrDir)) {
       DVar = Stack->getImplicitDSA(D, true);
       if (DVar.CKind != ACCC_shared) {
-        S.Diag(ELoc, diag::err_omp_required_access)
+        S.Diag(ELoc, diag::err_acc_required_access)
             << getOpenACCClauseName(ACCC_reduction)
             << getOpenACCClauseName(ACCC_shared);
         ReportOriginalDSA(S, Stack, D, DVar);
@@ -10324,7 +10317,7 @@ static bool ActOnACCReductionKindClause(
     if (BOK == BO_Comma && DeclareReductionRef.isUnset()) {
       // Not allowed reduction identifier is found.
       S.Diag(ReductionId.getLocStart(),
-             diag::err_omp_unknown_reduction_identifier)
+             diag::err_acc_unknown_reduction_identifier)
           << Type << ReductionIdRange;
       continue;
     }
@@ -10341,7 +10334,7 @@ static bool ActOnACCReductionKindClause(
       if ((BOK == BO_GT || BOK == BO_LT) &&
           !(Type->isScalarType() ||
             (S.getLangOpts().CPlusPlus && Type->isArithmeticType()))) {
-        S.Diag(ELoc, diag::err_omp_clause_not_arithmetic_type_arg)
+        S.Diag(ELoc, diag::err_acc_clause_not_arithmetic_type_arg)
             << getOpenACCClauseName(ClauseKind) << S.getLangOpts().CPlusPlus;
         if (!ASE && !OASE) {
           bool IsDecl = !VD || VD->isThisDeclarationADefinition(Context) ==
@@ -10354,7 +10347,7 @@ static bool ActOnACCReductionKindClause(
       }
       if ((BOK == BO_OrAssign || BOK == BO_AndAssign || BOK == BO_XorAssign) &&
           !S.getLangOpts().CPlusPlus && Type->isFloatingType()) {
-        S.Diag(ELoc, diag::err_omp_clause_floating_type_arg)
+        S.Diag(ELoc, diag::err_acc_clause_floating_type_arg)
             << getOpenACCClauseName(ClauseKind);
         if (!ASE && !OASE) {
           bool IsDecl = !VD || VD->isThisDeclarationADefinition(Context) ==
@@ -10397,7 +10390,7 @@ static bool ActOnACCReductionKindClause(
          D->getType().getNonReferenceType()->isVariablyModifiedType())) {
       if (!Context.getTargetInfo().isVLASupported() &&
           S.shouldDiagnoseTargetSupportFromOpenACC()) {
-        S.Diag(ELoc, diag::err_omp_reduction_vla_unsupported) << !!OASE;
+        S.Diag(ELoc, diag::err_acc_reduction_vla_unsupported) << !!OASE;
         S.Diag(ELoc, diag::note_vla_unsupported);
         continue;
       }
@@ -10537,7 +10530,7 @@ static bool ActOnACCReductionKindClause(
     if (RHSVD->isInvalidDecl())
       continue;
     if (!RHSVD->hasInit() && DeclareReductionRef.isUnset()) {
-      S.Diag(ELoc, diag::err_omp_reduction_id_not_compatible)
+      S.Diag(ELoc, diag::err_acc_reduction_id_not_compatible)
           << Type << ReductionIdRange;
       bool IsDecl = !VD || VD->isThisDeclarationADefinition(Context) ==
                                VarDecl::DeclarationOnly;
@@ -10620,7 +10613,7 @@ static bool ActOnACCReductionKindClause(
       bool IsParentBOK = ParentBOKDSA.DKind != ACCD_unknown;
       bool IsParentReductionOp = ParentReductionOpDSA.DKind != ACCD_unknown;
       if (!IsParentBOK && !IsParentReductionOp) {
-        S.Diag(ELoc, diag::err_omp_in_reduction_not_task_reduction);
+        S.Diag(ELoc, diag::err_acc_in_reduction_not_task_reduction);
         continue;
       }
       if ((DeclareReductionRef.isUnset() && IsParentReductionOp) ||
@@ -10636,10 +10629,10 @@ static bool ActOnACCReductionKindClause(
         }
         if (EmitError) {
           S.Diag(ReductionId.getLocStart(),
-                 diag::err_omp_reduction_identifier_mismatch)
+                 diag::err_acc_reduction_identifier_mismatch)
               << ReductionIdRange << RefExpr->getSourceRange();
           S.Diag(ParentSR.getBegin(),
-                 diag::note_omp_previous_reduction_identifier)
+                 diag::note_acc_previous_reduction_identifier)
               << ParentSR
               << (IsParentBOK ? ParentBOKDSA.RefExpr
                               : ParentReductionOpDSA.RefExpr)
@@ -10676,7 +10669,7 @@ static bool ActOnACCReductionKindClause(
           if (isOpenACCTaskingDirective(Stack->getCurrentDirective()) ||
               Stack->getCurrentDirective() == ACCD_taskgroup) {
             S.Diag(RefExpr->getExprLoc(),
-                   diag::err_omp_reduction_non_addressable_expression)
+                   diag::err_acc_reduction_non_addressable_expression)
                 << RefExpr->getSourceRange();
             continue;
           }
@@ -10768,7 +10761,7 @@ bool Sema::CheckOpenACCLinearModifier(OpenACCLinearClauseKind LinKind,
                                      SourceLocation LinLoc) {
   if ((!LangOpts.CPlusPlus && LinKind != ACCC_LINEAR_val) ||
       LinKind == ACCC_LINEAR_unknown) {
-    Diag(LinLoc, diag::err_omp_wrong_linear_modifier) << LangOpts.CPlusPlus;
+    Diag(LinLoc, diag::err_acc_wrong_linear_modifier) << LangOpts.CPlusPlus;
     return true;
   }
   return false;
@@ -10779,11 +10772,11 @@ bool Sema::CheckOpenACCLinearDecl(ValueDecl *D, SourceLocation ELoc,
                                  QualType Type) {
   auto *VD = dyn_cast_or_null<VarDecl>(D);
   // A variable must not have an incomplete type or a reference type.
-  if (RequireCompleteType(ELoc, Type, diag::err_omp_linear_incomplete_type))
+  if (RequireCompleteType(ELoc, Type, diag::err_acc_linear_incomplete_type))
     return true;
   if ((LinKind == ACCC_LINEAR_uval || LinKind == ACCC_LINEAR_ref) &&
       !Type->isReferenceType()) {
-    Diag(ELoc, diag::err_omp_wrong_linear_modifier_non_reference)
+    Diag(ELoc, diag::err_acc_wrong_linear_modifier_non_reference)
         << Type << getOpenACCSimpleClauseTypeName(ACCC_linear, LinKind);
     return true;
   }
@@ -10791,7 +10784,7 @@ bool Sema::CheckOpenACCLinearDecl(ValueDecl *D, SourceLocation ELoc,
 
   // A list item must not be const-qualified.
   if (Type.isConstant(Context)) {
-    Diag(ELoc, diag::err_omp_const_variable)
+    Diag(ELoc, diag::err_acc_const_variable)
         << getOpenACCClauseName(ACCC_linear);
     if (D) {
       bool IsDecl =
@@ -10809,7 +10802,7 @@ bool Sema::CheckOpenACCLinearDecl(ValueDecl *D, SourceLocation ELoc,
   const auto *Ty = Type.getTypePtrOrNull();
   if (!Ty || (!Ty->isDependentType() && !Ty->isIntegralType(Context) &&
               !Ty->isPointerType())) {
-    Diag(ELoc, diag::err_omp_linear_expected_int_or_ptr) << Type;
+    Diag(ELoc, diag::err_acc_linear_expected_int_or_ptr) << Type;
     if (D) {
       bool IsDecl =
           !VD ||
@@ -10860,7 +10853,7 @@ ACCClause *Sema::ActOnOpenACCLinearClause(
     //  other data-sharing attribute clause.
     DSAStackTy::DSAVarData DVar = DSAStack->getTopDSA(D, false);
     if (DVar.RefExpr) {
-      Diag(ELoc, diag::err_omp_wrong_dsa) << getOpenACCClauseName(DVar.CKind)
+      Diag(ELoc, diag::err_acc_wrong_dsa) << getOpenACCClauseName(DVar.CKind)
                                           << getOpenACCClauseName(ACCC_linear);
       ReportOriginalDSA(*this, DSAStack, D, DVar);
       continue;
@@ -10940,7 +10933,7 @@ ACCClause *Sema::ActOnOpenACCLinearClause(
     llvm::APSInt Result;
     bool IsConstant = StepExpr->isIntegerConstantExpr(Result, Context);
     if (IsConstant && !Result.isNegative() && !Result.isStrictlyPositive())
-      Diag(StepLoc, diag::warn_omp_linear_step_zero) << Vars[0]
+      Diag(StepLoc, diag::warn_acc_linear_step_zero) << Vars[0]
                                                      << (Vars.size() > 1);
     if (!IsConstant && CalcStep.isUsable()) {
       // Calculate the step beforehand instead of doing this on each iteration.
@@ -10995,7 +10988,7 @@ static bool FinishOpenACCLinearClause(ACCLinearClause &Clause, DeclRefExpr *IV,
     if (isOpenACCDistributeDirective(Stack->getCurrentDirective()) &&
         isOpenACCSimdDirective(Stack->getCurrentDirective()) && !Info.first) {
       SemaRef.Diag(ELoc,
-                   diag::err_omp_linear_distribute_var_non_loop_iteration);
+                   diag::err_acc_linear_distribute_var_non_loop_iteration);
       Updates.push_back(nullptr);
       Finals.push_back(nullptr);
       HasErrors = true;
@@ -11081,7 +11074,7 @@ ACCClause *Sema::ActOnOpenACCAlignedClause(
     QType = QType.getNonReferenceType().getUnqualifiedType().getCanonicalType();
     const Type *Ty = QType.getTypePtrOrNull();
     if (!Ty || (!Ty->isArrayType() && !Ty->isPointerType())) {
-      Diag(ELoc, diag::err_omp_aligned_expected_array_or_ptr)
+      Diag(ELoc, diag::err_acc_aligned_expected_array_or_ptr)
           << QType << getLangOpts().CPlusPlus << ERange;
       bool IsDecl =
           !VD ||
@@ -11095,8 +11088,8 @@ ACCClause *Sema::ActOnOpenACCAlignedClause(
     // OpenACC  [2.8.1, simd construct, Restrictions]
     // A list-item cannot appear in more than one aligned clause.
     if (Expr *PrevRef = DSAStack->addUniqueAligned(D, SimpleRefExpr)) {
-      Diag(ELoc, diag::err_omp_aligned_twice) << 0 << ERange;
-      Diag(PrevRef->getExprLoc(), diag::note_omp_explicit_dsa)
+      Diag(ELoc, diag::err_acc_aligned_twice) << 0 << ERange;
+      Diag(PrevRef->getExprLoc(), diag::note_acc_explicit_dsa)
           << getOpenACCClauseName(ACCC_aligned);
       continue;
     }
@@ -11154,7 +11147,7 @@ ACCClause *Sema::ActOnOpenACCCopyinClause(ArrayRef<Expr *> VarList,
     //  A list item that appears in a copyin clause must be threadprivate.
     DeclRefExpr *DE = dyn_cast<DeclRefExpr>(RefExpr);
     if (!DE || !isa<VarDecl>(DE->getDecl())) {
-      Diag(ELoc, diag::err_omp_expected_var_name_member_expr)
+      Diag(ELoc, diag::err_acc_expected_var_name_member_expr)
           << 0 << RefExpr->getSourceRange();
       continue;
     }
@@ -11175,7 +11168,7 @@ ACCClause *Sema::ActOnOpenACCCopyinClause(ArrayRef<Expr *> VarList,
     // OpenACC [2.14.4.1, Restrictions, C/C++, p.1]
     //  A list item that appears in a copyin clause must be threadprivate.
     if (!DSAStack->isThreadPrivate(VD)) {
-      Diag(ELoc, diag::err_omp_required_access)
+      Diag(ELoc, diag::err_acc_required_access)
           << getOpenACCClauseName(ACCC_copyin)
           << getOpenACCDirectiveName(ACCD_threadprivate);
       continue;
@@ -11257,7 +11250,7 @@ ACCClause *Sema::ActOnOpenACCCopyprivateClause(ArrayRef<Expr *> VarList,
       auto DVar = DSAStack->getTopDSA(D, false);
       if (DVar.CKind != ACCC_unknown && DVar.CKind != ACCC_copyprivate &&
           DVar.RefExpr) {
-        Diag(ELoc, diag::err_omp_wrong_dsa)
+        Diag(ELoc, diag::err_acc_wrong_dsa)
             << getOpenACCClauseName(DVar.CKind)
             << getOpenACCClauseName(ACCC_copyprivate);
         ReportOriginalDSA(*this, DSAStack, D, DVar);
@@ -11270,7 +11263,7 @@ ACCClause *Sema::ActOnOpenACCCopyprivateClause(ArrayRef<Expr *> VarList,
       if (DVar.CKind == ACCC_unknown) {
         DVar = DSAStack->getImplicitDSA(D, false);
         if (DVar.CKind == ACCC_shared) {
-          Diag(ELoc, diag::err_omp_required_access)
+          Diag(ELoc, diag::err_acc_required_access)
               << getOpenACCClauseName(ACCC_copyprivate)
               << "threadprivate or private in the enclosing context";
           ReportOriginalDSA(*this, DSAStack, D, DVar);
@@ -11281,7 +11274,7 @@ ACCClause *Sema::ActOnOpenACCCopyprivateClause(ArrayRef<Expr *> VarList,
 
     // Variably modified types are not supported.
     if (!Type->isAnyPointerType() && Type->isVariablyModifiedType()) {
-      Diag(ELoc, diag::err_omp_variably_modified_type_not_supported)
+      Diag(ELoc, diag::err_acc_variably_modified_type_not_supported)
           << getOpenACCClauseName(ACCC_copyprivate) << Type
           << getOpenACCDirectiveName(DSAStack->getCurrentDirective());
       bool IsDecl =
@@ -11351,7 +11344,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
                               SourceLocation LParenLoc, SourceLocation EndLoc) {
   if (DSAStack->getCurrentDirective() == ACCD_ordered &&
       DepKind != ACCC_DEPEND_source && DepKind != ACCC_DEPEND_sink) {
-    Diag(DepLoc, diag::err_omp_unexpected_clause_value)
+    Diag(DepLoc, diag::err_acc_unexpected_clause_value)
         << "'source' or 'sink'" << getOpenACCClauseName(ACCC_depend);
     return nullptr;
   }
@@ -11359,7 +11352,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
       (DepKind == ACCC_DEPEND_unknown || DepKind == ACCC_DEPEND_source ||
        DepKind == ACCC_DEPEND_sink)) {
     unsigned Except[] = {ACCC_DEPEND_source, ACCC_DEPEND_sink};
-    Diag(DepLoc, diag::err_omp_unexpected_clause_value)
+    Diag(DepLoc, diag::err_acc_unexpected_clause_value)
         << getListOfPossibleValues(ACCC_depend, /*First=*/0,
                                    /*Last=*/ACCC_DEPEND_unknown, Except)
         << getOpenACCClauseName(ACCC_depend);
@@ -11388,7 +11381,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
     if (DepKind == ACCC_DEPEND_sink) {
       if (DSAStack->getParentOrderedRegionParam() &&
           DepCounter >= TotalDepCount) {
-        Diag(ELoc, diag::err_omp_depend_sink_unexpected_expr);
+        Diag(ELoc, diag::err_acc_depend_sink_unexpected_expr);
         continue;
       }
       ++DepCounter;
@@ -11442,7 +11435,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
         continue;
 
       if (OOK != OO_Plus && OOK != OO_Minus && (RHS || OOK != OO_None)) {
-        Diag(OOLoc, diag::err_omp_depend_sink_expected_plus_minus);
+        Diag(OOLoc, diag::err_acc_depend_sink_expected_plus_minus);
         continue;
       }
       if (RHS) {
@@ -11457,10 +11450,10 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
         ValueDecl *VD =
             DSAStack->getParentLoopControlVariable(DepCounter.getZExtValue());
         if (VD) {
-          Diag(ELoc, diag::err_omp_depend_sink_expected_loop_iteration)
+          Diag(ELoc, diag::err_acc_depend_sink_expected_loop_iteration)
               << 1 << VD;
         } else {
-          Diag(ELoc, diag::err_omp_depend_sink_expected_loop_iteration) << 0;
+          Diag(ELoc, diag::err_acc_depend_sink_expected_loop_iteration) << 0;
         }
         continue;
       }
@@ -11471,7 +11464,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
           (ASE &&
            !ASE->getBase()->getType().getNonReferenceType()->isPointerType() &&
            !ASE->getBase()->getType().getNonReferenceType()->isArrayType())) {
-        Diag(ELoc, diag::err_omp_expected_addressable_lvalue_or_array_item)
+        Diag(ELoc, diag::err_acc_expected_addressable_lvalue_or_array_item)
             << RefExpr->getSourceRange();
         continue;
       }
@@ -11481,7 +11474,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
           CreateBuiltinUnaryOp(ELoc, UO_AddrOf, RefExpr->IgnoreParenImpCasts());
       getDiagnostics().setSuppressAllDiagnostics(Suppress);
       if (!Res.isUsable() && !isa<ACCArraySectionExpr>(SimpleExpr)) {
-        Diag(ELoc, diag::err_omp_expected_addressable_lvalue_or_array_item)
+        Diag(ELoc, diag::err_acc_expected_addressable_lvalue_or_array_item)
             << RefExpr->getSourceRange();
         continue;
       }
@@ -11493,7 +11486,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
       TotalDepCount > VarList.size() &&
       DSAStack->getParentOrderedRegionParam() &&
       DSAStack->getParentLoopControlVariable(VarList.size() + 1)) {
-    Diag(EndLoc, diag::err_omp_depend_sink_expected_loop_iteration)
+    Diag(EndLoc, diag::err_acc_depend_sink_expected_loop_iteration)
         << 1 << DSAStack->getParentLoopControlVariable(VarList.size() + 1);
   }
   if (DepKind != ACCC_DEPEND_source && DepKind != ACCC_DEPEND_sink &&
@@ -11711,7 +11704,7 @@ static Expr *CheckMapClauseExpressionBase(
 
       if (!isa<FieldDecl>(CurE->getMemberDecl())) {
         if (!NoDiagnose) {
-          SemaRef.Diag(ELoc, diag::err_omp_expected_access_to_data_field)
+          SemaRef.Diag(ELoc, diag::err_acc_expected_access_to_data_field)
               << CurE->getSourceRange();
           return nullptr;
         }
@@ -11727,7 +11720,7 @@ static Expr *CheckMapClauseExpressionBase(
       //
       if (FD->isBitField()) {
         if (!NoDiagnose) {
-          SemaRef.Diag(ELoc, diag::err_omp_bit_fields_forbidden_in_clause)
+          SemaRef.Diag(ELoc, diag::err_acc_bit_fields_forbidden_in_clause)
               << CurE->getSourceRange() << getOpenACCClauseName(CKind);
           return nullptr;
         }
@@ -11748,7 +11741,7 @@ static Expr *CheckMapClauseExpressionBase(
       if (auto *RT = CurType->getAs<RecordType>()) {
         if (RT->isUnionType()) {
           if (!NoDiagnose) {
-            SemaRef.Diag(ELoc, diag::err_omp_union_type_not_allowed)
+            SemaRef.Diag(ELoc, diag::err_acc_union_type_not_allowed)
                 << CurE->getSourceRange();
             return nullptr;
           }
@@ -11773,7 +11766,7 @@ static Expr *CheckMapClauseExpressionBase(
 
       if (!E->getType()->isAnyPointerType() && !E->getType()->isArrayType()) {
         if (!NoDiagnose) {
-          SemaRef.Diag(ELoc, diag::err_omp_expected_base_var_name)
+          SemaRef.Diag(ELoc, diag::err_acc_expected_base_var_name)
               << 0 << CurE->getSourceRange();
           return nullptr;
         }
@@ -11805,7 +11798,7 @@ static Expr *CheckMapClauseExpressionBase(
       bool IsPointer = CurType->isAnyPointerType();
 
       if (!IsPointer && !CurType->isArrayType()) {
-        SemaRef.Diag(ELoc, diag::err_omp_expected_base_var_name)
+        SemaRef.Diag(ELoc, diag::err_acc_expected_base_var_name)
             << 0 << CurE->getSourceRange();
         return nullptr;
       }
@@ -11828,7 +11821,7 @@ static Expr *CheckMapClauseExpressionBase(
         // A unity or whole array section is not allowed and that is not
         // compatible with the properties of the current array section.
         SemaRef.Diag(
-            ELoc, diag::err_array_section_does_not_specify_contiguous_storage)
+            ELoc, diag::err_acc_array_section_does_not_specify_contiguous_storage)
             << CurE->getSourceRange();
         return nullptr;
       }
@@ -11839,7 +11832,7 @@ static Expr *CheckMapClauseExpressionBase(
       if (!NoDiagnose) {
         // If nothing else worked, this is not a valid map clause expression.
         SemaRef.Diag(
-            ELoc, diag::err_omp_expected_named_var_member_or_array_expression)
+            ELoc, diag::err_acc_expected_named_var_member_or_array_expression)
             << ERange;
       }
       return nullptr;
@@ -11905,7 +11898,7 @@ static bool CheckMapConflicts(
               (isa<ArraySubscriptExpr>(SI->getAssociatedExpression()) ||
                isa<ACCArraySectionExpr>(SI->getAssociatedExpression()))) {
             SemaRef.Diag(CI->getAssociatedExpression()->getExprLoc(),
-                         diag::err_omp_multiple_array_items_in_map_clause)
+                         diag::err_acc_multiple_array_items_in_map_clause)
                 << CI->getAssociatedExpression()->getSourceRange();
             SemaRef.Diag(SI->getAssociatedExpression()->getExprLoc(),
                          diag::note_used_here)
@@ -11951,10 +11944,10 @@ static bool CheckMapConflicts(
         if (CI == CE && SI == SE) {
           if (CurrentRegionOnly) {
             if (CKind == ACCC_map)
-              SemaRef.Diag(ELoc, diag::err_omp_map_shared_storage) << ERange;
+              SemaRef.Diag(ELoc, diag::err_acc_map_shared_storage) << ERange;
             else {
               assert(CKind == ACCC_to || CKind == ACCC_from);
-              SemaRef.Diag(ELoc, diag::err_omp_once_referenced_in_target_update)
+              SemaRef.Diag(ELoc, diag::err_acc_once_referenced_in_target_update)
                   << ERange;
             }
             SemaRef.Diag(RE->getExprLoc(), diag::note_used_here)
@@ -11993,11 +11986,11 @@ static bool CheckMapConflicts(
           if (CI == CE || SI == SE) {
             SemaRef.Diag(
                 DerivedLoc,
-                diag::err_omp_pointer_mapped_along_with_derived_section)
+                diag::err_acc_pointer_mapped_along_with_derived_section)
                 << DerivedLoc;
           } else {
             assert(CI != CE && SI != SE);
-            SemaRef.Diag(DerivedLoc, diag::err_omp_same_pointer_derreferenced)
+            SemaRef.Diag(DerivedLoc, diag::err_acc_same_pointer_derreferenced)
                 << DerivedLoc;
           }
           SemaRef.Diag(RE->getExprLoc(), diag::note_used_here)
@@ -12012,10 +12005,10 @@ static bool CheckMapConflicts(
         // An expression is a subset of the other.
         if (CurrentRegionOnly && (CI == CE || SI == SE)) {
           if (CKind == ACCC_map)
-            SemaRef.Diag(ELoc, diag::err_omp_map_shared_storage) << ERange;
+            SemaRef.Diag(ELoc, diag::err_acc_map_shared_storage) << ERange;
           else {
             assert(CKind == ACCC_to || CKind == ACCC_from);
-            SemaRef.Diag(ELoc, diag::err_omp_once_referenced_in_target_update)
+            SemaRef.Diag(ELoc, diag::err_acc_once_referenced_in_target_update)
                 << ERange;
           }
           SemaRef.Diag(RE->getExprLoc(), diag::note_used_here)
@@ -12052,7 +12045,7 @@ static bool CheckMapConflicts(
   //
   if (EnclosingExpr && !IsEnclosedByDataEnvironmentExpr) {
     SemaRef.Diag(ELoc,
-                 diag::err_omp_original_storage_is_shared_and_does_not_contain)
+                 diag::err_acc_original_storage_is_shared_and_does_not_contain)
         << ERange;
     SemaRef.Diag(EnclosingExpr->getExprLoc(), diag::note_used_here)
         << EnclosingExpr->getSourceRange();
@@ -12124,7 +12117,7 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
 
     if (!RE->IgnoreParenImpCasts()->isLValue()) {
       SemaRef.Diag(ELoc,
-                   diag::err_omp_expected_named_var_member_or_array_expression)
+                   diag::err_acc_expected_named_var_member_or_array_expression)
           << RE->getSourceRange();
       continue;
     }
@@ -12163,7 +12156,7 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
     // threadprivate variables cannot appear in a from clause.
     if (VD && DSAS->isThreadPrivate(VD)) {
       auto DVar = DSAS->getTopDSA(VD, false);
-      SemaRef.Diag(ELoc, diag::err_omp_threadprivate_in_clause)
+      SemaRef.Diag(ELoc, diag::err_acc_threadprivate_in_clause)
           << getOpenACCClauseName(CKind);
       ReportOriginalDSA(SemaRef, DSAS, VD, DVar);
       continue;
@@ -12207,7 +12200,7 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
       OpenACCDirectiveKind DKind = DSAS->getCurrentDirective();
       if (DKind == ACCD_target_enter_data &&
           !(MapType == ACCC_MAP_to || MapType == ACCC_MAP_alloc)) {
-        SemaRef.Diag(StartLoc, diag::err_omp_invalid_map_type_for_directive)
+        SemaRef.Diag(StartLoc, diag::err_acc_invalid_map_type_for_directive)
             << (IsMapTypeImplicit ? 1 : 0)
             << getOpenACCSimpleClauseTypeName(ACCC_map, MapType)
             << getOpenACCDirectiveName(DKind);
@@ -12221,7 +12214,7 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
       if (DKind == ACCD_target_exit_data &&
           !(MapType == ACCC_MAP_from || MapType == ACCC_MAP_release ||
             MapType == ACCC_MAP_delete)) {
-        SemaRef.Diag(StartLoc, diag::err_omp_invalid_map_type_for_directive)
+        SemaRef.Diag(StartLoc, diag::err_acc_invalid_map_type_for_directive)
             << (IsMapTypeImplicit ? 1 : 0)
             << getOpenACCSimpleClauseTypeName(ACCC_map, MapType)
             << getOpenACCDirectiveName(DKind);
@@ -12238,7 +12231,7 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
            DKind == ACCD_target_teams_distribute_simd) && VD) {
         auto DVar = DSAS->getTopDSA(VD, false);
         if (isOpenACCPrivate(DVar.CKind)) {
-          SemaRef.Diag(ELoc, diag::err_omp_variable_in_given_clause_and_dsa)
+          SemaRef.Diag(ELoc, diag::err_acc_variable_in_given_clause_and_dsa)
               << getOpenACCClauseName(DVar.CKind)
               << getOpenACCClauseName(ACCC_map)
               << getOpenACCDirectiveName(DSAS->getCurrentDirective());
@@ -12298,20 +12291,20 @@ QualType Sema::ActOnOpenACCDeclareReductionType(SourceLocation TyLoc,
   // array type, a reference type, or a type qualified with const, volatile or
   // restrict.
   if (ReductionType.hasQualifiers()) {
-    Diag(TyLoc, diag::err_omp_reduction_wrong_type) << 0;
+    Diag(TyLoc, diag::err_acc_reduction_wrong_type) << 0;
     return QualType();
   }
 
   if (ReductionType->isFunctionType()) {
-    Diag(TyLoc, diag::err_omp_reduction_wrong_type) << 1;
+    Diag(TyLoc, diag::err_acc_reduction_wrong_type) << 1;
     return QualType();
   }
   if (ReductionType->isReferenceType()) {
-    Diag(TyLoc, diag::err_omp_reduction_wrong_type) << 2;
+    Diag(TyLoc, diag::err_acc_reduction_wrong_type) << 2;
     return QualType();
   }
   if (ReductionType->isArrayType()) {
-    Diag(TyLoc, diag::err_omp_reduction_wrong_type) << 3;
+    Diag(TyLoc, diag::err_acc_reduction_wrong_type) << 3;
     return QualType();
   }
   return ReductionType;
@@ -12378,7 +12371,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareReductionDirectiveStart(
     auto I = PreviousRedeclTypes.find(TyData.first.getCanonicalType());
     bool Invalid = false;
     if (I != PreviousRedeclTypes.end()) {
-      Diag(TyData.second, diag::err_omp_declare_reduction_redefinition)
+      Diag(TyData.second, diag::err_acc_declare_reduction_redefinition)
           << TyData.first;
       Diag(I->second, diag::note_previous_definition);
       Invalid = true;
@@ -12654,7 +12647,7 @@ ACCClause *Sema::ActOnOpenACCDistScheduleClause(
     Values += "'";
     Values += getOpenACCSimpleClauseTypeName(ACCC_dist_schedule, 0);
     Values += "'";
-    Diag(KindLoc, diag::err_omp_unexpected_clause_value)
+    Diag(KindLoc, diag::err_acc_unexpected_clause_value)
         << Values << getOpenACCClauseName(ACCC_dist_schedule);
     return nullptr;
   }
@@ -12678,7 +12671,7 @@ ACCClause *Sema::ActOnOpenACCDistScheduleClause(
       llvm::APSInt Result;
       if (ValExpr->isIntegerConstantExpr(Result, Context)) {
         if (Result.isSigned() && !Result.isStrictlyPositive()) {
-          Diag(ChunkSizeLoc, diag::err_omp_negative_expression_in_clause)
+          Diag(ChunkSizeLoc, diag::err_acc_negative_expression_in_clause)
               << "dist_schedule" << ChunkSize->getSourceRange();
           return nullptr;
         }
@@ -12718,7 +12711,7 @@ ACCClause *Sema::ActOnOpenACCDefaultmapClause(
       Loc = KindLoc;
     }
     Value += "'";
-    Diag(Loc, diag::err_omp_unexpected_clause_value)
+    Diag(Loc, diag::err_acc_unexpected_clause_value)
         << Value << getOpenACCClauseName(ACCC_defaultmap);
     return nullptr;
   }
@@ -12737,11 +12730,11 @@ bool Sema::ActOnStartOpenACCDeclareTargetDirective(SourceLocation Loc) {
       !isa<ClassTemplateDecl>(CurLexicalContext) &&
       !isa<ClassTemplatePartialSpecializationDecl>(CurLexicalContext) &&
       !isa<ClassTemplateSpecializationDecl>(CurLexicalContext)) {
-    Diag(Loc, diag::err_omp_region_not_file_context);
+    Diag(Loc, diag::err_acc_region_not_file_context);
     return false;
   }
   if (IsInOpenACCDeclareTargetContext) {
-    Diag(Loc, diag::err_omp_enclosed_declare_target);
+    Diag(Loc, diag::err_acc_enclosed_declare_target);
     return false;
   }
 
@@ -12786,7 +12779,7 @@ void Sema::ActOnOpenACCDeclareTargetName(Scope *CurScope,
   NamedDecl *ND = Lookup.getAsSingle<NamedDecl>();
   if (isa<VarDecl>(ND) || isa<FunctionDecl>(ND)) {
     if (!SameDirectiveDecls.insert(cast<NamedDecl>(ND->getCanonicalDecl())))
-      Diag(Id.getLoc(), diag::err_omp_declare_target_multiple) << Id.getName();
+      Diag(Id.getLoc(), diag::err_acc_declare_target_multiple) << Id.getName();
 
     if (!ND->hasAttr<ACCDeclareTargetDeclAttr>()) {
       Attr *A = ACCDeclareTargetDeclAttr::CreateImplicit(Context, MT);
@@ -12795,11 +12788,11 @@ void Sema::ActOnOpenACCDeclareTargetName(Scope *CurScope,
         ML->DeclarationMarkedOpenACCDeclareTarget(ND, A);
       checkDeclIsAllowedInOpenACCTarget(nullptr, ND, Id.getLoc());
     } else if (ND->getAttr<ACCDeclareTargetDeclAttr>()->getMapType() != MT) {
-      Diag(Id.getLoc(), diag::err_omp_declare_target_to_and_link)
+      Diag(Id.getLoc(), diag::err_acc_declare_target_to_and_link)
           << Id.getName();
     }
   } else
-    Diag(Id.getLoc(), diag::err_omp_invalid_target_decl) << Id.getName();
+    Diag(Id.getLoc(), diag::err_acc_invalid_target_decl) << Id.getName();
 }
 
 static void checkDeclInTargetContext(SourceLocation SL, SourceRange SR,
@@ -12853,7 +12846,7 @@ static void checkDeclInTargetContext(SourceLocation SL, SourceRange SR,
       (isa<VarDecl>(LD) || isa<FunctionDecl>(LD))) {
     // Outlined declaration is not declared target.
     if (LD->isOutOfLine()) {
-      SemaRef.Diag(LD->getLocation(), diag::warn_omp_not_in_target_context);
+      SemaRef.Diag(LD->getLocation(), diag::warn_acc_not_in_target_context);
       SemaRef.Diag(SL, diag::note_used_here) << SR;
     } else {
       const DeclContext *DC = LD->getDeclContext();
@@ -12867,7 +12860,7 @@ static void checkDeclInTargetContext(SourceLocation SL, SourceRange SR,
         return;
 
       // Is not declared in target context.
-      SemaRef.Diag(LD->getLocation(), diag::warn_omp_not_in_target_context);
+      SemaRef.Diag(LD->getLocation(), diag::warn_acc_not_in_target_context);
       SemaRef.Diag(SL, diag::note_used_here) << SR;
     }
     // Mark decl as declared target to prevent further diagnostic.
@@ -12898,7 +12891,7 @@ void Sema::checkDeclIsAllowedInOpenACCTarget(Expr *E, Decl *D,
   // 2.10.6: threadprivate variable cannot appear in a declare target directive.
   if (VarDecl *VD = dyn_cast<VarDecl>(D)) {
     if (DSAStack->isThreadPrivate(VD)) {
-      Diag(SL, diag::err_omp_threadprivate_in_target);
+      Diag(SL, diag::err_acc_threadprivate_in_target);
       ReportOriginalDSA(*this, DSAStack, VD, DSAStack->getTopDSA(VD, false));
       return;
     }
@@ -12925,7 +12918,7 @@ void Sema::checkDeclIsAllowedInOpenACCTarget(Expr *E, Decl *D,
         (FD->getAttr<ACCDeclareTargetDeclAttr>()->getMapType() ==
          ACCDeclareTargetDeclAttr::MT_Link)) {
       assert(IdLoc.isValid() && "Source location is expected");
-      Diag(IdLoc, diag::err_omp_function_in_link_clause);
+      Diag(IdLoc, diag::err_acc_function_in_link_clause);
       Diag(FD->getLocation(), diag::note_defined_here) << FD;
       return;
     }
@@ -12935,7 +12928,7 @@ void Sema::checkDeclIsAllowedInOpenACCTarget(Expr *E, Decl *D,
         (FTD->getAttr<ACCDeclareTargetDeclAttr>()->getMapType() ==
          ACCDeclareTargetDeclAttr::MT_Link)) {
       assert(IdLoc.isValid() && "Source location is expected");
-      Diag(IdLoc, diag::err_omp_function_in_link_clause);
+      Diag(IdLoc, diag::err_acc_function_in_link_clause);
       Diag(FTD->getLocation(), diag::note_defined_here) << FTD;
       return;
     }
@@ -13015,7 +13008,7 @@ ACCClause *Sema::ActOnOpenACCUseDevicePtrClause(ArrayRef<Expr *> VarList,
 
     // Item should be a pointer or reference to pointer.
     if (!Type->isPointerType()) {
-      Diag(ELoc, diag::err_omp_usedeviceptr_not_a_pointer)
+      Diag(ELoc, diag::err_acc_usedeviceptr_not_a_pointer)
           << 0 << RefExpr->getSourceRange();
       continue;
     }
@@ -13092,7 +13085,7 @@ ACCClause *Sema::ActOnOpenACCIsDevicePtrClause(ArrayRef<Expr *> VarList,
     // item should be a pointer or array or reference to pointer or array
     if (!Type.getNonReferenceType()->isPointerType() &&
         !Type.getNonReferenceType()->isArrayType()) {
-      Diag(ELoc, diag::err_omp_argument_type_isdeviceptr)
+      Diag(ELoc, diag::err_acc_argument_type_isdeviceptr)
           << 0 << RefExpr->getSourceRange();
       continue;
     }
@@ -13101,7 +13094,7 @@ ACCClause *Sema::ActOnOpenACCIsDevicePtrClause(ArrayRef<Expr *> VarList,
     // sharing attribute.
     auto DVar = DSAStack->getTopDSA(D, false);
     if (isOpenACCPrivate(DVar.CKind)) {
-      Diag(ELoc, diag::err_omp_variable_in_given_clause_and_dsa)
+      Diag(ELoc, diag::err_acc_variable_in_given_clause_and_dsa)
           << getOpenACCClauseName(DVar.CKind)
           << getOpenACCClauseName(ACCC_is_device_ptr)
           << getOpenACCDirectiveName(DSAStack->getCurrentDirective());
@@ -13118,7 +13111,7 @@ ACCClause *Sema::ActOnOpenACCIsDevicePtrClause(ArrayRef<Expr *> VarList,
               ConflictExpr = R.front().getAssociatedExpression();
               return true;
             })) {
-      Diag(ELoc, diag::err_omp_map_shared_storage) << RefExpr->getSourceRange();
+      Diag(ELoc, diag::err_acc_map_shared_storage) << RefExpr->getSourceRange();
       Diag(ConflictExpr->getExprLoc(), diag::note_used_here)
           << ConflictExpr->getSourceRange();
       continue;

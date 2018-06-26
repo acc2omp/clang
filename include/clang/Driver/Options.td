@@ -1397,6 +1397,22 @@ def fobjc_sender_dependent_dispatch : Flag<["-"], "fobjc-sender-dependent-dispat
 def fomit_frame_pointer : Flag<["-"], "fomit-frame-pointer">, Group<f_Group>;
 def fopenacc : Flag<["-"], "fopenacc">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>;
 def fno_openacc : Flag<["-"], "fno-openacc">, Group<f_Group>, Flags<[NoArgumentUnused]>;
+def fopenacc_version_EQ : Joined<["-"], "fopenacc-version=">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>;
+def fopenacc_EQ : Joined<["-"], "fopenacc=">, Group<f_Group>;
+def fopenacc_use_tls : Flag<["-"], "fopenacc-use-tls">, Group<f_Group>, Flags<[NoArgumentUnused]>;
+def fnoopenacc_use_tls : Flag<["-"], "fnoopenacc-use-tls">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>;
+def fopenacc_targets_EQ : CommaJoined<["-"], "fopenacc-targets=">, Flags<[DriverOption, CC1Option]>,
+  HelpText<"Specify comma-separated list of triples OpenACC offloading targets to be supported">;
+def fopenacc_dump_offload_linker_script : Flag<["-"], "fopenacc-dump-offload-linker-script">, Group<f_Group>,
+  Flags<[NoArgumentUnused]>;
+def fopenacc_relocatable_target : Flag<["-"], "fopenacc-relocatable-target">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>,
+  HelpText<"OpenACC target code is compiled as relocatable using the -c flag. For OpenACC targets the code is relocatable by default.">;
+def fnoopenacc_relocatable_target : Flag<["-"], "fnoopenacc-relocatable-target">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>,
+  HelpText<"Do not compile OpenACC target code as relocatable.">;
+def fopenacc_simd : Flag<["-"], "fopenacc-simd">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>,
+  HelpText<"Emit OpenACC code only for SIMD-based constructs.">;
+def fno_openacc_simd : Flag<["-"], "fno-openacc-simd">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>,
+  HelpText<"Disable OpenACC code for SIMD-based constructs.">;
 def fopenmp : Flag<["-"], "fopenmp">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>;
 def fno_openmp : Flag<["-"], "fno-openmp">, Group<f_Group>, Flags<[NoArgumentUnused]>;
 def fopenmp_version_EQ : Joined<["-"], "fopenmp-version=">, Group<f_Group>, Flags<[CC1Option, NoArgumentUnused]>;

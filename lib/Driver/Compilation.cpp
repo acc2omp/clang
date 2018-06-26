@@ -53,6 +53,8 @@ Compilation::getArgsForToolChain(const ToolChain *TC, StringRef BoundArch,
   if (!Entry) {
     SmallVector<Arg *, 4> AllocatedArgs;
     DerivedArgList *OpenMPArgs = nullptr;
+
+    //TODO acc2mp Duplicate for OpenACC offload?
     // Translate OpenMP toolchain arguments provided via the -Xopenmp-target flags.
     if (DeviceOffloadKind == Action::OFK_OpenMP) {
       const ToolChain *HostTC = getSingleOffloadToolChain<Action::OFK_Host>();

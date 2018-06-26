@@ -26,6 +26,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/AST/ExprOpenACC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/NSAPI.h"
 #include "clang/AST/OperationKinds.h"
@@ -8065,6 +8066,11 @@ static const Expr *EvalVal(const Expr *E,
       return EvalAddr(ASE->getBase(), refVars, ParentDecl);
     }
 
+    case Stmt::ACCArraySectionExprClass: {
+      return EvalAddr(cast<ACCArraySectionExpr>(E)->getBase(), refVars,
+                      ParentDecl);
+    }
+
     case Stmt::OMPArraySectionExprClass: {
       return EvalAddr(cast<OMPArraySectionExpr>(E)->getBase(), refVars,
                       ParentDecl);
@@ -11090,6 +11096,13 @@ void Sema::CheckArrayAccess(const Expr *expr) {
         const ArraySubscriptExpr *ASE = cast<ArraySubscriptExpr>(expr);
         CheckArrayAccess(ASE->getBase(), ASE->getIdx(), ASE,
                          AllowOnePastEnd > 0);
+        return;
+      }
+      case Stmt::ACCArraySectionExprClass: {
+        const ACCArraySectionExpr *ASE = cast<ACCArraySectionExpr>(expr);
+        if (ASE->getLowerBound())
+          CheckArrayAccess(ASE->getBase(), ASE->getLowerBound(),
+                           /*ASE=*/nullptr, AllowOnePastEnd > 0);
         return;
       }
       case Stmt::OMPArraySectionExprClass: {

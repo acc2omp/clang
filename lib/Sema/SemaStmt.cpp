@@ -2843,9 +2843,14 @@ Sema::ActOnBreakStmt(SourceLocation BreakLoc, Scope *CurScope) {
     // C99 6.8.6.3p1: A break shall appear only in or as a switch/loop body.
     return StmtError(Diag(BreakLoc, diag::err_break_not_in_loop_or_switch));
   }
-  if (S->isOpenMPLoopScope())
+  if (S->isOpenACCLoopScope()) {
+    return StmtError(Diag(BreakLoc, diag::err_acc_loop_cannot_use_stmt)
+                     << "break");
+  }
+  if (S->isOpenMPLoopScope()) {
     return StmtError(Diag(BreakLoc, diag::err_omp_loop_cannot_use_stmt)
                      << "break");
+  }
   CheckJumpOutOfSEHFinally(*this, BreakLoc, *S);
 
   return new (Context) BreakStmt(BreakLoc);
@@ -3833,6 +3838,9 @@ StmtResult Sema::ActOnCXXTryBlock(SourceLocation TryLoc, Stmt *TryBlock,
   if (getLangOpts().CUDA)
     CUDADiagIfDeviceCode(TryLoc, diag::err_cuda_device_exceptions)
         << "try" << CurrentCUDATarget();
+
+  if (getCurScope() && getCurScope()->isOpenACCSimdDirectiveScope())
+    Diag(TryLoc, diag::err_acc_simd_region_cannot_use_stmt) << "try";
 
   if (getCurScope() && getCurScope()->isOpenMPSimdDirectiveScope())
     Diag(TryLoc, diag::err_omp_simd_region_cannot_use_stmt) << "try";

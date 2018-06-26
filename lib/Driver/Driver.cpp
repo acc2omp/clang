@@ -504,6 +504,32 @@ void Driver::setLTOMode(const llvm::opt::ArgList &Args) {
                                                     << A->getValue();
   }
 }
+/// Compute the desired OpenACC runtime from the flags provided.
+Driver::OpenACCRuntimeKind Driver::getOpenACCRuntime(const ArgList &Args) const {
+  StringRef RuntimeName(CLANG_DEFAULT_OPENACC_RUNTIME);
+
+  const Arg *A = Args.getLastArg(options::OPT_fopenmp_EQ);
+  if (A)
+    RuntimeName = A->getValue();
+
+  //TODO acc2mp maybe we want to get libacc?
+  auto RT = llvm::StringSwitch<OpenACCRuntimeKind>(RuntimeName)
+                .Case("libomp", ACCRT_OMP)
+                .Case("libgomp", ACCRT_GOMP)
+                .Case("libiomp5", ACCRT_IOMP5)
+                .Default(ACCRT_Unknown);
+
+  if (RT == ACCRT_Unknown) {
+    if (A)
+      Diag(diag::err_drv_unsupported_option_argument)
+          << A->getOption().getName() << A->getValue();
+    else
+      // FIXME: We could use a nicer diagnostic here.
+      Diag(diag::err_drv_unsupported_opt) << "-fopenacc";
+  }
+
+  return RT;
+}
 
 /// Compute the desired OpenMP runtime from the flags provided.
 Driver::OpenMPRuntimeKind Driver::getOpenMPRuntime(const ArgList &Args) const {
@@ -553,6 +579,73 @@ void Driver::CreateOffloadingDeviceToolChains(Compilation &C,
           *this, CudaTriple, *HostTC, C.getInputArgs(), Action::OFK_Cuda);
     }
     C.addOffloadDeviceToolChain(CudaTC.get(), Action::OFK_Cuda);
+  }
+
+  //
+  // OpenACC
+  //
+  // We need to generate an OpenACC toolchain if the user specified targets with
+  // the -fopenmp-targets option.
+  if (Arg *OpenACCTargets =
+          C.getInputArgs().getLastArg(options::OPT_fopenmp_targets_EQ)) {
+    if (OpenACCTargets->getNumValues()) {
+      // We expect that -fopenacc-targets is always used in conjunction with the
+      // option -fopenacc specifying a valid runtime with offloading support,
+      // i.e. libomp or libiomp.
+      bool HasValidOpenACCRuntime = C.getInputArgs().hasFlag(
+          options::OPT_fopenacc, options::OPT_fopenacc_EQ,
+          options::OPT_fno_openacc, false);
+      if (HasValidOpenACCRuntime) {
+        OpenACCRuntimeKind OpenACCKind = getOpenACCRuntime(C.getInputArgs());
+        HasValidOpenACCRuntime =
+            OpenACCKind == ACCRT_OMP || OpenACCKind == ACCRT_IOMP5;
+      }
+
+      if (HasValidOpenACCRuntime) {
+        llvm::StringMap<const char *> FoundNormalizedTriples;
+        for (const char *Val : OpenACCTargets->getValues()) {
+          llvm::Triple TT(Val);
+          std::string NormalizedName = TT.normalize();
+
+          // Make sure we don't have a duplicate triple.
+          auto Duplicate = FoundNormalizedTriples.find(NormalizedName);
+          if (Duplicate != FoundNormalizedTriples.end()) {
+            Diag(clang::diag::warn_drv_acc_offload_target_duplicate)
+                << Val << Duplicate->second;
+            continue;
+          }
+
+          // Store the current triple so that we can check for duplicates in the
+          // following iterations.
+          FoundNormalizedTriples[NormalizedName] = Val;
+
+          // If the specified target is invalid, emit a diagnostic.
+          if (TT.getArch() == llvm::Triple::UnknownArch)
+            Diag(clang::diag::err_drv_invalid_acc_target) << Val;
+          else {
+            const ToolChain *TC;
+            // CUDA toolchains have to be selected differently. They pair host
+            // and device in their implementation.
+            if (TT.isNVPTX()) {
+              const ToolChain *HostTC =
+                  C.getSingleOffloadToolChain<Action::OFK_Host>();
+              assert(HostTC && "Host toolchain should be always defined.");
+              auto &CudaTC =
+                  ToolChains[TT.str() + "/" + HostTC->getTriple().normalize()];
+              if (!CudaTC)
+                CudaTC = llvm::make_unique<toolchains::CudaToolChain>(
+                    *this, TT, *HostTC, C.getInputArgs(), Action::OFK_OpenACC);
+              TC = CudaTC.get();
+            } else
+              TC = &getToolChain(C.getInputArgs(), TT);
+            C.addOffloadDeviceToolChain(TC, Action::OFK_OpenACC);
+          }
+        }
+      } else
+        Diag(clang::diag::err_drv_expecting_fopenacc_with_fopenacc_targets);
+    } else
+      Diag(clang::diag::warn_drv_empty_joined_argument)
+          << OpenACCTargets->getAsString(C.getInputArgs());
   }
 
   //
@@ -2362,6 +2455,151 @@ class OffloadingActionBuilder final {
     }
   };
 
+  /// OpenACC action builder. The host bitcode is passed to the device frontend
+  /// and all the device linked images are passed to the host link phase.
+  class OpenACCActionBuilder final : public DeviceActionBuilder {
+    /// The OpenACC actions for the current input.
+    ActionList OpenACCDeviceActions;
+
+    /// The linker inputs obtained for each toolchain.
+    SmallVector<ActionList, 8> DeviceLinkerInputs;
+
+  public:
+    OpenACCActionBuilder(Compilation &C, DerivedArgList &Args,
+                        const Driver::InputList &Inputs)
+        : DeviceActionBuilder(C, Args, Inputs, Action::OFK_OpenACC) {}
+
+    ActionBuilderReturnCode
+    getDeviceDependences(OffloadAction::DeviceDependences &DA,
+                         phases::ID CurPhase, phases::ID FinalPhase,
+                         PhasesTy &Phases) override {
+
+      // We should always have an action for each input.
+      assert(OpenACCDeviceActions.size() == ToolChains.size() &&
+             "Number of OpenACC actions and toolchains do not match.");
+
+      // The host only depends on device action in the linking phase, when all
+      // the device images have to be embedded in the host image.
+      if (CurPhase == phases::Link) {
+        assert(ToolChains.size() == DeviceLinkerInputs.size() &&
+               "Toolchains and linker inputs sizes do not match.");
+        auto LI = DeviceLinkerInputs.begin();
+        for (auto *A : OpenACCDeviceActions) {
+          LI->push_back(A);
+          ++LI;
+        }
+
+        // We passed the device action as a host dependence, so we don't need to
+        // do anything else with them.
+        OpenACCDeviceActions.clear();
+        return ABRT_Success;
+      }
+
+      // By default, we produce an action for each device arch.
+      for (Action *&A : OpenACCDeviceActions)
+        A = C.getDriver().ConstructPhaseAction(C, Args, CurPhase, A);
+
+      return ABRT_Success;
+    }
+
+    ActionBuilderReturnCode addDeviceDepences(Action *HostAction) override {
+
+      // If this is an input action replicate it for each OpenACC toolchain.
+      if (auto *IA = dyn_cast<InputAction>(HostAction)) {
+        OpenACCDeviceActions.clear();
+        for (unsigned I = 0; I < ToolChains.size(); ++I)
+          OpenACCDeviceActions.push_back(
+              C.MakeAction<InputAction>(IA->getInputArg(), IA->getType()));
+        return ABRT_Success;
+      }
+
+      // If this is an unbundling action use it as is for each OpenACC toolchain.
+      if (auto *UA = dyn_cast<OffloadUnbundlingJobAction>(HostAction)) {
+        OpenACCDeviceActions.clear();
+        for (unsigned I = 0; I < ToolChains.size(); ++I) {
+          OpenACCDeviceActions.push_back(UA);
+          UA->registerDependentActionInfo(
+              ToolChains[I], /*BoundArch=*/StringRef(), Action::OFK_OpenACC);
+        }
+        return ABRT_Success;
+      }
+
+      // When generating code for OpenACC we use the host compile phase result as
+      // a dependence to the device compile phase so that it can learn what
+      // declarations should be emitted. However, this is not the only use for
+      // the host action, so we prevent it from being collapsed.
+      if (isa<CompileJobAction>(HostAction)) {
+        HostAction->setCannotBeCollapsedWithNextDependentAction();
+        assert(ToolChains.size() == OpenACCDeviceActions.size() &&
+               "Toolchains and device action sizes do not match.");
+        OffloadAction::HostDependence HDep(
+            *HostAction, *C.getSingleOffloadToolChain<Action::OFK_Host>(),
+            /*BoundArch=*/nullptr, Action::OFK_OpenACC);
+        auto TC = ToolChains.begin();
+        for (Action *&A : OpenACCDeviceActions) {
+          assert(isa<CompileJobAction>(A));
+          OffloadAction::DeviceDependences DDep;
+          DDep.add(*A, **TC, /*BoundArch=*/nullptr, Action::OFK_OpenACC);
+          A = C.MakeAction<OffloadAction>(HDep, DDep);
+          ++TC;
+        }
+      }
+      return ABRT_Success;
+    }
+
+    void appendTopLevelActions(ActionList &AL) override {
+      if (OpenACCDeviceActions.empty())
+        return;
+
+      // We should always have an action for each input.
+      assert(OpenACCDeviceActions.size() == ToolChains.size() &&
+             "Number of OpenACC actions and toolchains do not match.");
+
+      // Append all device actions followed by the proper offload action.
+      auto TI = ToolChains.begin();
+      for (auto *A : OpenACCDeviceActions) {
+        OffloadAction::DeviceDependences Dep;
+        Dep.add(*A, **TI, /*BoundArch=*/nullptr, Action::OFK_OpenACC);
+        AL.push_back(C.MakeAction<OffloadAction>(Dep, A->getType()));
+        ++TI;
+      }
+      // We no longer need the action stored in this builder.
+      OpenACCDeviceActions.clear();
+    }
+
+    void appendLinkDependences(OffloadAction::DeviceDependences &DA) override {
+      assert(ToolChains.size() == DeviceLinkerInputs.size() &&
+             "Toolchains and linker inputs sizes do not match.");
+
+      // Append a new link action for each device.
+      auto TC = ToolChains.begin();
+      for (auto &LI : DeviceLinkerInputs) {
+        auto *DeviceLinkAction =
+            C.MakeAction<LinkJobAction>(LI, types::TY_Image);
+        DA.add(*DeviceLinkAction, **TC, /*BoundArch=*/nullptr,
+               Action::OFK_OpenACC);
+        ++TC;
+      }
+    }
+
+    bool initialize() override {
+      // Get the OpenACC toolchains. If we don't get any, the action builder will
+      // know there is nothing to do related to OpenACC offloading.
+      auto OpenACCTCRange = C.getOffloadToolChains<Action::OFK_OpenACC>();
+      for (auto TI = OpenACCTCRange.first, TE = OpenACCTCRange.second; TI != TE;
+           ++TI)
+        ToolChains.push_back(TI->second);
+
+      DeviceLinkerInputs.resize(ToolChains.size());
+      return false;
+    }
+
+    bool canUseBundlerUnbundler() const override {
+      // OpenACC should use bundled files whenever possible.
+      return true;
+    }
+  };
+
   /// OpenMP action builder. The host bitcode is passed to the device frontend
   /// and all the device linked images are passed to the host link phase.
   class OpenMPActionBuilder final : public DeviceActionBuilder {
@@ -2527,6 +2765,9 @@ public:
 
     // Create a specialized builder for CUDA.
     SpecializedBuilders.push_back(new CudaActionBuilder(C, Args, Inputs));
+
+    // Create a specialized builder for OpenACC.
+    SpecializedBuilders.push_back(new OpenACCActionBuilder(C, Args, Inputs));
 
     // Create a specialized builder for OpenMP.
     SpecializedBuilders.push_back(new OpenMPActionBuilder(C, Args, Inputs));
@@ -3465,7 +3706,7 @@ public:
 /// is not necessarily represented in the toolchain's triple -- for example,
 /// armv7 and armv7s both map to the same triple -- so we need both in our map.
 /// Also, we need to add the offloading device kind, as the same tool chain can
-/// be used for host and device for some programming models, e.g. OpenMP.
+/// be used for host and device for some programming models, e.g. OpenMP, OpenACC.
 static std::string GetTriplePlusArchString(const ToolChain *TC,
                                            StringRef BoundArch,
                                            Action::OffloadKind OffloadKind) {

@@ -86,6 +86,25 @@ class Driver {
   LTOKind LTOMode;
 
 public:
+  enum OpenACCRuntimeKind {
+    /// An unknown OpenACC runtime. We can't generate effective OpenACC code
+    /// without knowing what runtime to target.
+    ACCRT_Unknown,
+
+    /// The LLVM OpenACC runtime. When completed and integrated, this will become
+    /// the default for Clang.
+    ACCRT_OMP,
+
+    /// The GNU OpenACC runtime. Clang doesn't support generating OpenACC code for
+    /// this runtime but can swallow the pragmas, and find and link against the
+    /// runtime library itself.
+    ACCRT_GOMP,
+
+    /// The legacy name for the LLVM OpenACC runtime from when it was the Intel
+    /// OpenACC runtime. We support this mode for users with existing
+    /// dependencies on this runtime library name.
+    ACCRT_IOMP5
+  };
   enum OpenMPRuntimeKind {
     /// An unknown OpenMP runtime. We can't generate effective OpenMP code
     /// without knowing what runtime to target.
@@ -331,6 +350,8 @@ public:
   bool embedBitcodeInObject() const { return (BitcodeEmbed == EmbedBitcode); }
   bool embedBitcodeMarkerOnly() const { return (BitcodeEmbed == EmbedMarker); }
 
+  /// Compute the desired OpenACC runtime from the flags provided.
+  OpenACCRuntimeKind getOpenACCRuntime(const llvm::opt::ArgList &Args) const;
   /// Compute the desired OpenMP runtime from the flags provided.
   OpenMPRuntimeKind getOpenMPRuntime(const llvm::opt::ArgList &Args) const;
 

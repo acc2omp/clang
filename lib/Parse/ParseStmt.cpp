@@ -110,7 +110,8 @@ Parser::ParseStatementOrDeclaration(StmtVector &Stmts,
   StmtResult Res = ParseStatementOrDeclarationAfterAttributes(
       Stmts, Allowed, TrailingElseLoc, Attrs);
 
-  llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res =" << Res.get() << "\n";
+  // MARK acc2mp remove this debug if needed
+  //llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res =" << Res.get() << "\n";
 
   assert((Attrs.empty() || Res.isInvalid() || Res.isUsable()) &&
          "attributes on empty statement");

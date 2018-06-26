@@ -30,6 +30,7 @@ ACCThreadPrivateDecl *ACCThreadPrivateDecl::Create(ASTContext &C,
                                                    DeclContext *DC,
                                                    SourceLocation L,
                                                    ArrayRef<Expr *> VL) {
+  llvm::outs() << "\n\n\n -------------- CREATING ACCTHREADPRIVATEDECL ---------------\n\n\n";
   ACCThreadPrivateDecl *D =
       new (C, DC, additionalSizeToAlloc<Expr *>(VL.size()))
           ACCThreadPrivateDecl(ACCThreadPrivate, DC, L);

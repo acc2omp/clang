@@ -2187,6 +2187,11 @@ QualType Sema::BuildArrayType(QualType T, ArrayType::ArraySizeModifier ASM,
     if (getLangOpts().CUDA) {
       // CUDA device code doesn't support VLAs.
       CUDADiagIfDeviceCode(Loc, diag::err_cuda_vla) << CurrentCUDATarget();
+    } else if (!getLangOpts().OpenACC ||
+               shouldDiagnoseTargetSupportFromOpenACC()) {
+      // Some targets don't support VLAs.
+      Diag(Loc, diag::err_vla_unsupported);
+      return QualType();
     } else if (!getLangOpts().OpenMP ||
                shouldDiagnoseTargetSupportFromOpenMP()) {
       // Some targets don't support VLAs.

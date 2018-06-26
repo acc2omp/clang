@@ -7219,6 +7219,8 @@ TreeTransform<Derived>::TransformDoStmt(DoStmt *S) {
                                     S->getRParenLoc());
 }
 
+
+// MARK acc2mp Probably the ParallelForLoop error is HERE!
 template<typename Derived>
 StmtResult
 TreeTransform<Derived>::TransformForStmt(ForStmt *S) {
@@ -7226,6 +7228,11 @@ TreeTransform<Derived>::TransformForStmt(ForStmt *S) {
   StmtResult Init = getDerived().TransformStmt(S->getInit());
   if (Init.isInvalid())
     return StmtError();
+
+  // In OpenACC loop region loop control variable must be captured and be
+  // private. Perform analysis of first part (if any).
+  if (getSema().getLangOpts().OpenACC && Init.isUsable())
+    getSema().ActOnOpenACCLoopInitialization(S->getForLoc(), Init.get());
 
   // In OpenMP loop region loop control variable must be captured and be
   // private. Perform analysis of first part (if any).

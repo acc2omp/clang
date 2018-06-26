@@ -1152,7 +1152,7 @@ bool DSAStackTy::hasDirective(
   return false;
 }
 
-void Sema::InitDataSharingAttributesStack() {
+void Sema::InitOpenMPDataSharingAttributesStack() {
   VarDataSharingAttributesStack = new DSAStackTy(*this);
 }
 
@@ -1432,7 +1432,7 @@ bool Sema::isOpenMPTargetCapturedDecl(ValueDecl *D, unsigned Level) {
                                         Level);
 }
 
-void Sema::DestroyDataSharingAttributesStack() { delete DSAStack; }
+void Sema::DestroyOpenMPDataSharingAttributesStack() { delete DSAStack; }
 
 void Sema::StartOpenMPDSABlock(OpenMPDirectiveKind DKind,
                                const DeclarationNameInfo &DirName,
@@ -4573,7 +4573,7 @@ CheckOpenMPLoop(OpenMPDirectiveKind DKind, Expr *CollapseLoopCountExpr,
                      diag::err_omp_wrong_ordered_loop_count)
             << OrderedLoopCountExpr->getSourceRange();
         SemaRef.Diag(CollapseLoopCountExpr->getExprLoc(),
-                     diag::note_collapse_loop_count)
+                     diag::note_omp_collapse_loop_count)
             << CollapseLoopCountExpr->getSourceRange();
       }
       NestedLoopCount = Result.getLimitedValue();
@@ -11820,7 +11820,7 @@ static Expr *CheckMapClauseExpressionBase(
         // A unity or whole array section is not allowed and that is not
         // compatible with the properties of the current array section.
         SemaRef.Diag(
-            ELoc, diag::err_array_section_does_not_specify_contiguous_storage)
+            ELoc, diag::err_omp_array_section_does_not_specify_contiguous_storage)
             << CurE->getSourceRange();
         return nullptr;
       }
