@@ -9399,7 +9399,7 @@ bool ASTContext::DeclMustBeEmitted(const Decl *D) {
 
   //llvm::outs() << "\n<< ----------------///\\\\\\------------------- \n";
   //llvm::outs() << "<< DEBUG >> DeclMustBeEmitted: DeclKind is " << D->getDeclKindName() << "\n";
-  D->dumpColor();
+  //D->dumpColor();
   //llvm::outs() << "<< ----------------\\\\\\///------------------- \n\n";
 
   if (const VarDecl *VD = dyn_cast<VarDecl>(D)) {

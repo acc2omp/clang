@@ -547,6 +547,8 @@ KEYWORD(vec_step                    , KEYOPENCL|KEYALTIVEC|KEYZVECTOR)
 #define GENERIC_IMAGE_TYPE(ImgType, Id) KEYWORD(ImgType##_t, KEYOPENCL)
 #include "clang/Basic/OpenCLImageTypes.def"
 
+// OpenACC Type Traits
+KEYWORD(__builtin_acc_required_simd_align, KEYALL)
 // OpenMP Type Traits
 KEYWORD(__builtin_omp_required_simd_align, KEYALL)
 

@@ -1525,7 +1525,7 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
       if (getLangOpts().CPlusPlus11 && Tok.is(tok::l_brace)) {
         Diag(Tok, diag::warn_cxx98_compat_generalized_initializer_lists);
         Idx = ParseBraceInitializer();
-      } else if (getLangOpts().OpenMP) {
+      } else if (getLangOpts().OpenMP || getLangOpts().OpenACC) {
         ColonProtectionRAIIObject RAII(*this);
         // Parse [: or [ expr or [ expr :
         if (!Tok.is(tok::colon)) {
@@ -1896,6 +1896,7 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
 ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
   assert(Tok.isOneOf(tok::kw_sizeof, tok::kw___alignof, tok::kw_alignof,
                      tok::kw__Alignof, tok::kw_vec_step,
+                     tok::kw___builtin_acc_required_simd_align,
                      tok::kw___builtin_omp_required_simd_align) &&
          "Not a sizeof/alignof/vec_step expression!");
   Token OpTok = Tok;
@@ -1934,7 +1935,7 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
     } else {
       Diag(Tok, diag::err_sizeof_parameter_pack);
     }
-    
+
     if (!Name)
       return ExprError();
 
@@ -1968,10 +1969,9 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
     ExprKind = UETT_AlignOf;
   else if (OpTok.is(tok::kw_vec_step))
     ExprKind = UETT_VecStep;
-  // TODO acc2mp
-  // Remove comment, leave code if necessary
-  //else if (OpTok.is(tok::kw___builtin_acc_required_simd_align))
-  //  ExprKind = UETT_OpenACCRequiredSimdAlign;
+  // TODO acc2mp investigate if this is necessary
+  else if (OpTok.is(tok::kw___builtin_acc_required_simd_align))
+    ExprKind = UETT_OpenACCRequiredSimdAlign;
   else if (OpTok.is(tok::kw___builtin_omp_required_simd_align))
     ExprKind = UETT_OpenMPRequiredSimdAlign;
 

@@ -43,6 +43,10 @@ StmtResult Parser::ParseStatement(SourceLocation *TrailingElseLoc,
         TrailingElseLoc);
   } while (!Res.isInvalid() && !Res.get());
 
+  /* llvm::outs()<< "[DEBUG(ParseStatement)] StmtResult = [" << Res.get()->getStmtClassName() << "]\ndump = {"; */
+  /* Res.get()->dumpColor(); */
+  /* llvm::outs() << "}\n"; */
+
   return Res;
 }
 
@@ -111,7 +115,9 @@ Parser::ParseStatementOrDeclaration(StmtVector &Stmts,
       Stmts, Allowed, TrailingElseLoc, Attrs);
 
   // MARK acc2mp remove this debug if needed
-  //llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res =" << Res.get() << "\n";
+  llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res ={";
+  Res.get()->dumpColor();
+  llvm::outs() << "}\n";
 
   assert((Attrs.empty() || Res.isInvalid() || Res.isUsable()) &&
          "attributes on empty statement");
@@ -163,6 +169,7 @@ Parser::ParseStatementOrDeclarationAfterAttributes(StmtVector &Stmts,
   // or they directly 'return;' if not.
 Retry:
   tok::TokenKind Kind  = Tok.getKind();
+  llvm::outs() << "$ ParseStatementOrDeclaration : TokenKind = " << getTokenName(Kind) << "\n";
   SourceLocation AtLoc;
   switch (Kind) {
   case tok::at: // May be a @try or @throw statement
@@ -367,6 +374,7 @@ Retry:
 
   case tok::annot_pragma_openmp:
     ProhibitAttributes(Attrs);
+    llvm::outs()<< "Entering function ParseOpenMPDeclarativeOrExecutableDirective()\n";
     return ParseOpenMPDeclarativeOrExecutableDirective(Allowed);
 
   case tok::annot_pragma_ms_pointers_to_members:

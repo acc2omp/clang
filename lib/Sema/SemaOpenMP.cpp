@@ -3048,6 +3048,9 @@ StmtResult Sema::ActOnOpenMPExecutableDirective(
   case OMPD_parallel_for:
     Res = ActOnOpenMPParallelForDirective(ClausesWithImplicit, AStmt, StartLoc,
                                           EndLoc, VarsWithInheritedDSA);
+    llvm::outs()<< "============= Generated Action for OMPD_parallel_for {\n";
+    Res.get()->dumpColor();
+    llvm::outs()<< "} =============\n";
     AllowedNameModifiers.push_back(OMPD_parallel);
     break;
   case OMPD_parallel_for_simd:
@@ -3251,6 +3254,8 @@ StmtResult Sema::ActOnOpenMPExecutableDirective(
   case OMPD_unknown:
     llvm_unreachable("Unknown OpenMP directive");
   }
+
+  llvm::outs() << "=============== ActOnOpenMPDirective ; end of main switch ============= \n";
 
   for (auto P : VarsWithInheritedDSA) {
     Diag(P.second->getExprLoc(), diag::err_omp_no_dsa_for_variable)
@@ -5481,6 +5486,9 @@ StmtResult Sema::ActOnOpenMPParallelForDirective(
     return StmtError();
 
   CapturedStmt *CS = cast<CapturedStmt>(AStmt);
+  llvm::outs() << "!!!!!!!!!!!! CapturedStmt: {";
+  CS->getCapturedStmt()->dumpColor();
+  llvm::outs() << "}!!!!!!!!!!!!!!!\n";
   // 1.2.2 OpenMP Language Terminology
   // Structured block - An executable statement with a single entry at the
   // top and a single exit at the bottom.

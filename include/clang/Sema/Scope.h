@@ -88,7 +88,7 @@ public:
     /// \brief This is a scope that corresponds to the Objective-C
     /// \@catch statement.
     AtCatchScope = 0x400,
-    
+
     /// \brief This scope corresponds to an Objective-C method body.
     /// It always has FnScope and DeclScope set as well.
     ObjCMethodScope = 0x800,

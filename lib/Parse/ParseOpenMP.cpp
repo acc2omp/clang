@@ -911,6 +911,8 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
   bool HasAssociatedStatement = true;
   bool FlushHasClause = false;
 
+  llvm::outs() << "Directive Kind is: " << getOpenMPDirectiveName(DKind) << "\n";
+
   switch (DKind) {
   case OMPD_threadprivate: {
     if (Allowed != ACK_Any) {
@@ -1012,6 +1014,7 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
   case OMPD_target_teams_distribute_parallel_for_simd:
   case OMPD_target_teams_distribute_simd: {
     ConsumeToken();
+    llvm::outs() << " -------------- Probably OMPD_parallel_for --------------\n";
     // Parse directive name of the 'critical' directive if any.
     if (DKind == OMPD_critical) {
       BalancedDelimiterTracker T(*this, tok::l_paren,
@@ -1032,19 +1035,25 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
         ConsumeToken();
     }
 
-    if (isOpenMPLoopDirective(DKind))
+    if (isOpenMPLoopDirective(DKind)){
+      llvm::outs() << "------------ isOpenMPLoopDirective! ------------\n";
       ScopeFlags |= Scope::OpenMPLoopDirectiveScope;
+    }
     if (isOpenMPSimdDirective(DKind))
       ScopeFlags |= Scope::OpenMPSimdDirectiveScope;
     ParseScope OMPDirectiveScope(this, ScopeFlags);
     Actions.StartOpenMPDSABlock(DKind, DirName, Actions.getCurScope(), Loc);
 
+    llvm::outs() << "------------ Consuming other toks ------------\n";
     while (Tok.isNot(tok::annot_pragma_openmp_end)) {
       OpenMPClauseKind CKind =
           Tok.isAnnotation()
               ? OMPC_unknown
               : FlushHasClause ? OMPC_flush
                                : getOpenMPClauseKind(PP.getSpelling(Tok));
+
+      llvm::outs() << "------------ OpenMPClauseKind is: " << getOpenMPClauseName(CKind) << " --------------- \n";
+
       Actions.StartOpenMPClause(CKind);
       FlushHasClause = false;
       OMPClause *Clause =
@@ -1064,6 +1073,7 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
     EndLoc = Tok.getLocation();
     // Consume final annot_pragma_openmp_end.
     ConsumeAnnotationToken();
+    llvm::outs() << "------------ Consuming tok annot_pragma_openacc_end ------------\n";
 
     // OpenMP [2.13.8, ordered Construct, Syntax]
     // If the depend clause is specified, the ordered construct is a stand-alone
@@ -1097,6 +1107,9 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
     Directive = Actions.ActOnOpenMPExecutableDirective(
         DKind, DirName, CancelRegion, Clauses, AssociatedStmt.get(), Loc,
         EndLoc);
+    llvm::outs() << "------------ Generated Directive is: <<<<<";
+    Directive.get()->dumpColor();
+    llvm::outs() << ">>>>> ------------\n";
 
     // Exit scope.
     Actions.EndOpenMPDSABlock(Directive.get());

@@ -3048,7 +3048,9 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   case ACCD_parallel_for:
     Res = ActOnOpenACCParallelForDirective(ClausesWithImplicit, AStmt, StartLoc,
                                           EndLoc, VarsWithInheritedDSA);
-    llvm::outs() << "Creating action 'ActOnOpenACCParallelForDirective'. PtrTy =" << Res.get() << "\n";
+    llvm::outs()<< "============= Generated Action for ACCD_parallel_for ==============\n";
+    Res.get()->dumpColor();
+    llvm::outs()<< "} =============\n";
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
   case ACCD_parallel_for_simd:
@@ -3252,6 +3254,8 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   case ACCD_unknown:
     llvm_unreachable("Unknown OpenACC directive");
   }
+
+  llvm::outs() << "=============== ActOnOpenMPDirective ; end of main switch ============= \n";
 
   for (auto P : VarsWithInheritedDSA) {
     Diag(P.second->getExprLoc(), diag::err_acc_no_dsa_for_variable)
@@ -5482,6 +5486,9 @@ StmtResult Sema::ActOnOpenACCParallelForDirective(
     return StmtError();
 
   CapturedStmt *CS = cast<CapturedStmt>(AStmt);
+  llvm::outs() << "!!!!!!!!!!!! CapturedStmt: {";
+  CS->getCapturedStmt()->dumpColor();
+  llvm::outs() << "}!!!!!!!!!!!!!!!\n";
   // 1.2.2 OpenACC Language Terminology
   // Structured block - An executable statement with a single entry at the
   // top and a single exit at the bottom.

@@ -3931,6 +3931,14 @@ void Parser::ParseStructUnionBody(SourceLocation RecordLoc,
       continue;
     }
 
+    if (Tok.is(tok::annot_pragma_openacc)) {
+      // Result can be ignored, because it must be always empty.
+      AccessSpecifier AS = AS_none;
+      ParsedAttributesWithRange Attrs(AttrFactory);
+      (void)ParseOpenACCDeclarativeDirectiveWithExtDecl(AS, Attrs);
+      continue;
+    }
+
     if (Tok.is(tok::annot_pragma_openmp)) {
       // Result can be ignored, because it must be always empty.
       AccessSpecifier AS = AS_none;

@@ -341,14 +341,52 @@ OMPParallelForDirective *OMPParallelForDirective::Create(
   void *Mem = C.Allocate(Size + sizeof(OMPClause *) * Clauses.size() +
                          sizeof(Stmt *) *
                              numLoopChildren(CollapsedNum, OMPD_parallel_for));
+
+  llvm::outs() << "         ________________________________\n";
+  llvm::outs() << "        |     OMPParallelForDirective    |\n";
+  llvm::outs() << "         TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n";
+  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
+  llvm::outs() << "         |||||||||||param||dump||||||||||\n";
+  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n\n";
+  llvm::outs() << "         ArrayRef<OMPClause *> Clauses = [" << Clauses.size() << "]= {\n";
+  for (auto __iterator = Clauses.begin(), __end = Clauses.end();
+     __iterator != __end; __iterator++) {
+        llvm::outs() << "         ---[ Clause: ClauseKind " << getOpenMPClauseName((*__iterator)->getClauseKind()) << " ]\n";
+  }
+  llvm::outs() << "         }\n";
+
   OMPParallelForDirective *Dir = new (Mem)
       OMPParallelForDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
+  llvm::outs() << "         Dir[0] dumpColor <{ ";
+  Dir->dumpColor();
+  llvm::outs() << "\n         }>\n";
+
   Dir->setAssociatedStmt(AssociatedStmt);
+  llvm::outs() << "         Dir[1] dumpColor <{ ";
+  Dir->dumpColor();
+  llvm::outs() << "\n         }>\n";
+
   Dir->setIterationVariable(Exprs.IterationVarRef);
+  llvm::outs() << "         Dir[2] dumpColor <{ ";
+  Dir->dumpColor();
+  llvm::outs() << "\n         }>\n";
+
   Dir->setLastIteration(Exprs.LastIteration);
+  llvm::outs() << "         Dir[3] dumpColor <{ ";
+  Dir->dumpColor();
+  llvm::outs() << "\n         }>\n";
+
   Dir->setCalcLastIteration(Exprs.CalcLastIteration);
+  llvm::outs() << "         Dir[4] dumpColor <{ ";
+  Dir->dumpColor();
+  llvm::outs() << "\n         }>\n";
+
   Dir->setPreCond(Exprs.PreCond);
+  llvm::outs() << "         Dir[5] dumpColor <{ ";
+  Dir->dumpColor();
+  llvm::outs() << "\n         }>\n";
+
   Dir->setCond(Exprs.Cond);
   Dir->setInit(Exprs.Init);
   Dir->setInc(Exprs.Inc);
@@ -367,6 +405,15 @@ OMPParallelForDirective *OMPParallelForDirective::Create(
   Dir->setFinals(Exprs.Finals);
   Dir->setPreInits(Exprs.PreInits);
   Dir->setHasCancel(HasCancel);
+
+  llvm::outs() << "         Dir[final] dumpColor <{ ";
+  Dir->dumpColor();
+  llvm::outs() << "\n         }>\n";
+
+  llvm::outs() << "\n";
+  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
+  llvm::outs() << "        |     OMPParallelForDirective    |\n";
+  llvm::outs() << "        |________________________________|\n";
   return Dir;
 }
 

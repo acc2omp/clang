@@ -3086,6 +3086,10 @@ Parser::DeclGroupPtrTy Parser::ParseCXXClassMemberDeclarationWithPragmas(
     return nullptr;
   }
 
+  case tok::annot_pragma_openacc:
+    return ParseOpenACCDeclarativeDirectiveWithExtDecl(AS, AccessAttrs, TagType,
+                                                      TagDecl);
+
   case tok::annot_pragma_openmp:
     return ParseOpenMPDeclarativeDirectiveWithExtDecl(AS, AccessAttrs, TagType,
                                                       TagDecl);

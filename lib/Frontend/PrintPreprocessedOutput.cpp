@@ -855,6 +855,16 @@ void clang::DoPrintPreprocessedInput(Preprocessor &PP, raw_ostream *OS,
   PP.AddPragmaHandler("GCC", GCCHandler.get());
   PP.AddPragmaHandler("clang", ClangHandler.get());
 
+  // The tokens after pragma acc need to be expanded.
+  //
+  //  OpenACC [2.1, Directive format]
+  //  Preprocessing tokens following the #pragma acc are subject to macro
+  //  replacement.
+  std::unique_ptr<UnknownPragmaHandler> OpenACCHandler(
+      new UnknownPragmaHandler("#pragma acc", Callbacks,
+                               /*RequireTokenExpansion=*/true));
+  PP.AddPragmaHandler("acc", OpenACCHandler.get());
+
   // The tokens after pragma omp need to be expanded.
   //
   //  OpenMP [2.1, Directive format]

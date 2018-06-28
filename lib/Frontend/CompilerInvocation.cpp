@@ -2453,6 +2453,73 @@ static void ParseLangArgs(LangOptions &Opts, ArgList &Args, InputKind IK,
 
   // Check if -fopenacc is specified.
   Opts.OpenACC = Args.hasArg(options::OPT_fopenacc) ? 1 : 0;
+  // Check if -fopenmp-simd is specified.
+  Opts.OpenACCSimd = !Opts.OpenACC && Args.hasFlag(options::OPT_fopenacc_simd,
+                                                 options::OPT_fno_openacc_simd,
+                                                 /*Default=*/false);
+  Opts.OpenACCUseTLS =
+      Opts.OpenACC && !Args.hasArg(options::OPT_fnoopenacc_use_tls);
+  Opts.OpenACCIsDevice =
+      Opts.OpenACC && Args.hasArg(options::OPT_fopenacc_is_device);
+
+  if (Opts.OpenACC || Opts.OpenACCSimd) {
+    if (int Version =
+            getLastArgIntValue(Args, OPT_fopenacc_version_EQ,
+                               Opts.OpenACCSimd ? 45 : Opts.OpenACC, Diags))
+      Opts.OpenACC = Version;
+    else if (Opts.OpenACCSimd)
+      Opts.OpenACC = 45;
+    // Provide diagnostic when a given target is not expected to be an OpenACC
+    // device or host.
+    if (!Opts.OpenACCIsDevice) {
+      switch (T.getArch()) {
+      default:
+        break;
+      // Add unsupported host targets here:
+      case llvm::Triple::nvptx:
+      case llvm::Triple::nvptx64:
+        Diags.Report(clang::diag::err_drv_acc_host_target_not_supported)
+            << TargetOpts.Triple;
+        break;
+      }
+    }
+  }
+
+  // Set the flag to prevent the implementation from emitting device exception
+  // handling code for those requiring so.
+  if (Opts.OpenACCIsDevice && T.isNVPTX()) {
+    Opts.Exceptions = 0;
+    Opts.CXXExceptions = 0;
+  }
+
+  // Get the OpenACC target triples if any.
+  if (Arg *A = Args.getLastArg(options::OPT_fopenacc_targets_EQ)) {
+
+    for (unsigned i = 0; i < A->getNumValues(); ++i) {
+      llvm::Triple TT(A->getValue(i));
+
+      if (TT.getArch() == llvm::Triple::UnknownArch ||
+          !(TT.getArch() == llvm::Triple::ppc ||
+            TT.getArch() == llvm::Triple::ppc64 ||
+            TT.getArch() == llvm::Triple::ppc64le ||
+            TT.getArch() == llvm::Triple::nvptx ||
+            TT.getArch() == llvm::Triple::nvptx64 ||
+            TT.getArch() == llvm::Triple::x86 ||
+            TT.getArch() == llvm::Triple::x86_64))
+        Diags.Report(clang::diag::err_drv_invalid_acc_target) << A->getValue(i);
+      else
+        Opts.ACCTargetTriples.push_back(TT);
+    }
+  }
+
+  // Get OpenACC host file path if any and report if a non existent file is
+  // found
+  if (Arg *A = Args.getLastArg(options::OPT_fopenacc_host_ir_file_path)) {
+    Opts.ACCHostIRFile = A->getValue();
+    if (!llvm::sys::fs::exists(Opts.ACCHostIRFile))
+      Diags.Report(clang::diag::err_drv_acc_host_ir_file_not_found)
+          << Opts.ACCHostIRFile;
+  }
 
   // Check if -fopenmp is specified.
   Opts.OpenMP = Args.hasArg(options::OPT_fopenmp) ? 1 : 0;
@@ -2860,6 +2927,10 @@ bool CompilerInvocation::CreateFromArgs(CompilerInvocation &Res,
     if (LangOpts.CUDAIsDevice)
       Res.getTargetOpts().HostTriple = Res.getFrontendOpts().AuxTriple;
   }
+
+  // Set the triple of the host for OpenACC device compile.
+  if (LangOpts.OpenACCIsDevice)
+    Res.getTargetOpts().HostTriple = Res.getFrontendOpts().AuxTriple;
 
   // Set the triple of the host for OpenMP device compile.
   if (LangOpts.OpenMPIsDevice)

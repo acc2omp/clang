@@ -1014,6 +1014,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_target_teams_distribute_parallel_for_simd:
   case ACCD_target_teams_distribute_simd: {
     ConsumeToken();
+    llvm::outs() << " -------------- Probably ACCD_parallel_for --------------\n";
     // Parse directive name of the 'critical' directive if any.
     if (DKind == ACCD_critical) {
       BalancedDelimiterTracker T(*this, tok::l_paren,
@@ -1034,19 +1035,24 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
         ConsumeToken();
     }
 
-    if (isOpenACCLoopDirective(DKind))
+    if (isOpenACCLoopDirective(DKind)){
+      llvm::outs() << "------------ isOpenACCLoopDirective! ------------\n";
       ScopeFlags |= Scope::OpenACCLoopDirectiveScope;
+    }
     if (isOpenACCSimdDirective(DKind))
       ScopeFlags |= Scope::OpenACCSimdDirectiveScope;
     ParseScope ACCDirectiveScope(this, ScopeFlags);
     Actions.StartOpenACCDSABlock(DKind, DirName, Actions.getCurScope(), Loc);
 
+    llvm::outs() << "------------ Consuming other toks ------------\n";
     while (Tok.isNot(tok::annot_pragma_openacc_end)) {
       OpenACCClauseKind CKind =
           Tok.isAnnotation()
               ? ACCC_unknown
               : FlushHasClause ? ACCC_flush
                                : getOpenACCClauseKind(PP.getSpelling(Tok));
+
+      llvm::outs() << "------------ OpenACCClauseKind is: " << getOpenACCClauseName(CKind) << " --------------- \n";
       Actions.StartOpenACCClause(CKind);
       FlushHasClause = false;
       ACCClause *Clause =
@@ -1066,6 +1072,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     EndLoc = Tok.getLocation();
     // Consume final annot_pragma_openacc_end.
     ConsumeAnnotationToken();
+    llvm::outs() << "------------ Consuming tok annot_pragma_openacc_end ------------\n";
 
     // OpenACC [2.13.8, ordered Construct, Syntax]
     // If the depend clause is specified, the ordered construct is a stand-alone
@@ -1099,7 +1106,9 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     Directive = Actions.ActOnOpenACCExecutableDirective(
         DKind, DirName, CancelRegion, Clauses, AssociatedStmt.get(), Loc,
         EndLoc);
-
+    llvm::outs() << "------------ Generated Directive is: <<<<<";
+    Directive.get()->dumpColor();
+    llvm::outs() << ">>>>> ------------\n";
     // Exit scope.
     Actions.EndOpenACCDSABlock(Directive.get());
     ACCDirectiveScope.Exit();
