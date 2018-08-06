@@ -259,12 +259,12 @@ protected:
     friend class ASTStmtReader;
     friend class ASTStmtWriter;
     friend class TypeTraitExpr;
-    
+
     unsigned : NumExprBits;
-    
+
     /// \brief The kind of type trait, which is a value of a TypeTrait enumerator.
     unsigned Kind : 8;
-    
+
     /// \brief If this expression is not value-dependent, this indicates whether
     /// the trait evaluated true or false.
     unsigned Value : 1;
@@ -2119,7 +2119,7 @@ private:
   /// \brief The number of variable captured, including 'this'.
   unsigned NumCaptures;
 
-  /// \brief The pointer part is the implicit the outlined function and the 
+  /// \brief The pointer part is the implicit the outlined function and the
   /// int part is the captured region kind, 'CR_Default' etc.
   llvm::PointerIntPair<CapturedDecl *, 1, CapturedRegionKind> CapDeclAndKind;
 

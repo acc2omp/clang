@@ -4116,15 +4116,13 @@ ExprResult
 Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
                               Expr *idx, SourceLocation rbLoc) {
   if (base && !base->getType().isNull() &&
-      base->getType()->isSpecificPlaceholderType(BuiltinType::OMPArraySection))
-    return ActOnOMPArraySectionExpr(base, lbLoc, idx, SourceLocation(),
-                                    /*Length=*/nullptr, rbLoc);
-  
-// TODO acc2mp
-// Figure out the need of the following copy
-  if (base && !base->getType().isNull() &&
       base->getType()->isSpecificPlaceholderType(BuiltinType::ACCArraySection))
     return ActOnACCArraySectionExpr(base, lbLoc, idx, SourceLocation(),
+                                    /*Length=*/nullptr, rbLoc);
+
+  if (base && !base->getType().isNull() &&
+      base->getType()->isSpecificPlaceholderType(BuiltinType::OMPArraySection))
+    return ActOnOMPArraySectionExpr(base, lbLoc, idx, SourceLocation(),
                                     /*Length=*/nullptr, rbLoc);
 
   // Since this might be a postfix expression, get rid of ParenListExprs.
@@ -4195,7 +4193,6 @@ Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
   return CreateBuiltinArraySubscriptExpr(base, lbLoc, idx, rbLoc);
 }
 
-//TODO acc2mp This section was commented before bug. Ivestigate if there is still a problem
 ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                           Expr *LowerBound,
                                           SourceLocation ColonLoc, Expr *Length,

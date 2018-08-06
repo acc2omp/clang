@@ -98,7 +98,7 @@ def Block : Decl<"blocks">, DeclContext;
 def Captured : Decl, DeclContext;
 def ClassScopeFunctionSpecialization : Decl;
 def Import : Decl;
-def ACCThreadPrivate : Decl;
 def OMPThreadPrivate : Decl;
+def ACCThreadPrivate : Decl;
 def Empty : Decl;
 

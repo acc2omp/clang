@@ -14,6 +14,7 @@
 #include "CodeGenFunction.h"
 #include "CGCXXABI.h"
 #include "CGObjCRuntime.h"
+#include "CGOpenACCRuntime.h"
 #include "CGOpenMPRuntime.h"
 #include "clang/Frontend/CodeGenOptions.h"
 #include "llvm/ADT/StringExtras.h"
@@ -173,6 +174,12 @@ void CodeGenFunction::EmitCXXGlobalVarDeclInit(const VarDecl &D,
   ConstantAddress DeclAddr(DeclPtr, getContext().getDeclAlign(&D));
 
   if (!T->isReferenceType()) {
+    if (getLangOpts().OpenACC && !getLangOpts().OpenACCSimd &&
+        D.hasAttr<ACCThreadPrivateDeclAttr>()) {
+      (void)CGM.getOpenACCRuntime().emitThreadPrivateVarDefinition(
+          &D, DeclAddr, D.getAttr<ACCThreadPrivateDeclAttr>()->getLocation(),
+          PerformInit, this);
+    }
     if (getLangOpts().OpenMP && !getLangOpts().OpenMPSimd &&
         D.hasAttr<OMPThreadPrivateDeclAttr>()) {
       (void)CGM.getOpenMPRuntime().emitThreadPrivateVarDefinition(

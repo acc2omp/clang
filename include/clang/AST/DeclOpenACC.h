@@ -36,6 +36,7 @@ namespace clang {
 /// };
 /// \endcode
 ///
+//
 class ACCThreadPrivateDecl final
     : public Decl,
       private llvm::TrailingObjects<ACCThreadPrivateDecl, Expr *> {
@@ -46,8 +47,14 @@ class ACCThreadPrivateDecl final
 
   virtual void anchor();
 
+  ACCThreadPrivateDecl() : Decl(static_cast<Kind>(0), EmptyShell()) {
+    llvm::errs() << "\n\n\n -------------- CONSTRUCTOR ACCTHREADPRIVATEDECL ---------------\n\n\n";
+  }
+
   ACCThreadPrivateDecl(Kind DK, DeclContext *DC, SourceLocation L) :
-    Decl(DK, DC, L), NumVars(0) { }
+    Decl(DK, DC, L), NumVars(0) {
+    llvm::errs() << "\n\n\n -------------- CONSTRUCTOR ACCTHREADPRIVATEDECL ---------------\n\n\n";
+    }
 
   ArrayRef<const Expr *> getVars() const {
     return llvm::makeArrayRef(getTrailingObjects<Expr *>(), NumVars);

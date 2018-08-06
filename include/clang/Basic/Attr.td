@@ -2785,11 +2785,11 @@ def ACCDeclareSimdDecl : Attr {
       modifiers_iterator MI = modifiers_begin();
       for (auto *E : linears()) {
         OS << " linear(";
-        //if (*MI != ACCC_LINEAR_unknown)
-        //  OS << getOpenACCSimpleClauseTypeName(ACCC_linear, *MI) << "(";
-        //E->printPretty(OS, nullptr, Policy);
-        //if (*MI != ACCC_LINEAR_unknown)
-        //  OS << ")";
+        if (*MI != ACCC_LINEAR_unknown)
+          OS << getOpenACCSimpleClauseTypeName(ACCC_linear, *MI) << "(";
+        E->printPretty(OS, nullptr, Policy);
+        if (*MI != ACCC_LINEAR_unknown)
+          OS << ")";
         if (*I) {
           OS << ": ";
           (*I)->printPretty(OS, nullptr, Policy);

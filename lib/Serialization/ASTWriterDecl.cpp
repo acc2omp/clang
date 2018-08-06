@@ -1699,7 +1699,7 @@ void ASTDeclWriter::VisitRedeclarable(Redeclarable<T> *D) {
       Record.AddDeclRef(FirstLocal);
     }
 
-    // Make sure that we serialize both the previous and the most-recent 
+    // Make sure that we serialize both the previous and the most-recent
     // declarations, which (transitively) ensures that all declarations in the
     // chain get serialized.
     //

@@ -1746,18 +1746,18 @@ private:
   // Expand AllowedConstructsKind
 
   StmtResult ParseStatement(SourceLocation *TrailingElseLoc = nullptr,
+                            bool AllowOpenACCStandalone = false,
                             bool AllowOpenMPStandalone = false);
   enum AllowedConstructsKind {
     /// \brief Allow any declarations, statements, OpenMP and OpenACC directives.
     ACK_Any,
-    /// \brief Allow only statements and non-standalone OpenACC directives.
-    ACK_StatementsOpenACCNonStandalone,
-    /// \brief Allow statements and all executable OpenACC directives
-    ACK_StatementsOpenACCAnyExecutable,
-    /// \brief Allow only statements and non-standalone OpenMP directives.
-    ACK_StatementsOpenMPNonStandalone,
-    /// \brief Allow statements and all executable OpenMP directives
-    ACK_StatementsOpenMPAnyExecutable
+    /// \brief Allow statements,
+    /// \brief { non-standalone OpenACC directives | all executable OpenACC directives } and
+    /// \brief { non-standalone OpenMP directives | all executable OpenMP directives }.
+    ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone,
+    ACK_Statements_OpenACCNonStandalone_OpenMPAnyExecutable,
+    ACK_Statements_OpenACCAnyExecutable_OpenMPNonStandalone,
+    ACK_Statements_OpenACCAnyExecutable_OpenMPAnyExecutable
   };
   StmtResult
   ParseStatementOrDeclaration(StmtVector &Stmts, AllowedConstructsKind Allowed,

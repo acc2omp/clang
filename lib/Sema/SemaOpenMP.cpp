@@ -2111,6 +2111,7 @@ void Sema::ActOnOpenMPRegionStart(OpenMPDirectiveKind DKind, Scope *CurScope) {
         std::make_pair(".bound_tid.", KmpInt32PtrTy),
         std::make_pair(StringRef(), QualType()) // __context with shared vars
     };
+    llvm::outs() << "XD ActOnOpenMPRegionStart\n";
     ActOnCapturedRegionStart(DSAStack->getConstructLoc(), CurScope, CR_OpenMP,
                              Params);
     break;
@@ -2519,6 +2520,24 @@ StmtResult Sema::ActOnOpenMPRegionEnd(StmtResult S,
     ErrorFound = true;
     return StmtError();
   }
+  llvm::outs() << "         ________________________________\n";
+  llvm::outs() << "        |       ActOnOpenMPRegionEnd    |\n";
+  llvm::outs() << "         TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n";
+  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
+  llvm::outs() << "         ||||||||||custom||dump||||||||||\n";
+  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n\n";
+  llvm::outs() << "         ArrayRef<OMPClause *> Clauses = size[" << Clauses.size() << "]= {\n";
+  int i = 0;
+  for (auto __iterator = Clauses.begin(), __end = Clauses.end();
+     __iterator != __end; __iterator++) {
+        llvm::outs() << "         ---[ Clause[" << i << "]: ClauseKind " << getOpenMPClauseName((*__iterator)->getClauseKind()) << " ]\n";
+        i++;
+  }
+  llvm::outs() << "         }\n";
+
+  llvm::outs() << "         S[0] dumpColor <{ ";
+  S.get()->dumpColor();
+  llvm::outs() << "\n         }>\n";
 
   SmallVector<OpenMPDirectiveKind, 4> CaptureRegions;
   getOpenMPCaptureRegions(CaptureRegions, DSAStack->getCurrentDirective());
@@ -2620,8 +2639,22 @@ StmtResult Sema::ActOnOpenMPRegionEnd(StmtResult S,
         }
       }
     }
+
+    llvm::outs() << "         SR[0] dumpColor <{ ";
+    SR.get()->dumpColor();
+    SR.get()->dumpPretty(this->getASTContext());
+    llvm::outs() << "\n         }>\n";
+
     SR = ActOnCapturedRegionEnd(SR.get());
+    llvm::outs() << "         SR[1] dumpColor <{ ";
+    SR.get()->dumpPretty(this->getASTContext());
+    SR.get()->dumpColor();
+    llvm::outs() << "\n         }>\n";
   }
+  llvm::outs() << "\n";
+  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
+  llvm::outs() << "        |       ActOnOpenMPRegionEnd     |\n";
+  llvm::outs() << "        |________________________________|\n";
   return SR;
 }
 
@@ -5484,6 +5517,10 @@ StmtResult Sema::ActOnOpenMPParallelForDirective(
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
   if (!AStmt)
     return StmtError();
+
+  llvm::outs() << "!!!!!!!!!!!! AssociatedStmt: {";
+  AStmt->dumpColor();
+  llvm::outs() << "}!!!!!!!!!!!!!!!\n";
 
   CapturedStmt *CS = cast<CapturedStmt>(AStmt);
   llvm::outs() << "!!!!!!!!!!!! CapturedStmt: {";

@@ -74,6 +74,15 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   // Generate a stoppoint if we are emitting debug info.
   EmitStopPoint(S);
 
+  // Ignore all OpenACC directives except for simd if OpenACC with Simd is
+  // enabled.
+  if (getLangOpts().OpenACC && getLangOpts().OpenACCSimd) {
+    if (const auto *D = dyn_cast<ACCExecutableDirective>(S)) {
+      EmitSimpleACCExecutableDirective(*D);
+      return;
+    }
+  }
+
   // Ignore all OpenMP directives except for simd if OpenMP with Simd is
   // enabled.
   if (getLangOpts().OpenMP && getLangOpts().OpenMPSimd) {

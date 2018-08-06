@@ -2650,6 +2650,9 @@ void ASTStmtReader::VisitACCExecutableDirective(ACCExecutableDirective *E) {
   E->setLocEnd(ReadSourceLocation());
   ACCClauseReader ClauseReader(this, Record);
   SmallVector<ACCClause *, 5> Clauses;
+
+  llvm::outs() << " #$#$#$#$#$#$#$ DEBUG : VisitACCExecutableDirective :D\n";
+
   for (unsigned i = 0; i < E->getNumClauses(); ++i)
     Clauses.push_back(ClauseReader.readClause());
   E->setClauses(Clauses);

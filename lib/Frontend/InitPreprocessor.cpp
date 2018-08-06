@@ -1001,6 +1001,28 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
   if (TI.getTriple().isOSDarwin() && TI.getTriple().isSimulatorEnvironment())
     Builder.defineMacro("__APPLE_EMBEDDED_SIMULATOR__", "1");
 
+  // TODO acc2mp this is a brainless copy of OpenMP, just so OpenACC has some definitions
+  // OpenACC definition
+  // OpenACC 2.2:
+  //   In implementations that support a preprocessor, the _OPENACC
+  //   macro name is defined to have the decimal value yyyymm where
+  //   yyyy and mm are the year and the month designations of the
+  //   version of the OpenACC API that the implementation support.
+  switch (LangOpts.OpenACC) {
+  case 0:
+    break;
+  case 40:
+    Builder.defineMacro("_OPENACC", "201307");
+    break;
+  case 45:
+    Builder.defineMacro("_OPENACC", "201511");
+    break;
+  default:
+    // Default version is OpenACC 3.1, in Simd only mode - 4.5
+    Builder.defineMacro("_OPENACC", LangOpts.OpenACCSimd ? "201511" : "201107");
+    break;
+  }
+
   // OpenMP definition
   // OpenMP 2.2:
   //   In implementations that support a preprocessor, the _OPENMP

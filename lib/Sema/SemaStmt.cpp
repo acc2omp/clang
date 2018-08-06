@@ -4181,16 +4181,50 @@ void Sema::ActOnCapturedRegionError() {
 StmtResult Sema::ActOnCapturedRegionEnd(Stmt *S) {
   CapturedRegionScopeInfo *RSI = getCurCapturedRegion();
 
+  /* llvm::outs() << "              S[0] dumpColor <<<{ "; */
+  /* S->dumpColor(); */
+  /* llvm::outs() << "\n              }>>>\n"; */
+
+
   SmallVector<CapturedStmt::Capture, 4> Captures;
   SmallVector<Expr *, 4> CaptureInits;
   buildCapturedStmtCaptureList(Captures, CaptureInits, RSI->Captures);
 
+  llvm::outs() << "        Captures:\n";
+  int i = 0;
+  for (auto __iterator = Captures.begin(), __end = Captures.end();
+     __iterator != __end; __iterator++) {
+        llvm::outs() << "         ---[ Captures[" << i << "]: ";
+        ((*__iterator).getLocation()).dump(getSourceManager());
+        llvm::outs() << "\n";
+        i++;
+  }
+  llvm::outs() << "        RSI->Captures:\n";
+  i = 0;
+  for (auto __iterator = RSI->Captures.begin(), __end = RSI->Captures.end();
+     __iterator != __end; __iterator++) {
+        llvm::outs() << "         ---[ RSI->Captures[" << i << "]: ";
+        ((*__iterator).getLocation()).dump(getSourceManager());
+        llvm::outs() << "\n";
+        i++;
+  }
+
   CapturedDecl *CD = RSI->TheCapturedDecl;
   RecordDecl *RD = RSI->TheRecordDecl;
+
+  llvm::outs() << "       CD = ";
+  CD->dumpColor();
+  llvm::outs() << "       RD = ";
+  RD->dumpColor();
 
   CapturedStmt *Res = CapturedStmt::Create(
       getASTContext(), S, static_cast<CapturedRegionKind>(RSI->CapRegionKind),
       Captures, CaptureInits, CD, RD);
+
+  //TODO acc2mp Remove this leftovers debug when finished
+  /* llvm::outs() << "              Res[0] dumpColor <<<{ "; */
+  /* Res->dumpColor(); */
+  /* llvm::outs() << "\n              }>>>\n"; */
 
   CD->setBody(Res->getCapturedStmt());
   RD->completeDefinition();
@@ -4200,6 +4234,10 @@ StmtResult Sema::ActOnCapturedRegionEnd(Stmt *S) {
 
   PopDeclContext();
   PopFunctionScopeInfo();
+
+  /* llvm::outs() << "              Res[1] dumpColor <<<{ "; */
+  /* Res->dumpColor(); */
+  /* llvm::outs() << "\n              }>>>\n"; */
 
   return Res;
 }

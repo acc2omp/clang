@@ -968,7 +968,8 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_target_enter_data:
   case ACCD_target_exit_data:
   case ACCD_target_update:
-    if (Allowed == ACK_StatementsOpenACCNonStandalone) {
+    if (Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPAnyExecutable
+     || Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone) {
       Diag(Tok, diag::err_acc_immediate_directive)
           << getOpenACCDirectiveName(DKind) << 0;
     }
@@ -1014,7 +1015,6 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_target_teams_distribute_parallel_for_simd:
   case ACCD_target_teams_distribute_simd: {
     ConsumeToken();
-    llvm::outs() << " -------------- Probably ACCD_parallel_for --------------\n";
     // Parse directive name of the 'critical' directive if any.
     if (DKind == ACCD_critical) {
       BalancedDelimiterTracker T(*this, tok::l_paren,
@@ -1078,7 +1078,8 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     // If the depend clause is specified, the ordered construct is a stand-alone
     // directive.
     if (DKind == ACCD_ordered && FirstClauses[ACCC_depend].getInt()) {
-      if (Allowed == ACK_StatementsOpenACCNonStandalone) {
+      if (Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPAnyExecutable
+       || Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone) {
         Diag(Loc, diag::err_acc_immediate_directive)
             << getOpenACCDirectiveName(DKind) << 1
             << getOpenACCClauseName(ACCC_depend);

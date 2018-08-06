@@ -385,6 +385,8 @@ void CodeGenModule::checkAliases() {
 
 void CodeGenModule::clear() {
   DeferredDeclsToEmit.clear();
+  if (OpenACCRuntime)
+    OpenACCRuntime->clear();
   if (OpenMPRuntime)
     OpenMPRuntime->clear();
 }
@@ -426,6 +428,13 @@ void CodeGenModule::Release() {
     if (llvm::Function *CudaDtorFunction = CUDARuntime->makeModuleDtorFunction())
       AddGlobalDtor(CudaDtorFunction);
   }
+  if (OpenACCRuntime)
+    if (llvm::Function *OpenACCRegistrationFunction =
+            OpenACCRuntime->emitRegistrationFunction()) {
+      auto ComdatKey = OpenACCRegistrationFunction->hasComdat() ?
+        OpenACCRegistrationFunction : nullptr;
+      AddGlobalCtor(OpenACCRegistrationFunction, 0, ComdatKey);
+    }
   if (OpenMPRuntime)
     if (llvm::Function *OpenMPRegistrationFunction =
             OpenMPRuntime->emitRegistrationFunction()) {
@@ -4855,7 +4864,6 @@ llvm::Constant *CodeGenModule::GetAddrOfRTTIDescriptor(QualType Ty,
 
   return getCXXABI().getAddrOfRTTIDescriptor(Ty);
 }
-
 void CodeGenModule::EmitACCThreadPrivateDecl(const ACCThreadPrivateDecl *D) {
   // Do not emit threadprivates in simd-only mode.
   if (LangOpts.OpenACC && LangOpts.OpenACCSimd)
@@ -4865,7 +4873,7 @@ void CodeGenModule::EmitACCThreadPrivateDecl(const ACCThreadPrivateDecl *D) {
     bool PerformInit =
         VD->getAnyInitializer() &&
         !VD->getAnyInitializer()->isConstantInitializer(getContext(),
-                                                        /*ForRef=*/false);
+                                                        /*ForRef=*/false); 
 
     Address Addr(GetAddrOfGlobalVar(VD), getContext().getDeclAlign(VD));
     if (auto InitFunction = getOpenACCRuntime().emitThreadPrivateVarDefinition(

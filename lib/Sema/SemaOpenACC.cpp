@@ -961,7 +961,7 @@ DSAStackTy::DSAVarData DSAStackTy::getTopDSA(ValueDecl *D, bool FromParent) {
   //  Variables appearing in threadprivate directives are threadprivate.
   auto *VD = dyn_cast<VarDecl>(D);
   if ((VD && VD->getTLSKind() != VarDecl::TLS_None &&
-       !(VD->hasAttr<ACCThreadPrivateDeclAttr>() &&
+       !(VD->hasAttr<ACCThreadPrivateDeclAttr>() && 
          SemaRef.getLangOpts().OpenACCUseTLS &&
          SemaRef.getASTContext().getTargetInfo().isTLSSupported())) ||
       (VD && VD->getStorageClass() == SC_Register &&
@@ -975,7 +975,8 @@ DSAStackTy::DSAVarData DSAStackTy::getTopDSA(ValueDecl *D, bool FromParent) {
     DVar.RefExpr = TI->getSecond().RefExpr.getPointer();
     DVar.CKind = ACCC_threadprivate;
     return DVar;
-  } else if (VD && VD->hasAttr<ACCThreadPrivateDeclAttr>()) {
+  }
+  else if (VD  && VD->hasAttr<ACCThreadPrivateDeclAttr>() ) {
     DVar.RefExpr = buildDeclRefExpr(
         SemaRef, VD, D->getType().getNonReferenceType(),
         VD->getAttr<ACCThreadPrivateDeclAttr>()->getLocation());
@@ -2953,6 +2954,9 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   llvm::DenseMap<ValueDecl *, Expr *> VarsWithInheritedDSA;
   bool ErrorFound = false;
   ClausesWithImplicit.append(Clauses.begin(), Clauses.end());
+
+  llvm::outs() << "-- <<DEBUG>> Checkpoint 0\n";
+
   if (AStmt && !CurContext->isDependentContext()) {
     assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
 
@@ -2962,7 +2966,9 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Stmt *S = AStmt;
     while (--ThisCaptureLevel >= 0)
       S = cast<CapturedStmt>(S)->getCapturedStmt();
+    llvm::outs() << "-- <<DEBUG>> Checkpoint 0.1\n";
     DSAChecker.Visit(S);
+    llvm::outs() << "-- <<DEBUG>> Checkpoint 0.2\n";
     if (DSAChecker.isErrorFound())
       return StmtError();
     // Generate list of implicitly defined firstprivate variables.
@@ -3003,6 +3009,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
         ErrorFound = true;
     }
   }
+  llvm::outs() << "-- <<DEBUG>> Checkpoint 1\n";
 
   llvm::SmallVector<OpenACCDirectiveKind, 4> AllowedNameModifiers;
   switch (Kind) {
@@ -5484,6 +5491,10 @@ StmtResult Sema::ActOnOpenACCParallelForDirective(
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
   if (!AStmt)
     return StmtError();
+
+  llvm::outs() << "!!!!!!!!!!!! AssociatedStmt: {";
+  AStmt->dumpColor();
+  llvm::outs() << "}!!!!!!!!!!!!!!!\n";
 
   CapturedStmt *CS = cast<CapturedStmt>(AStmt);
   llvm::outs() << "!!!!!!!!!!!! CapturedStmt: {";

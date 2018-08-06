@@ -1064,11 +1064,14 @@ CursorKind.OBJ_BOOL_LITERAL_EXPR = CursorKind(145)
 # Represents the "self" expression in a ObjC method.
 CursorKind.OBJ_SELF_EXPR = CursorKind(146)
 
+# OpenACC 4.0 [2.4, Array Section].
+CursorKind.ACC_ARRAY_SECTION_EXPR = CursorKind(147)
+
 # OpenMP 4.0 [2.4, Array Section].
-CursorKind.OMP_ARRAY_SECTION_EXPR = CursorKind(147)
+CursorKind.OMP_ARRAY_SECTION_EXPR = CursorKind(148)
 
 # Represents an @available(...) check.
-CursorKind.OBJC_AVAILABILITY_CHECK_EXPR = CursorKind(148)
+CursorKind.OBJC_AVAILABILITY_CHECK_EXPR = CursorKind(149)
 
 
 # A statement whose specific kind is not exposed via this interface.
@@ -1171,125 +1174,242 @@ CursorKind.NULL_STMT = CursorKind(230)
 # Adaptor class for mixing declarations with statements and expressions.
 CursorKind.DECL_STMT = CursorKind(231)
 
+# Windows Structured Exception Handling's leave statement.
+CursorKind.SEH_LEAVE_STMT = CursorKind(232)
+
+# OpenACC parallel directive.
+CursorKind.ACC_PARALLEL_DIRECTIVE = CursorKind(233)
+
+# OpenACC SIMD directive.
+CursorKind.ACC_SIMD_DIRECTIVE = CursorKind(234)
+
+# OpenACC for directive.
+CursorKind.ACC_FOR_DIRECTIVE = CursorKind(235)
+
+# OpenACC sections directive.
+CursorKind.ACC_SECTIONS_DIRECTIVE = CursorKind(236)
+
+# OpenACC section directive.
+CursorKind.ACC_SECTION_DIRECTIVE = CursorKind(237)
+
+# OpenACC single directive.
+CursorKind.ACC_SINGLE_DIRECTIVE = CursorKind(238)
+
+# OpenACC parallel for directive.
+CursorKind.ACC_PARALLEL_FOR_DIRECTIVE = CursorKind(239)
+
+# OpenACC parallel sections directive.
+CursorKind.ACC_PARALLEL_SECTIONS_DIRECTIVE = CursorKind(240)
+
+# OpenACC task directive.
+CursorKind.ACC_TASK_DIRECTIVE = CursorKind(241)
+
+# OpenACC master directive.
+CursorKind.ACC_MASTER_DIRECTIVE = CursorKind(242)
+
+# OpenACC critical directive.
+CursorKind.ACC_CRITICAL_DIRECTIVE = CursorKind(243)
+
+# OpenACC taskyield directive.
+CursorKind.ACC_TASKYIELD_DIRECTIVE = CursorKind(244)
+
+# OpenACC barrier directive.
+CursorKind.ACC_BARRIER_DIRECTIVE = CursorKind(245)
+
+# OpenACC taskwait directive.
+CursorKind.ACC_TASKWAIT_DIRECTIVE = CursorKind(246)
+
+# OpenACC flush directive.
+CursorKind.ACC_FLUSH_DIRECTIVE = CursorKind(247)
+
+# OpenACC ordered directive.
+CursorKind.ACC_ORDERED_DIRECTIVE = CursorKind(248)
+
+# OpenACC atomic directive.
+CursorKind.ACC_ATOMIC_DIRECTIVE = CursorKind(249)
+
+# OpenACC for SIMD directive.
+CursorKind.ACC_FOR_SIMD_DIRECTIVE = CursorKind(250)
+
+# OpenACC parallel for SIMD directive.
+CursorKind.ACC_PARALLELFORSIMD_DIRECTIVE = CursorKind(251)
+
+# OpenACC target directive.
+CursorKind.ACC_TARGET_DIRECTIVE = CursorKind(252)
+
+# OpenACC teams directive.
+CursorKind.ACC_TEAMS_DIRECTIVE = CursorKind(253)
+
+# OpenACC taskgroup directive.
+CursorKind.ACC_TASKGROUP_DIRECTIVE = CursorKind(254)
+
+# OpenACC cancellation point directive.
+CursorKind.ACC_CANCELLATION_POINT_DIRECTIVE = CursorKind(255)
+
+# OpenACC cancel directive.
+CursorKind.ACC_CANCEL_DIRECTIVE = CursorKind(256)
+
+# OpenACC target data directive.
+CursorKind.ACC_TARGET_DATA_DIRECTIVE = CursorKind(257)
+
+# OpenACC taskloop directive.
+CursorKind.ACC_TASK_LOOP_DIRECTIVE = CursorKind(258)
+
+# OpenACC taskloop simd directive.
+CursorKind.ACC_TASK_LOOP_SIMD_DIRECTIVE = CursorKind(259)
+
+# OpenACC distribute directive.
+CursorKind.ACC_DISTRIBUTE_DIRECTIVE = CursorKind(260)
+
+# OpenACC target enter data directive.
+CursorKind.ACC_TARGET_ENTER_DATA_DIRECTIVE = CursorKind(261)
+
+# OpenACC target exit data directive.
+CursorKind.ACC_TARGET_EXIT_DATA_DIRECTIVE = CursorKind(262)
+
+# OpenACC target parallel directive.
+CursorKind.ACC_TARGET_PARALLEL_DIRECTIVE = CursorKind(263)
+
+# OpenACC target parallel for directive.
+CursorKind.ACC_TARGET_PARALLELFOR_DIRECTIVE = CursorKind(264)
+
+# OpenACC target update directive.
+CursorKind.ACC_TARGET_UPDATE_DIRECTIVE = CursorKind(265)
+
+# OpenACC distribute parallel for directive.
+CursorKind.ACC_DISTRIBUTE_PARALLELFOR_DIRECTIVE = CursorKind(266)
+
+# OpenACC distribute parallel for simd directive.
+CursorKind.ACC_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE = CursorKind(267)
+
+# OpenACC distribute simd directive.
+CursorKind.ACC_DISTRIBUTE_SIMD_DIRECTIVE = CursorKind(268)
+
+# OpenACC target parallel for simd directive.
+CursorKind.ACC_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE = CursorKind(269)
+
+# OpenACC target simd directive.
+CursorKind.ACC_TARGET_SIMD_DIRECTIVE = CursorKind(270)
+
+# OpenACC teams distribute directive.
+CursorKind.ACC_TEAMS_DISTRIBUTE_DIRECTIVE = CursorKind(271)
+
 # OpenMP parallel directive.
-CursorKind.OMP_PARALLEL_DIRECTIVE = CursorKind(232)
+CursorKind.OMP_PARALLEL_DIRECTIVE = CursorKind(272)
 
 # OpenMP SIMD directive.
-CursorKind.OMP_SIMD_DIRECTIVE = CursorKind(233)
+CursorKind.OMP_SIMD_DIRECTIVE = CursorKind(273)
 
 # OpenMP for directive.
-CursorKind.OMP_FOR_DIRECTIVE = CursorKind(234)
+CursorKind.OMP_FOR_DIRECTIVE = CursorKind(274)
 
 # OpenMP sections directive.
-CursorKind.OMP_SECTIONS_DIRECTIVE = CursorKind(235)
+CursorKind.OMP_SECTIONS_DIRECTIVE = CursorKind(275)
 
 # OpenMP section directive.
-CursorKind.OMP_SECTION_DIRECTIVE = CursorKind(236)
+CursorKind.OMP_SECTION_DIRECTIVE = CursorKind(276)
 
 # OpenMP single directive.
-CursorKind.OMP_SINGLE_DIRECTIVE = CursorKind(237)
+CursorKind.OMP_SINGLE_DIRECTIVE = CursorKind(277)
 
 # OpenMP parallel for directive.
-CursorKind.OMP_PARALLEL_FOR_DIRECTIVE = CursorKind(238)
+CursorKind.OMP_PARALLEL_FOR_DIRECTIVE = CursorKind(278)
 
 # OpenMP parallel sections directive.
-CursorKind.OMP_PARALLEL_SECTIONS_DIRECTIVE = CursorKind(239)
+CursorKind.OMP_PARALLEL_SECTIONS_DIRECTIVE = CursorKind(279)
 
 # OpenMP task directive.
-CursorKind.OMP_TASK_DIRECTIVE = CursorKind(240)
+CursorKind.OMP_TASK_DIRECTIVE = CursorKind(280)
 
 # OpenMP master directive.
-CursorKind.OMP_MASTER_DIRECTIVE = CursorKind(241)
+CursorKind.OMP_MASTER_DIRECTIVE = CursorKind(281)
 
 # OpenMP critical directive.
-CursorKind.OMP_CRITICAL_DIRECTIVE = CursorKind(242)
+CursorKind.OMP_CRITICAL_DIRECTIVE = CursorKind(282)
 
 # OpenMP taskyield directive.
-CursorKind.OMP_TASKYIELD_DIRECTIVE = CursorKind(243)
+CursorKind.OMP_TASKYIELD_DIRECTIVE = CursorKind(283)
 
 # OpenMP barrier directive.
-CursorKind.OMP_BARRIER_DIRECTIVE = CursorKind(244)
+CursorKind.OMP_BARRIER_DIRECTIVE = CursorKind(284)
 
 # OpenMP taskwait directive.
-CursorKind.OMP_TASKWAIT_DIRECTIVE = CursorKind(245)
+CursorKind.OMP_TASKWAIT_DIRECTIVE = CursorKind(285)
 
 # OpenMP flush directive.
-CursorKind.OMP_FLUSH_DIRECTIVE = CursorKind(246)
-
-# Windows Structured Exception Handling's leave statement.
-CursorKind.SEH_LEAVE_STMT = CursorKind(247)
+CursorKind.OMP_FLUSH_DIRECTIVE = CursorKind(286)
 
 # OpenMP ordered directive.
-CursorKind.OMP_ORDERED_DIRECTIVE = CursorKind(248)
+CursorKind.OMP_ORDERED_DIRECTIVE = CursorKind(287)
 
 # OpenMP atomic directive.
-CursorKind.OMP_ATOMIC_DIRECTIVE = CursorKind(249)
+CursorKind.OMP_ATOMIC_DIRECTIVE = CursorKind(288)
 
 # OpenMP for SIMD directive.
-CursorKind.OMP_FOR_SIMD_DIRECTIVE = CursorKind(250)
+CursorKind.OMP_FOR_SIMD_DIRECTIVE = CursorKind(289)
 
 # OpenMP parallel for SIMD directive.
-CursorKind.OMP_PARALLELFORSIMD_DIRECTIVE = CursorKind(251)
+CursorKind.OMP_PARALLELFORSIMD_DIRECTIVE = CursorKind(290)
 
 # OpenMP target directive.
-CursorKind.OMP_TARGET_DIRECTIVE = CursorKind(252)
+CursorKind.OMP_TARGET_DIRECTIVE = CursorKind(291)
 
 # OpenMP teams directive.
-CursorKind.OMP_TEAMS_DIRECTIVE = CursorKind(253)
+CursorKind.OMP_TEAMS_DIRECTIVE = CursorKind(292)
 
 # OpenMP taskgroup directive.
-CursorKind.OMP_TASKGROUP_DIRECTIVE = CursorKind(254)
+CursorKind.OMP_TASKGROUP_DIRECTIVE = CursorKind(293)
 
 # OpenMP cancellation point directive.
-CursorKind.OMP_CANCELLATION_POINT_DIRECTIVE = CursorKind(255)
+CursorKind.OMP_CANCELLATION_POINT_DIRECTIVE = CursorKind(294)
 
 # OpenMP cancel directive.
-CursorKind.OMP_CANCEL_DIRECTIVE = CursorKind(256)
+CursorKind.OMP_CANCEL_DIRECTIVE = CursorKind(295)
 
 # OpenMP target data directive.
-CursorKind.OMP_TARGET_DATA_DIRECTIVE = CursorKind(257)
+CursorKind.OMP_TARGET_DATA_DIRECTIVE = CursorKind(296)
 
 # OpenMP taskloop directive.
-CursorKind.OMP_TASK_LOOP_DIRECTIVE = CursorKind(258)
+CursorKind.OMP_TASK_LOOP_DIRECTIVE = CursorKind(297)
 
 # OpenMP taskloop simd directive.
-CursorKind.OMP_TASK_LOOP_SIMD_DIRECTIVE = CursorKind(259)
+CursorKind.OMP_TASK_LOOP_SIMD_DIRECTIVE = CursorKind(298)
 
 # OpenMP distribute directive.
-CursorKind.OMP_DISTRIBUTE_DIRECTIVE = CursorKind(260)
+CursorKind.OMP_DISTRIBUTE_DIRECTIVE = CursorKind(299)
 
 # OpenMP target enter data directive.
-CursorKind.OMP_TARGET_ENTER_DATA_DIRECTIVE = CursorKind(261)
+CursorKind.OMP_TARGET_ENTER_DATA_DIRECTIVE = CursorKind(300)
 
 # OpenMP target exit data directive.
-CursorKind.OMP_TARGET_EXIT_DATA_DIRECTIVE = CursorKind(262)
+CursorKind.OMP_TARGET_EXIT_DATA_DIRECTIVE = CursorKind(301)
 
 # OpenMP target parallel directive.
-CursorKind.OMP_TARGET_PARALLEL_DIRECTIVE = CursorKind(263)
+CursorKind.OMP_TARGET_PARALLEL_DIRECTIVE = CursorKind(302)
 
 # OpenMP target parallel for directive.
-CursorKind.OMP_TARGET_PARALLELFOR_DIRECTIVE = CursorKind(264)
+CursorKind.OMP_TARGET_PARALLELFOR_DIRECTIVE = CursorKind(303)
 
 # OpenMP target update directive.
-CursorKind.OMP_TARGET_UPDATE_DIRECTIVE = CursorKind(265)
+CursorKind.OMP_TARGET_UPDATE_DIRECTIVE = CursorKind(304)
 
 # OpenMP distribute parallel for directive.
-CursorKind.OMP_DISTRIBUTE_PARALLELFOR_DIRECTIVE = CursorKind(266)
+CursorKind.OMP_DISTRIBUTE_PARALLELFOR_DIRECTIVE = CursorKind(305)
 
 # OpenMP distribute parallel for simd directive.
-CursorKind.OMP_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE = CursorKind(267)
+CursorKind.OMP_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE = CursorKind(306)
 
 # OpenMP distribute simd directive.
-CursorKind.OMP_DISTRIBUTE_SIMD_DIRECTIVE = CursorKind(268)
+CursorKind.OMP_DISTRIBUTE_SIMD_DIRECTIVE = CursorKind(307)
 
 # OpenMP target parallel for simd directive.
-CursorKind.OMP_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE = CursorKind(269)
+CursorKind.OMP_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE = CursorKind(308)
 
 # OpenMP target simd directive.
-CursorKind.OMP_TARGET_SIMD_DIRECTIVE = CursorKind(270)
+CursorKind.OMP_TARGET_SIMD_DIRECTIVE = CursorKind(309)
 
 # OpenMP teams distribute directive.
-CursorKind.OMP_TEAMS_DISTRIBUTE_DIRECTIVE = CursorKind(271)
+CursorKind.OMP_TEAMS_DISTRIBUTE_DIRECTIVE = CursorKind(310)
 
 ###
 # Other Kinds

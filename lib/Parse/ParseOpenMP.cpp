@@ -968,7 +968,8 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
   case OMPD_target_enter_data:
   case OMPD_target_exit_data:
   case OMPD_target_update:
-    if (Allowed == ACK_StatementsOpenMPNonStandalone) {
+    if (Allowed == ACK_Statements_OpenACCAnyExecutable_OpenMPNonStandalone
+     || Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone) {
       Diag(Tok, diag::err_omp_immediate_directive)
           << getOpenMPDirectiveName(DKind) << 0;
     }
@@ -1073,13 +1074,14 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
     EndLoc = Tok.getLocation();
     // Consume final annot_pragma_openmp_end.
     ConsumeAnnotationToken();
-    llvm::outs() << "------------ Consuming tok annot_pragma_openacc_end ------------\n";
+    llvm::outs() << "------------ Consuming tok annot_pragma_openmp_end ------------\n";
 
     // OpenMP [2.13.8, ordered Construct, Syntax]
     // If the depend clause is specified, the ordered construct is a stand-alone
     // directive.
     if (DKind == OMPD_ordered && FirstClauses[OMPC_depend].getInt()) {
-      if (Allowed == ACK_StatementsOpenMPNonStandalone) {
+      if (Allowed == ACK_Statements_OpenACCAnyExecutable_OpenMPNonStandalone
+       || Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone) {
         Diag(Loc, diag::err_omp_immediate_directive)
             << getOpenMPDirectiveName(DKind) << 1
             << getOpenMPClauseName(OMPC_depend);
@@ -1095,7 +1097,15 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
       // the captured region. Code elsewhere assumes that any FunctionScopeInfo
       // should have at least one compound statement scope within it.
       AssociatedStmt = (Sema::CompoundScopeRAII(Actions), ParseStatement());
+      llvm::outs() << "------------ AssociatedStmt[0]: {";
+      AssociatedStmt.get()->dumpColor();
+      llvm::outs() << "}------------\n";
+
       AssociatedStmt = Actions.ActOnOpenMPRegionEnd(AssociatedStmt, Clauses);
+      llvm::outs() << "------------ AssociatedStmt[1]: {";
+      AssociatedStmt.get()->dumpColor();
+      llvm::outs() << "}------------\n";
+
     } else if (DKind == OMPD_target_update || DKind == OMPD_target_enter_data ||
                DKind == OMPD_target_exit_data) {
       Actions.ActOnOpenMPRegionStart(DKind, getCurScope());
@@ -1104,6 +1114,9 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
                                                   /*isStmtExpr=*/false));
       AssociatedStmt = Actions.ActOnOpenMPRegionEnd(AssociatedStmt, Clauses);
     }
+    llvm::outs() << "------------ AssociatedStmt: {";
+    AssociatedStmt.get()->dumpColor();
+    llvm::outs() << "}------------\n";
     Directive = Actions.ActOnOpenMPExecutableDirective(
         DKind, DirName, CancelRegion, Clauses, AssociatedStmt.get(), Loc,
         EndLoc);

@@ -26,21 +26,38 @@ using namespace clang;
 //===----------------------------------------------------------------------===//
 // C99 6.8: Statements and Blocks.
 //===----------------------------------------------------------------------===//
-// TODO acc2mp study if it is necessary to add support for AllowOpenACCStandalone
 /// \brief Parse a standalone statement (for instance, as the body of an 'if',
 /// 'while', or 'for').
 StmtResult Parser::ParseStatement(SourceLocation *TrailingElseLoc,
-                                  bool AllowOpenMPStandalone) {
+                                  bool AllowOpenACCStandalone,
+                                  bool AllowOpenMPStandalone ) {
   StmtResult Res;
 
   // We may get back a null statement if we found a #pragma. Keep going until
   // we get an actual statement.
   do {
     StmtVector Stmts;
+
+    AllowedConstructsKind Allowed;
+    if(AllowOpenACCStandalone){
+        if(AllowOpenMPStandalone){
+            Allowed = ACK_Statements_OpenACCAnyExecutable_OpenMPAnyExecutable;
+        }
+        else {
+            Allowed = ACK_Statements_OpenACCAnyExecutable_OpenMPNonStandalone;
+        }
+    }
+    else {
+        if(AllowOpenMPStandalone){
+            Allowed = ACK_Statements_OpenACCNonStandalone_OpenMPAnyExecutable;
+        }
+        else {
+            Allowed = ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone;
+        }
+    }
+
     Res = ParseStatementOrDeclaration(
-        Stmts, AllowOpenMPStandalone ? ACK_StatementsOpenMPAnyExecutable
-                                     : ACK_StatementsOpenMPNonStandalone,
-        TrailingElseLoc);
+        Stmts, Allowed, TrailingElseLoc);
   } while (!Res.isInvalid() && !Res.get());
 
   /* llvm::outs()<< "[DEBUG(ParseStatement)] StmtResult = [" << Res.get()->getStmtClassName() << "]\ndump = {"; */
@@ -69,6 +86,7 @@ StmtResult Parser::ParseStatement(SourceLocation *TrailingElseLoc,
 /// [OBC]   objc-try-catch-statement
 /// [OBC]   objc-synchronized-statement
 /// [GNU]   asm-statement
+/// [ACC]   openacc-construct             [TODO]
 /// [OMP]   openmp-construct             [TODO]
 ///
 ///       labeled-statement:
@@ -114,10 +132,10 @@ Parser::ParseStatementOrDeclaration(StmtVector &Stmts,
   StmtResult Res = ParseStatementOrDeclarationAfterAttributes(
       Stmts, Allowed, TrailingElseLoc, Attrs);
 
-  // MARK acc2mp remove this debug if needed
-  llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res ={";
-  Res.get()->dumpColor();
-  llvm::outs() << "}\n";
+  // TODO acc2mp remove this debug if needed
+  /* llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res ={"; */
+  /* Res.get()->dumpColor(); */
+  /* llvm::outs() << "}\n"; */
 
   assert((Attrs.empty() || Res.isInvalid() || Res.isUsable()) &&
          "attributes on empty statement");
@@ -623,7 +641,7 @@ StmtResult Parser::ParseLabeledStatement(ParsedAttributesWithRange &attrs) {
       // can't handle GNU attributes), so only call it in the one case where
       // GNU attributes are allowed.
       SubStmt = ParseStatementOrDeclarationAfterAttributes(
-          Stmts, /*Allowed=*/ACK_StatementsOpenMPNonStandalone, nullptr,
+          Stmts, /*Allowed=*/ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone, nullptr,
           TempAttrs);
       if (!TempAttrs.empty() && !SubStmt.isInvalid())
         SubStmt = Actions.ProcessStmtAttributes(

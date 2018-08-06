@@ -17,6 +17,7 @@
 #include "CGCUDARuntime.h"
 #include "CGCXXABI.h"
 #include "CGDebugInfo.h"
+#include "CGOpenACCRuntime.h"
 #include "CGOpenMPRuntime.h"
 #include "CodeGenModule.h"
 #include "CodeGenPGO.h"
@@ -117,6 +118,9 @@ CodeGenFunction::~CodeGenFunction() {
   // something.
   if (FirstBlockInfo)
     destroyBlockInfos(FirstBlockInfo);
+
+  if (getLangOpts().OpenACC && CurFn)
+    CGM.getOpenACCRuntime().functionFinished(*this);
 
   if (getLangOpts().OpenMP && CurFn)
     CGM.getOpenMPRuntime().functionFinished(*this);

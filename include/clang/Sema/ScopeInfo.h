@@ -76,12 +76,12 @@ public:
   PartialDiagnostic PD;
   SourceLocation Loc;
   const Stmt *stmt;
-  
+
   PossiblyUnreachableDiag(const PartialDiagnostic &PD, SourceLocation Loc,
                           const Stmt *stmt)
     : PD(PD), Loc(Loc), stmt(stmt) {}
 };
-    
+
 /// \brief Retains information about a function, method, or block that is
 /// currently being parsed.
 class FunctionScopeInfo {
@@ -92,7 +92,7 @@ protected:
     SK_Lambda,
     SK_CapturedRegion
   };
-  
+
 public:
   /// \brief What kind of scope we are describing.
   ///
@@ -195,7 +195,7 @@ public:
   /// current function scope.  These diagnostics are vetted for reachability
   /// prior to being emitted.
   SmallVector<PossiblyUnreachableDiag, 4> PossiblyUnreachableDiags;
-  
+
   /// \brief A list of parameters which have the nonnull attribute and are
   /// modified in the function.
   llvm::SmallPtrSet<const ParmVarDecl*, 8> ModifiedNonNullParams;
@@ -512,7 +512,7 @@ public:
     /// is only required if we are capturing ByVal and the variable's type has
     /// a non-trivial copy constructor.
     llvm::PointerIntPair<void *, 2, CaptureKind> InitExprAndCaptureKind;
-    
+
     /// \brief The source location at which the first capture occurred.
     SourceLocation Loc;
 
@@ -580,14 +580,14 @@ public:
       assert(isVariableCapture());
       return VarAndNestedAndThis.getPointer();
     }
-    
+
     /// \brief Retrieve the location at which this variable was captured.
     SourceLocation getLocation() const { return Loc; }
-    
+
     /// \brief Retrieve the source location of the ellipsis, whose presence
     /// indicates that the capture is a pack expansion.
     SourceLocation getEllipsisLoc() const { return EllipsisLoc; }
-    
+
     /// \brief Retrieve the capture type for this capture, which is effectively
     /// the type of the non-static data member in the lambda/block structure
     /// that would store this capture.
@@ -626,9 +626,9 @@ public:
   QualType ReturnType;
 
   void addCapture(VarDecl *Var, bool isBlock, bool isByref, bool isNested,
-                  SourceLocation Loc, SourceLocation EllipsisLoc, 
+                  SourceLocation Loc, SourceLocation EllipsisLoc,
                   QualType CaptureType, Expr *Cpy) {
-    Captures.push_back(Capture(Var, isBlock, isByref, isNested, Loc, 
+    Captures.push_back(Capture(Var, isBlock, isByref, isNested, Loc,
                                EllipsisLoc, CaptureType, Cpy));
     CaptureMap[Var] = Captures.size();
   }
@@ -648,13 +648,13 @@ public:
 
   /// \brief Determine whether the C++ 'this' is captured.
   bool isCXXThisCaptured() const { return CXXThisCaptureIndex != 0; }
-  
+
   /// \brief Retrieve the capture of C++ 'this', if it has been captured.
   Capture &getCXXThisCapture() {
     assert(isCXXThisCaptured() && "this has not been captured");
     return Captures[CXXThisCaptureIndex - 1];
   }
-  
+
   /// \brief Determine whether the given variable has been captured.
   bool isCaptured(VarDecl *Var) const {
     return CaptureMap.count(Var);
@@ -677,7 +677,7 @@ public:
     return Captures[Known->second - 1];
   }
 
-  static bool classof(const FunctionScopeInfo *FSI) { 
+  static bool classof(const FunctionScopeInfo *FSI) {
     return FSI->Kind == SK_Block || FSI->Kind == SK_Lambda
                                  || FSI->Kind == SK_CapturedRegion;
   }
@@ -687,7 +687,7 @@ public:
 class BlockScopeInfo final : public CapturingScopeInfo {
 public:
   BlockDecl *TheDecl;
-  
+
   /// TheScope - This is the scope for the block itself, which contains
   /// arguments etc.
   Scope *TheScope;
@@ -726,15 +726,12 @@ public:
   unsigned short OpenACCLevel;
   unsigned short OpenMPLevel;
 
-
-// TODO acc2mp
-// Figure out how to implement acc's equivalence
   CapturedRegionScopeInfo(DiagnosticsEngine &Diag, Scope *S, CapturedDecl *CD,
                           RecordDecl *RD, ImplicitParamDecl *Context,
-                          CapturedRegionKind K, unsigned OpenMPLevel)
+                          CapturedRegionKind K, unsigned Level)
     : CapturingScopeInfo(Diag, ImpCap_CapturedRegion),
       TheCapturedDecl(CD), TheRecordDecl(RD), TheScope(S),
-      ContextParam(Context), CapRegionKind(K), OpenMPLevel(OpenMPLevel)
+      ContextParam(Context), CapRegionKind(K), OpenMPLevel(Level), OpenACCLevel(Level)
   {
     Kind = SK_CapturedRegion;
   }
@@ -790,12 +787,12 @@ public:
   /// \brief Whether the lambda contains an unexpanded parameter pack.
   bool ContainsUnexpandedParameterPack;
 
-  /// \brief If this is a generic lambda, use this as the depth of 
+  /// \brief If this is a generic lambda, use this as the depth of
   /// each 'auto' parameter, during initial AST construction.
   unsigned AutoTemplateParameterDepth;
 
   /// \brief Store the list of the auto parameters for a generic lambda.
-  /// If this is a generic lambda, store the list of the auto 
+  /// If this is a generic lambda, store the list of the auto
   /// parameters converted into TemplateTypeParmDecls into a vector
   /// that can be used to construct the generic lambda's template
   /// parameter list, during initial AST construction.
@@ -805,19 +802,19 @@ public:
   /// list has been created (from the AutoTemplateParams) then
   /// store a reference to it (cache it to avoid reconstructing it).
   TemplateParameterList *GLTemplateParameterList;
-  
+
   /// \brief Contains all variable-referring-expressions (i.e. DeclRefExprs
   ///  or MemberExprs) that refer to local variables in a generic lambda
   ///  or a lambda in a potentially-evaluated-if-used context.
-  ///  
-  ///  Potentially capturable variables of a nested lambda that might need 
-  ///   to be captured by the lambda are housed here.  
+  ///
+  ///  Potentially capturable variables of a nested lambda that might need
+  ///   to be captured by the lambda are housed here.
   ///  This is specifically useful for generic lambdas or
   ///  lambdas within a a potentially evaluated-if-used context.
   ///  If an enclosing variable is named in an expression of a lambda nested
-  ///  within a generic lambda, we don't always know know whether the variable 
+  ///  within a generic lambda, we don't always know know whether the variable
   ///  will truly be odr-used (i.e. need to be captured) by that nested lambda,
-  ///  until its instantiation. But we still need to capture it in the 
+  ///  until its instantiation. But we still need to capture it in the
   ///  enclosing lambda if all intervening lambdas can capture the variable.
 
   llvm::SmallVector<Expr*, 4> PotentiallyCapturingExprs;

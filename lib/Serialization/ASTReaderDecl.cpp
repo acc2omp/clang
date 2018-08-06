@@ -2630,6 +2630,7 @@ static bool isConsumerInterestedIn(ASTContext &Ctx, Decl *D, bool HasBody) {
       isa<PragmaCommentDecl>(D) ||
       isa<PragmaDetectMismatchDecl>(D))
     return true;
+
   if (isa<ACCThreadPrivateDecl>(D) || isa<ACCDeclareReductionDecl>(D))
     return !D->getDeclContext()->isFunctionOrMethod();
   if (isa<OMPThreadPrivateDecl>(D) || isa<OMPDeclareReductionDecl>(D))

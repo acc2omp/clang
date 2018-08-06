@@ -684,9 +684,6 @@ Parser::ParseExternalDeclaration(ParsedAttributesWithRange &attrs,
     return nullptr;
   case tok::annot_pragma_openacc: {
     AccessSpecifier AS = AS_none;
-
-    //TODO acc2mp
-    // Create OpenACC's own function
     return ParseOpenACCDeclarativeDirectiveWithExtDecl(AS, attrs);
   }
   case tok::annot_pragma_openmp: {

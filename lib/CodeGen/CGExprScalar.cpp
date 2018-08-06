@@ -2281,6 +2281,13 @@ ScalarExprEmitter::VisitUnaryExprOrTypeTraitExpr(
 
       return size;
     }
+  } else if (E->getKind() == UETT_OpenACCRequiredSimdAlign) {
+    auto Alignment =
+        CGF.getContext()
+            .toCharUnitsFromBits(CGF.getContext().getOpenACCDefaultSimdAlign(
+                E->getTypeOfArgument()->getPointeeType()))
+            .getQuantity();
+    return llvm::ConstantInt::get(CGF.SizeTy, Alignment);
   } else if (E->getKind() == UETT_OpenMPRequiredSimdAlign) {
     auto Alignment =
         CGF.getContext()

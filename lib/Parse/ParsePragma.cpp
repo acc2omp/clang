@@ -304,12 +304,12 @@ void Parser::initializePragmaHandlers() {
 
   if (getLangOpts().OpenACC){
     OpenACCHandler.reset(new PragmaOpenACCHandler());
-    llvm::outs()<<"OPENACC langOpts enabled!!!" << "\n"; 
+    llvm::outs()<<"OPENACC langOpts enabled!!!" << "\n";
   }
   else
     OpenACCHandler.reset(new PragmaNoOpenACCHandler());
   PP.AddPragmaHandler(OpenACCHandler.get());
-  
+
   if (getLangOpts().OpenMP)
     OpenMPHandler.reset(new PragmaOpenMPHandler());
   else
@@ -2181,7 +2181,7 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   PP.EnterTokenStream(std::move(Toks), Pragma.size(),
                       /*DisableMacroExpansion=*/false);
 
-  
+
 
   //TODO acc2mp THIS IS JUST A DEBUG, remove later
   llvm::outs()<<"Pragma token size is: "<< Pragma.size() << "\n";
@@ -2192,8 +2192,8 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   }
 
   llvm::outs()<<"\nPassed tokens into PP.EnterTokenStream()\n";
-  
-  
+
+
 }
 
 

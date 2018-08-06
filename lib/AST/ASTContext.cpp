@@ -9418,24 +9418,24 @@ bool ASTContext::DeclMustBeEmitted(const Decl *D) {
   } else if (isa<PragmaCommentDecl>(D))
     return true;
 
-/* // OpenACC copy */
-/*   else if (isa<ACCThreadPrivateDecl>(D) || */
-/*            D->hasAttr<ACCDeclareTargetDeclAttr>()) */
-/*     return true; */
-/* // TODO acc2mp */
+/* // TODO acc2mp ASTContext::DeclMustBeEmitted verify if this copy is right*/
 /* // Probably do something about this construct. It doesn't make much sense two replicate else if */
 /*   else if (isa<PragmaDetectMismatchDecl>(D)) */
 /*     return true; */
-/*   else if (isa<ACCThreadPrivateDecl>(D)) */
-/*     return !D->getDeclContext()->isDependentContext(); */
-/*   else if (isa<ACCDeclareReductionDecl>(D)) */
-/*     return !D->getDeclContext()->isDependentContext(); */
-
+  else if (isa<ACCThreadPrivateDecl>(D) ||
+           D->hasAttr<ACCDeclareTargetDeclAttr>())
+    return true;
   else if (isa<OMPThreadPrivateDecl>(D) ||
            D->hasAttr<OMPDeclareTargetDeclAttr>())
     return true;
+
   else if (isa<PragmaDetectMismatchDecl>(D))
     return true;
+
+  else if (isa<ACCThreadPrivateDecl>(D))
+    return !D->getDeclContext()->isDependentContext();
+  else if (isa<ACCDeclareReductionDecl>(D))
+    return !D->getDeclContext()->isDependentContext();
   else if (isa<OMPThreadPrivateDecl>(D))
     return !D->getDeclContext()->isDependentContext();
   else if (isa<OMPDeclareReductionDecl>(D))
