@@ -46,6 +46,7 @@ public:
     static_cast<PTR(CLASS)>(S), std::forward<ParamTys>(P)...)
 
   RetTy Visit(PTR(Stmt) S, ParamTys... P) {
+    /* llvm::outs() << "-- <<DEBUG>> Checkpoint DSAChecker->Visit 0\n"; */
     // If we have a binary expr, dispatch to the subcode of the binop.  A smart
     // optimizer (e.g. LLVM) will fold this comparison into the switch stmt
     // below.
@@ -106,6 +107,7 @@ public:
       }
     }
 
+    /* llvm::outs() << "-- <<DEBUG>> Checkpoint DSAChecker->Visit 1\n"; */
     // Top switch stmt: dispatch to VisitFooStmt for each FooStmt.
     switch (S->getStmtClass()) {
     default: llvm_unreachable("Unknown stmt kind!");
@@ -114,6 +116,7 @@ public:
     case Stmt::CLASS ## Class: DISPATCH(CLASS, CLASS);
 #include "clang/AST/StmtNodes.inc"
     }
+    /* llvm::outs() << "-- <<DEBUG>> Checkpoint DSAChecker->Visit 2\n"; */
   }
 
   // If the implementation chooses not to implement a certain visit method, fall

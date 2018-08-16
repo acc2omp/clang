@@ -7577,6 +7577,10 @@ ExprResult Sema::ActOnFinishFullExpr(Expr *FE, SourceLocation CC,
   // lambda where we've entered the introducer but not the body, or represent a
   // lambda where we've entered the body, depending on where the
   // parser/instantiation has got to).
+
+  llvm::outs() << "[Debug] :: ActOnFinishFullExpr :: IsLambdaInitCaptureInitualizer = "
+      << (IsLambdaInitCaptureInitializer ? "true" : "false") << "\n";
+
   if (!IsLambdaInitCaptureInitializer &&
       DiagnoseUnexpandedParameterPack(FullExpr.get()))
     return ExprError();

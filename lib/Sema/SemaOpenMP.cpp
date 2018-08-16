@@ -2520,24 +2520,24 @@ StmtResult Sema::ActOnOpenMPRegionEnd(StmtResult S,
     ErrorFound = true;
     return StmtError();
   }
-  llvm::outs() << "         ________________________________\n";
-  llvm::outs() << "        |       ActOnOpenMPRegionEnd    |\n";
-  llvm::outs() << "         TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n";
-  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
-  llvm::outs() << "         ||||||||||custom||dump||||||||||\n";
-  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n\n";
-  llvm::outs() << "         ArrayRef<OMPClause *> Clauses = size[" << Clauses.size() << "]= {\n";
-  int i = 0;
-  for (auto __iterator = Clauses.begin(), __end = Clauses.end();
-     __iterator != __end; __iterator++) {
-        llvm::outs() << "         ---[ Clause[" << i << "]: ClauseKind " << getOpenMPClauseName((*__iterator)->getClauseKind()) << " ]\n";
-        i++;
-  }
-  llvm::outs() << "         }\n";
+  /* llvm::outs() << "         ________________________________\n"; */
+  /* llvm::outs() << "        |       ActOnOpenMPRegionEnd    |\n"; */
+  /* llvm::outs() << "         TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n"; */
+  /* llvm::outs() << "         ||||||||||||||||||||||||||||||||\n"; */
+  /* llvm::outs() << "         ||||||||||custom||dump||||||||||\n"; */
+  /* llvm::outs() << "         ||||||||||||||||||||||||||||||||\n\n"; */
+  /* llvm::outs() << "         ArrayRef<OMPClause *> Clauses = size[" << Clauses.size() << "]= {\n"; */
+  /* int i = 0; */
+  /* for (auto __iterator = Clauses.begin(), __end = Clauses.end(); */
+  /*    __iterator != __end; __iterator++) { */
+  /*       llvm::outs() << "         ---[ Clause[" << i << "]: ClauseKind " << getOpenMPClauseName((*__iterator)->getClauseKind()) << " ]\n"; */
+  /*       i++; */
+  /* } */
+  /* llvm::outs() << "         }\n"; */
 
-  llvm::outs() << "         S[0] dumpColor <{ ";
-  S.get()->dumpColor();
-  llvm::outs() << "\n         }>\n";
+  /* llvm::outs() << "         S[0] dumpColor <{ "; */
+  /* S.get()->dumpColor(); */
+  /* llvm::outs() << "\n         }>\n"; */
 
   SmallVector<OpenMPDirectiveKind, 4> CaptureRegions;
   getOpenMPCaptureRegions(CaptureRegions, DSAStack->getCurrentDirective());
@@ -2640,21 +2640,23 @@ StmtResult Sema::ActOnOpenMPRegionEnd(StmtResult S,
       }
     }
 
-    llvm::outs() << "         SR[0] dumpColor <{ ";
-    SR.get()->dumpColor();
-    SR.get()->dumpPretty(this->getASTContext());
-    llvm::outs() << "\n         }>\n";
+    /* llvm::outs() << "         SR[0] dumpColor <{ "; */
+    /* SR.get()->dumpColor(); */
+    /* SR.get()->dumpPretty(this->getASTContext()); */
+    /* llvm::outs() << "\n         }>\n"; */
 
+    llvm::outs() << "@@@@@ <Debug> The end is near. This bracket is expected to never close {\n";
     SR = ActOnCapturedRegionEnd(SR.get());
-    llvm::outs() << "         SR[1] dumpColor <{ ";
-    SR.get()->dumpPretty(this->getASTContext());
-    SR.get()->dumpColor();
-    llvm::outs() << "\n         }>\n";
+    llvm::outs() << "@@@@@ <Debug> It's a miracle. The bracket closed }\n";
+    /* llvm::outs() << "         SR[1] dumpColor <{ "; */
+    /* SR.get()->dumpPretty(this->getASTContext()); */
+    /* SR.get()->dumpColor(); */
+    /* llvm::outs() << "\n         }>\n"; */
   }
-  llvm::outs() << "\n";
-  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
-  llvm::outs() << "        |       ActOnOpenMPRegionEnd     |\n";
-  llvm::outs() << "        |________________________________|\n";
+  /* llvm::outs() << "\n"; */
+  /* llvm::outs() << "         ||||||||||||||||||||||||||||||||\n"; */
+  /* llvm::outs() << "        |       ActOnOpenMPRegionEnd     |\n"; */
+  /* llvm::outs() << "        |________________________________|\n"; */
   return SR;
 }
 

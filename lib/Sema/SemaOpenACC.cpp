@@ -2060,6 +2060,7 @@ public:
       Visit(E->getBase());
   }
   void VisitACCExecutableDirective(ACCExecutableDirective *S) {
+    llvm::outs() << "-- <<DEBUG>> Checkpoint DSAChecker 0\n";
     for (auto *C : S->clauses()) {
       // Skip analysis of arguments of implicitly defined firstprivate clause
       // for task|target directives.
@@ -2073,6 +2074,7 @@ public:
         }
       }
     }
+    llvm::outs() << "-- <<DEBUG>> Checkpoint DSAChecker 1\n";
   }
   void VisitStmt(Stmt *S) {
     for (auto *C : S->children()) {
@@ -2621,7 +2623,9 @@ StmtResult Sema::ActOnOpenACCRegionEnd(StmtResult S,
         }
       }
     }
+    llvm::outs() << "@@@@@ <Debug> The end is near. This bracket is expected to never close {\n";
     SR = ActOnCapturedRegionEnd(SR.get());
+    llvm::outs() << "@@@@@ <Debug> It's a miracle. The bracket closed }\n";
   }
   return SR;
 }
@@ -2944,6 +2948,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     OpenACCDirectiveKind CancelRegion, ArrayRef<ACCClause *> Clauses,
     Stmt *AStmt, SourceLocation StartLoc, SourceLocation EndLoc) {
   StmtResult Res = StmtError();
+  /* llvm::outs() << "-- <<DEBUG>> Checkpoint X\n"; */
   // First check CancelRegion which is then used in checkNestingOfRegions.
   if (checkCancelRegion(*this, Kind, CancelRegion, StartLoc) ||
       checkNestingOfRegions(*this, DSAStack, Kind, DirName, CancelRegion,
@@ -2955,8 +2960,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   bool ErrorFound = false;
   ClausesWithImplicit.append(Clauses.begin(), Clauses.end());
 
-  llvm::outs() << "-- <<DEBUG>> Checkpoint 0\n";
-
+  /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0\n"; */
   if (AStmt && !CurContext->isDependentContext()) {
     assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
 
@@ -2966,9 +2970,11 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Stmt *S = AStmt;
     while (--ThisCaptureLevel >= 0)
       S = cast<CapturedStmt>(S)->getCapturedStmt();
-    llvm::outs() << "-- <<DEBUG>> Checkpoint 0.1\n";
+    /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0.0\n"; */
+    /* S->dumpColor(); */
+    /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0.1\n"; */
     DSAChecker.Visit(S);
-    llvm::outs() << "-- <<DEBUG>> Checkpoint 0.2\n";
+    /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0.2\n"; */
     if (DSAChecker.isErrorFound())
       return StmtError();
     // Generate list of implicitly defined firstprivate variables.
@@ -3009,7 +3015,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
         ErrorFound = true;
     }
   }
-  llvm::outs() << "-- <<DEBUG>> Checkpoint 1\n";
+  /* llvm::outs() << "-- <<DEBUG>> Checkpoint 1\n"; */
 
   llvm::SmallVector<OpenACCDirectiveKind, 4> AllowedNameModifiers;
   switch (Kind) {

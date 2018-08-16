@@ -28,6 +28,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -35,7 +36,6 @@
 #include <string>
 
 namespace llvm {
-
 class FoldingSetNodeID;
 
 } // namespace llvm
@@ -93,9 +93,9 @@ protected:
     friend class Stmt;
 
     /// \brief The statement class.
-    unsigned sClass : 8;
+    unsigned sClass : 9;
   };
-  enum { NumStmtBits = 8 };
+  enum { NumStmtBits = 9 };
 
   class CompoundStmtBitfields {
     friend class CompoundStmt;
@@ -146,7 +146,7 @@ protected:
     unsigned InstantiationDependent : 1;
     unsigned ContainsUnexpandedParameterPack : 1;
   };
-  enum { NumExprBits = 17 };
+  enum { NumExprBits = 18 };
 
   class CharacterLiteralBitfields {
     friend class CharacterLiteral;
@@ -376,6 +376,7 @@ public:
   }
 
   StmtClass getStmtClass() const {
+    /* llvm::outs() << "                        >>>>>>>>>>>         getStmtClass(); StmtBits.sClass = " << StmtBits.sClass << "\n"; */
     return static_cast<StmtClass>(StmtBits.sClass);
   }
 
@@ -2121,7 +2122,7 @@ private:
 
   /// \brief The pointer part is the implicit the outlined function and the
   /// int part is the captured region kind, 'CR_Default' etc.
-  llvm::PointerIntPair<CapturedDecl *, 1, CapturedRegionKind> CapDeclAndKind;
+  llvm::PointerIntPair<CapturedDecl *, 2, CapturedRegionKind> CapDeclAndKind;
 
   /// \brief The record for captured variables, a RecordDecl or CXXRecordDecl.
   RecordDecl *TheRecordDecl = nullptr;

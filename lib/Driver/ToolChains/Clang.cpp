@@ -3091,7 +3091,7 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   bool IsOpenACCDevice = JA.isDeviceOffloading(Action::OFK_OpenACC);
   bool IsOpenMPDevice = JA.isDeviceOffloading(Action::OFK_OpenMP);
   assert((IsCuda
-         ||(Input.size() == 2 && (IsOpenACCDevice || IsOpenMPDevice))
+         ||(Inputs.size() == 2 && (IsOpenACCDevice || IsOpenMPDevice))
          || Inputs.size() == 1) &&
          "Unable to handle multiple inputs.");
 

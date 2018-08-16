@@ -173,7 +173,7 @@ namespace  {
 
         FC = OrigFC;
 
-        OS << "doDumpChild(): ";
+        /* OS << "doDumpChild(): "; */
         doDumpChild();
 
         // If any children are left, they're the last at their nesting level.
@@ -1040,9 +1040,9 @@ void ASTDumper::dumpObjCTypeParamList(const ObjCTypeParamList *typeParams) {
 //===----------------------------------------------------------------------===//
 
 void ASTDumper::dumpDecl(const Decl *D) {
-  OS << " --- dumpDecl : [K:" << D->getKind() <<"] ";
-  OS << D->getDeclKindName();
-  OS << " --- ";
+  /* OS << " --- dumpDecl : [K:" << D->getKind() <<"] "; */
+  /* OS << D->getDeclKindName(); */
+  /* OS << " --- "; */
   dumpChild([=] {
     if (!D) {
       ColorScope Color(*this, NullColor);
@@ -1054,20 +1054,20 @@ void ASTDumper::dumpDecl(const Decl *D) {
       ColorScope Color(*this, DeclKindNameColor);
       OS << D->getDeclKindName() << "Decl";
     }
-    OS << "X[0] ";
+    /* OS << "X[0] "; */
     dumpPointer(D);
     if (D->getLexicalDeclContext() != D->getDeclContext())
       OS << " parent " << cast<Decl>(D->getDeclContext());
-    OS << "X[1] ";
+    /* OS << "X[1] "; */
     dumpPreviousDecl(OS, D);
-    OS << "X[2] ";
+    /* OS << "X[2] "; */
     SourceRange sr = D->getSourceRange();
-    OS << "X[2.5] ";
+    /* OS << "X[2.5] "; */
     dumpSourceRange(D->getSourceRange());
-    OS << "X[3] ";
-    OS << ' ';
+    /* OS << "X[3] "; */
+    /* OS << ' '; */
     dumpLocation(D->getLocation());
-    OS << "X[4] ";
+    /* OS << "X[4] "; */
     if (D->isFromASTFile())
       OS << " imported";
     if (Module *M = D->getOwningModule())
@@ -2009,19 +2009,19 @@ void ASTDumper::dumpStmt(const Stmt *S) {
       OS << "<<<NULL>>>";
       return;
     }
-    llvm::errs() << "T[0] ";
+    /* llvm::errs() << "T[0] "; */
 
     // Some statements have custom mechanisms for dumping their children.
     if (const DeclStmt *DS = dyn_cast<DeclStmt>(S)) {
       VisitDeclStmt(DS);
       return;
     }
-    llvm::errs() << "T[1] ";
+    /* llvm::errs() << "T[1] "; */
     if (const GenericSelectionExpr *GSE = dyn_cast<GenericSelectionExpr>(S)) {
       VisitGenericSelectionExpr(GSE);
       return;
     }
-    llvm::errs() << "T[2] ";
+    /* llvm::errs() << "T[2] "; */
 
     ConstStmtVisitor<ASTDumper>::Visit(S);
 
@@ -2030,7 +2030,7 @@ void ASTDumper::dumpStmt(const Stmt *S) {
       /* llvm::outs() << "\n//DumpingSubStmt[" << i++ << "]//"; */
       dumpStmt(SubStmt);
     }
-    llvm::errs() << "T[3] ";
+    /* llvm::errs() << "T[3] "; */
   });
 }
 

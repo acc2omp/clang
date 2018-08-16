@@ -339,6 +339,10 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
     K = CXCursor_ArraySubscriptExpr;
     break;
 
+  case Stmt::ACCArraySectionExprClass:
+    K = CXCursor_ACCArraySectionExpr;
+    break;
+
   case Stmt::OMPArraySectionExprClass:
     K = CXCursor_OMPArraySectionExpr;
     break;
@@ -542,6 +546,150 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::MSDependentExistsStmtClass:
     K = CXCursor_UnexposedStmt;
     break;
+// MYLABEL
+//
+  case Stmt::ACCParallelDirectiveClass:
+    K = CXCursor_ACCParallelDirective;
+    break;
+  case Stmt::ACCSimdDirectiveClass:
+    K = CXCursor_ACCSimdDirective;
+    break;
+  case Stmt::ACCForDirectiveClass:
+    K = CXCursor_ACCForDirective;
+    break;
+  case Stmt::ACCForSimdDirectiveClass:
+    K = CXCursor_ACCForSimdDirective;
+    break;
+  case Stmt::ACCSectionsDirectiveClass:
+    K = CXCursor_ACCSectionsDirective;
+    break;
+  case Stmt::ACCSectionDirectiveClass:
+    K = CXCursor_ACCSectionDirective;
+    break;
+  case Stmt::ACCSingleDirectiveClass:
+    K = CXCursor_ACCSingleDirective;
+    break;
+  case Stmt::ACCMasterDirectiveClass:
+    K = CXCursor_ACCMasterDirective;
+    break;
+  case Stmt::ACCCriticalDirectiveClass:
+    K = CXCursor_ACCCriticalDirective;
+    break;
+  case Stmt::ACCParallelForDirectiveClass:
+    K = CXCursor_ACCParallelForDirective;
+    break;
+  case Stmt::ACCParallelForSimdDirectiveClass:
+    K = CXCursor_ACCParallelForSimdDirective;
+    break;
+  case Stmt::ACCParallelSectionsDirectiveClass:
+    K = CXCursor_ACCParallelSectionsDirective;
+    break;
+  case Stmt::ACCTaskDirectiveClass:
+    K = CXCursor_ACCTaskDirective;
+    break;
+  case Stmt::ACCTaskyieldDirectiveClass:
+    K = CXCursor_ACCTaskyieldDirective;
+    break;
+  case Stmt::ACCBarrierDirectiveClass:
+    K = CXCursor_ACCBarrierDirective;
+    break;
+  case Stmt::ACCTaskwaitDirectiveClass:
+    K = CXCursor_ACCTaskwaitDirective;
+    break;
+  case Stmt::ACCTaskgroupDirectiveClass:
+    K = CXCursor_ACCTaskgroupDirective;
+    break;
+  case Stmt::ACCFlushDirectiveClass:
+    K = CXCursor_ACCFlushDirective;
+    break;
+  case Stmt::ACCOrderedDirectiveClass:
+    K = CXCursor_ACCOrderedDirective;
+    break;
+  case Stmt::ACCAtomicDirectiveClass:
+    K = CXCursor_ACCAtomicDirective;
+    break;
+  case Stmt::ACCTargetDirectiveClass:
+    K = CXCursor_ACCTargetDirective;
+    break;
+  case Stmt::ACCTargetDataDirectiveClass:
+    K = CXCursor_ACCTargetDataDirective;
+    break;
+  case Stmt::ACCTargetEnterDataDirectiveClass:
+    K = CXCursor_ACCTargetEnterDataDirective;
+    break;
+  case Stmt::ACCTargetExitDataDirectiveClass:
+    K = CXCursor_ACCTargetExitDataDirective;
+    break;
+  case Stmt::ACCTargetParallelDirectiveClass:
+    K = CXCursor_ACCTargetParallelDirective;
+    break;
+  case Stmt::ACCTargetParallelForDirectiveClass:
+    K = CXCursor_ACCTargetParallelForDirective;
+    break;
+  case Stmt::ACCTargetUpdateDirectiveClass:
+    K = CXCursor_ACCTargetUpdateDirective;
+    break;
+  case Stmt::ACCTeamsDirectiveClass:
+    K = CXCursor_ACCTeamsDirective;
+    break;
+  case Stmt::ACCCancellationPointDirectiveClass:
+    K = CXCursor_ACCCancellationPointDirective;
+    break;
+  case Stmt::ACCCancelDirectiveClass:
+    K = CXCursor_ACCCancelDirective;
+    break;
+  case Stmt::ACCTaskLoopDirectiveClass:
+    K = CXCursor_ACCTaskLoopDirective;
+    break;
+  case Stmt::ACCTaskLoopSimdDirectiveClass:
+    K = CXCursor_ACCTaskLoopSimdDirective;
+    break;
+  case Stmt::ACCDistributeDirectiveClass:
+    K = CXCursor_ACCDistributeDirective;
+    break;
+  case Stmt::ACCDistributeParallelForDirectiveClass:
+    K = CXCursor_ACCDistributeParallelForDirective;
+    break;
+  case Stmt::ACCDistributeParallelForSimdDirectiveClass:
+    K = CXCursor_ACCDistributeParallelForSimdDirective;
+    break;
+  case Stmt::ACCDistributeSimdDirectiveClass:
+    K = CXCursor_ACCDistributeSimdDirective;
+    break;
+  case Stmt::ACCTargetParallelForSimdDirectiveClass:
+    K = CXCursor_ACCTargetParallelForSimdDirective;
+    break;
+  case Stmt::ACCTargetSimdDirectiveClass:
+    K = CXCursor_ACCTargetSimdDirective;
+    break;
+  case Stmt::ACCTeamsDistributeDirectiveClass:
+    K = CXCursor_ACCTeamsDistributeDirective;
+    break;
+  case Stmt::ACCTeamsDistributeSimdDirectiveClass:
+    K = CXCursor_ACCTeamsDistributeSimdDirective;
+    break;
+  case Stmt::ACCTeamsDistributeParallelForSimdDirectiveClass:
+    K = CXCursor_ACCTeamsDistributeParallelForSimdDirective;
+    break;
+  case Stmt::ACCTeamsDistributeParallelForDirectiveClass:
+    K = CXCursor_ACCTeamsDistributeParallelForDirective;
+    break;
+  case Stmt::ACCTargetTeamsDirectiveClass:
+    K = CXCursor_ACCTargetTeamsDirective;
+    break;
+  case Stmt::ACCTargetTeamsDistributeDirectiveClass:
+    K = CXCursor_ACCTargetTeamsDistributeDirective;
+    break;
+  case Stmt::ACCTargetTeamsDistributeParallelForDirectiveClass:
+    K = CXCursor_ACCTargetTeamsDistributeParallelForDirective;
+    break;
+  case Stmt::ACCTargetTeamsDistributeParallelForSimdDirectiveClass:
+    K = CXCursor_ACCTargetTeamsDistributeParallelForSimdDirective;
+    break;
+  case Stmt::ACCTargetTeamsDistributeSimdDirectiveClass:
+    K = CXCursor_ACCTargetTeamsDistributeSimdDirective;
+    break;
+// MYLABEL
   case Stmt::OMPParallelDirectiveClass:
     K = CXCursor_OMPParallelDirective;
     break;
