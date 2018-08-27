@@ -39,6 +39,13 @@ void AddRunTimeLibs(const ToolChain &TC, const Driver &D,
                     llvm::opt::ArgStringList &CmdArgs,
                     const llvm::opt::ArgList &Args);
 
+void AddOpenACCLinkerScript(const ToolChain &TC, Compilation &C,
+                           const InputInfo &Output,
+                           const InputInfoList &Inputs,
+                           const llvm::opt::ArgList &Args,
+                           llvm::opt::ArgStringList &CmdArgs,
+                           const JobAction &JA);
+
 void AddOpenMPLinkerScript(const ToolChain &TC, Compilation &C,
                            const InputInfo &Output,
                            const InputInfoList &Inputs,
@@ -66,6 +73,11 @@ void AddAssemblerKPIC(const ToolChain &ToolChain,
 
 void addArchSpecificRPath(const ToolChain &TC, const llvm::opt::ArgList &Args,
                           llvm::opt::ArgStringList &CmdArgs);
+
+/// Returns true, if an OpenACC runtime has been added.
+bool addOpenACCRuntime(llvm::opt::ArgStringList &CmdArgs, const ToolChain &TC,
+                      const llvm::opt::ArgList &Args,
+                      bool IsOffloadingHost = false, bool GompNeedsRT = false);
 /// Returns true, if an OpenMP runtime has been added.
 bool addOpenMPRuntime(llvm::opt::ArgStringList &CmdArgs, const ToolChain &TC,
                       const llvm::opt::ArgList &Args,

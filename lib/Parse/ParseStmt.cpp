@@ -133,9 +133,9 @@ Parser::ParseStatementOrDeclaration(StmtVector &Stmts,
       Stmts, Allowed, TrailingElseLoc, Attrs);
 
   // TODO acc2mp remove this debug if needed
-  /* llvm::outs() << "<DEBUG>(ParseStatementOrDeclaration): Res ={"; */
-  /* Res.get()->dumpColor(); */
-  /* llvm::outs() << "}\n"; */
+  llvm::outs() << "<<<MAIN DEBUG>>>(ParseStatementOrDeclaration): Res ={";
+  Res.get()->dumpColor();
+  llvm::outs() << "}\n";
 
   assert((Attrs.empty() || Res.isInvalid() || Res.isUsable()) &&
          "attributes on empty statement");
@@ -782,6 +782,7 @@ StmtResult Parser::ParseCaseStatement(bool MissingCase, ExprResult Expr) {
     if (Case.isInvalid()) {
       if (TopLevelCase.isInvalid())  // No parsed case stmts.
         return ParseStatement(/*TrailingElseLoc=*/nullptr,
+                             /*AllowOpenACCStandalone=*/true,
                               /*AllowOpenMPStandalone=*/true);
       // Otherwise, just don't add it as a nested case.
     } else {
@@ -803,6 +804,7 @@ StmtResult Parser::ParseCaseStatement(bool MissingCase, ExprResult Expr) {
 
   if (Tok.isNot(tok::r_brace)) {
     SubStmt = ParseStatement(/*TrailingElseLoc=*/nullptr,
+                             /*AllowOpenACCStandalone=*/true,
                              /*AllowOpenMPStandalone=*/true);
   } else {
     // Nicely diagnose the common error "switch (X) { case 4: }", which is
@@ -856,6 +858,7 @@ StmtResult Parser::ParseDefaultStatement() {
 
   if (Tok.isNot(tok::r_brace)) {
     SubStmt = ParseStatement(/*TrailingElseLoc=*/nullptr,
+                             /*AllowOpenACCStandalone=*/true,
                              /*AllowOpenMPStandalone=*/true);
   } else {
     // Diagnose the common error "switch (X) {... default: }", which is

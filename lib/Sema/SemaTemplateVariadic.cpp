@@ -396,13 +396,6 @@ bool Sema::DiagnoseUnexpandedParameterPack(SourceLocation Loc,
 
 bool Sema::DiagnoseUnexpandedParameterPack(Expr *E,
                                         UnexpandedParameterPackContext UPPC) {
-  // TODO acc2mp remove this debug when finished
-  llvm::outs() << " :: DiagnoseUnexpandedParameterPack :: Expr E -> dumpColor() {\n";
-  E->dumpColor();
-  llvm::outs() << "}\n";
-  llvm::outs() << "/ / / / Checking !E->containsUnexpandedParameterPack() = "
-      << (!E->containsUnexpandedParameterPack() ? "true" : "false") << "\n";
-
   // C++0x [temp.variadic]p5:
   //   An appearance of a name of a parameter pack that is not expanded is
   //   ill-formed.

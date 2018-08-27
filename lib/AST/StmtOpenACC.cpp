@@ -342,26 +342,9 @@ ACCParallelForDirective *ACCParallelForDirective::Create(
                          sizeof(Stmt *) *
                              numLoopChildren(CollapsedNum, ACCD_parallel_for));
 
-  llvm::outs() << "         ________________________________\n";
-  llvm::outs() << "        |     ACCParallelForDirective    |\n";
-  llvm::outs() << "         TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n";
-  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
-  llvm::outs() << "         |||||||||||param||dump||||||||||\n";
-  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n\n";
-  llvm::outs() << "         ArrayRef<ACCClause *> Clauses = [" << Clauses.size() << "]= {\n";
-  for (auto __iterator = Clauses.begin(), __end = Clauses.end();
-     __iterator != __end; __iterator++) {
-        llvm::outs() << "         ---[ Clause: ClauseKind " << getOpenACCClauseName((*__iterator)->getClauseKind()) << " ]\n";
-  }
-  llvm::outs() << "         }\n";
-
   ACCParallelForDirective *Dir = new (Mem)
       ACCParallelForDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
-  llvm::outs() << "         Dir[0] dumpColor <{ ";
-  Dir->dumpColor();
-  llvm::outs() << "\n         }>\n";
-
   Dir->setAssociatedStmt(AssociatedStmt);
   Dir->setIterationVariable(Exprs.IterationVarRef);
   Dir->setLastIteration(Exprs.LastIteration);
@@ -385,15 +368,6 @@ ACCParallelForDirective *ACCParallelForDirective::Create(
   Dir->setFinals(Exprs.Finals);
   Dir->setPreInits(Exprs.PreInits);
   Dir->setHasCancel(HasCancel);
-
-  llvm::outs() << "         Dir[final] dumpColor <{ ";
-  Dir->dumpColor();
-  llvm::outs() << "\n         }>\n";
-
-  llvm::outs() << "\n";
-  llvm::outs() << "         ||||||||||||||||||||||||||||||||\n";
-  llvm::outs() << "        |     ACCParallelForDirective    |\n";
-  llvm::outs() << "        |________________________________|\n";
   return Dir;
 }
 

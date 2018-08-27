@@ -1761,9 +1761,6 @@ void Sema::PushCapturedRegionScope(Scope *S, CapturedDecl *CD, RecordDecl *RD,
   if(getLangOpts().OpenACC && K == CR_OpenACC)
       nesting = getOpenACCNestingLevel();
 
-  llvm::outs() << "                 $$$$$$$$$$$$$$$ kind = " << K << "$$$$$$$$$$$$$$$$$\n";
-  llvm::outs() << "                 $$$$$$$$$$$$$$$ nesting = " << nesting << "$$$$$$$$$$$$$$$$$\n";
-
   CapturingScopeInfo *CSI = new CapturedRegionScopeInfo(
       getDiagnostics(), S, CD, RD, CD->getContextParam(), K, nesting
       );

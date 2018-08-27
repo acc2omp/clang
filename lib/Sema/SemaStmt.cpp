@@ -4189,54 +4189,54 @@ StmtResult Sema::ActOnCapturedRegionEnd(Stmt *S) {
   SmallVector<Expr *, 4> CaptureInits;
   buildCapturedStmtCaptureList(Captures, CaptureInits, RSI->Captures);
 
-  llvm::outs() << "        Captures:\n";
-  int i = 0;
-  for (auto __iterator = Captures.begin(), __end = Captures.end();
-     __iterator != __end; __iterator++) {
-        llvm::outs() << "         ---[ Captures[" << i << "]: ";
-        ((*__iterator).getLocation()).dump(getSourceManager());
-        llvm::outs() << "\n";
-        i++;
-  }
-  llvm::outs() << "        RSI->Captures:\n";
-  i = 0;
-  for (auto __iterator = RSI->Captures.begin(), __end = RSI->Captures.end();
-     __iterator != __end; __iterator++) {
-        llvm::outs() << "         ---[ RSI->Captures[" << i << "]: ";
-        ((*__iterator).getLocation()).dump(getSourceManager());
-        llvm::outs() << "\n";
-        i++;
-  }
+  /* llvm::outs() << "        Captures:\n"; */
+  /* int i = 0; */
+  /* for (auto __iterator = Captures.begin(), __end = Captures.end(); */
+  /*    __iterator != __end; __iterator++) { */
+  /*       llvm::outs() << "         ---[ Captures[" << i << "]: "; */
+  /*       ((*__iterator).getLocation()).dump(getSourceManager()); */
+  /*       llvm::outs() << "\n"; */
+  /*       i++; */
+  /* } */
+  /* llvm::outs() << "        RSI->Captures:\n"; */
+  /* i = 0; */
+  /* for (auto __iterator = RSI->Captures.begin(), __end = RSI->Captures.end(); */
+  /*    __iterator != __end; __iterator++) { */
+  /*       llvm::outs() << "         ---[ RSI->Captures[" << i << "]: "; */
+  /*       ((*__iterator).getLocation()).dump(getSourceManager()); */
+  /*       llvm::outs() << "\n"; */
+  /*       i++; */
+  /* } */
 
   CapturedDecl *CD = RSI->TheCapturedDecl;
   RecordDecl *RD = RSI->TheRecordDecl;
 
-  llvm::outs() << "       CD = ";
-  CD->dumpColor();
-  llvm::outs() << "       RD = ";
-  RD->dumpColor();
-  llvm::outs() << "       S = ";
-  S->dumpColor();
-  llvm::outs() << "       RSI->CapRegionKind = ";
-  switch(static_cast<CapturedRegionKind>(RSI->CapRegionKind)) {
-      case CR_Default:
-          llvm::outs() << "CR_Default\n";
-          break;
-      case CR_OpenMP:
-          llvm::outs() << "CR_OpenMP\n";
-          break;
-      default:
-          llvm::outs() << "--other--\n";
-  }
+  /* llvm::outs() << "       CD = "; */
+  /* CD->dumpColor(); */
+  /* llvm::outs() << "       RD = "; */
+  /* RD->dumpColor(); */
+  /* llvm::outs() << "       S = "; */
+  /* S->dumpColor(); */
+  /* llvm::outs() << "       RSI->CapRegionKind = "; */
+  /* switch(static_cast<CapturedRegionKind>(RSI->CapRegionKind)) { */
+  /*     case CR_Default: */
+  /*         llvm::outs() << "CR_Default\n"; */
+  /*         break; */
+  /*     case CR_OpenMP: */
+  /*         llvm::outs() << "CR_OpenMP\n"; */
+  /*         break; */
+  /*     default: */
+  /*         llvm::outs() << "--other--\n"; */
+  /* } */
 
   CapturedStmt *Res = CapturedStmt::Create(
       getASTContext(), S, static_cast<CapturedRegionKind>(RSI->CapRegionKind),
       Captures, CaptureInits, CD, RD);
 
   //TODO acc2mp Remove this leftovers debug when finished
-  llvm::outs() << "              Res[0] dumpColor <<<{ ";
-  Res->dumpColor();
-  llvm::outs() << "\n              }>>>\n";
+  /* llvm::outs() << "              Res[0] dumpColor <<<{ "; */
+  /* Res->dumpColor(); */
+  /* llvm::outs() << "\n              }>>>\n"; */
 
   CD->setBody(Res->getCapturedStmt());
   RD->completeDefinition();

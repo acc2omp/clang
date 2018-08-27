@@ -3944,10 +3944,44 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddLastArg(CmdArgs, options::OPT_fdiagnostics_show_template_tree);
   Args.AddLastArg(CmdArgs, options::OPT_fno_elide_type);
 
-  // TODO acc2mp this duplication is incomplete
-  // Forward flags for OpenACC.
-  if (Args.hasFlag(options::OPT_fopenacc, options::OPT_fno_openacc, false)) {
-    CmdArgs.push_back("-fopenacc");
+  /* // TODO acc2mp this duplication is incomplete */
+  /* // Forward flags for OpenACC. */
+  /* if (Args.hasFlag(options::OPT_fopenacc, options::OPT_fno_openacc, false)) { */
+  /*   CmdArgs.push_back("-fopenacc"); */
+  /* } */
+  // Forward flags for OpenACC. We don't do this if the current action is an
+  // device offloading action other than OpenACC.
+  if (Args.hasFlag(options::OPT_fopenacc, options::OPT_fopenacc_EQ,
+                   options::OPT_fno_openacc, false) &&
+      (JA.isDeviceOffloading(Action::OFK_None) ||
+       JA.isDeviceOffloading(Action::OFK_OpenACC))) {
+    switch (D.getOpenACCRuntime(Args)) {
+    case Driver::ACCRT_OMP:
+    case Driver::ACCRT_IOMP5:
+      // Clang can generate useful OpenACC code for these two runtime libraries.
+      CmdArgs.push_back("-fopenacc");
+
+      // If no option regarding the use of TLS in OpenACC codegeneration is
+      // given, decide a default based on the target. Otherwise rely on the
+      // options and pass the right information to the frontend.
+      if (!Args.hasFlag(options::OPT_fopenacc_use_tls,
+                        options::OPT_fnoopenacc_use_tls, /*Default=*/true))
+        CmdArgs.push_back("-fnoopenacc-use-tls");
+      Args.AddAllArgs(CmdArgs, options::OPT_fopenacc_version_EQ);
+      break;
+    default:
+      // By default, if Clang doesn't know how to generate useful OpenACC code
+      // for a specific runtime library, we just don't pass the '-fopenacc' flag
+      // down to the actual compilation.
+      // FIXME: It would be better to have a mode which *only* omits IR
+      // generation based on the OpenACC support so that we get consistent
+      // semantic analysis, etc.
+      break;
+    }
+  } else {
+    Args.AddLastArg(CmdArgs, options::OPT_fopenacc_simd,
+                    options::OPT_fno_openacc_simd);
+    Args.AddAllArgs(CmdArgs, options::OPT_fopenacc_version_EQ);
   }
 
   // Forward flags for OpenMP. We don't do this if the current action is an

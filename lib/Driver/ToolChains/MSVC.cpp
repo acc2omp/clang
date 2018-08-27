@@ -405,6 +405,27 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   Args.AddAllArgValues(CmdArgs, options::OPT__SLASH_link);
 
+  if (Args.hasFlag(options::OPT_fopenacc, options::OPT_fopenacc_EQ,
+                   options::OPT_fno_openacc, false)) {
+    CmdArgs.push_back("-nodefaultlib:vcomp.lib");
+    CmdArgs.push_back("-nodefaultlib:vcompd.lib");
+    CmdArgs.push_back(Args.MakeArgString(std::string("-libpath:") +
+                                         TC.getDriver().Dir + "/../lib"));
+    switch (TC.getDriver().getOpenACCRuntime(Args)) {
+    case Driver::ACCRT_OMP:
+      CmdArgs.push_back("-defaultlib:libomp.lib");
+      break;
+    case Driver::ACCRT_IOMP5:
+      CmdArgs.push_back("-defaultlib:libiomp5md.lib");
+      break;
+    case Driver::ACCRT_GOMP:
+      break;
+    case Driver::ACCRT_Unknown:
+      // Already diagnosed.
+      break;
+    }
+  }
+
   if (Args.hasFlag(options::OPT_fopenmp, options::OPT_fopenmp_EQ,
                    options::OPT_fno_openmp, false)) {
     CmdArgs.push_back("-nodefaultlib:vcomp.lib");

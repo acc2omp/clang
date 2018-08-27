@@ -1086,19 +1086,14 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
       }
       HasAssociatedStatement = false;
     }
-    llvm::outs() << " ------ CHECK POINT [0] -----\n";
-
     StmtResult AssociatedStmt;
     if (HasAssociatedStatement) {
-      llvm::outs() << " ------ CHECK POINT [0.1] -----\n";
       // The body is a block scope like in Lambdas and Blocks.
       Actions.ActOnOpenACCRegionStart(DKind, getCurScope());
       // FIXME: We create a bogus CompoundStmt scope to hold the contents of
       // the captured region. Code elsewhere assumes that any FunctionScopeInfo
       // should have at least one compound statement scope within it.
-      llvm::outs() << " ------ CHECK POINT [0.2] -----\n";
       AssociatedStmt = (Sema::CompoundScopeRAII(Actions), ParseStatement());
-      llvm::outs() << " ------ CHECK POINT [0.3] -----\n";
       AssociatedStmt = Actions.ActOnOpenACCRegionEnd(AssociatedStmt, Clauses);
     } else if (DKind == ACCD_target_update || DKind == ACCD_target_enter_data ||
                DKind == ACCD_target_exit_data) {
@@ -1108,13 +1103,9 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
                                                   /*isStmtExpr=*/false));
       AssociatedStmt = Actions.ActOnOpenACCRegionEnd(AssociatedStmt, Clauses);
     }
-    llvm::outs() << " ------ CHECK POINT [1] -----\n";
     Directive = Actions.ActOnOpenACCExecutableDirective(
         DKind, DirName, CancelRegion, Clauses, AssociatedStmt.get(), Loc,
         EndLoc);
-    llvm::outs() << "------------ Generated Directive is: <<<<<";
-    Directive.get()->dumpColor();
-    llvm::outs() << ">>>>> ------------\n";
     // Exit scope.
     Actions.EndOpenACCDSABlock(Directive.get());
     ACCDirectiveScope.Exit();

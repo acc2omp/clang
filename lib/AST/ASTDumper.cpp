@@ -1996,41 +1996,28 @@ void ASTDumper::VisitBlockDecl(const BlockDecl *D) {
 //===----------------------------------------------------------------------===//
 
 void ASTDumper::dumpStmt(const Stmt *S) {
-  /* const char* sname = S->getStmtClassName(); */
-  /* if(sname){ */
-  /*     llvm::errs() << "\n --- dumpStmt : [C:" << sname <<"] ---\n"; */
-  /* } else { */
-  /*     llvm::errs() << "\n --- dumpStmt : [C:XXX] ---\n"; */
-  /* } */
-  //llvm::outs() << "\nDumping Stmt[" << S->getStmtClassName() << "] {\n";
   dumpChild([=] {
     if (!S) {
       ColorScope Color(*this, NullColor);
       OS << "<<<NULL>>>";
       return;
     }
-    /* llvm::errs() << "T[0] "; */
 
     // Some statements have custom mechanisms for dumping their children.
     if (const DeclStmt *DS = dyn_cast<DeclStmt>(S)) {
       VisitDeclStmt(DS);
       return;
     }
-    /* llvm::errs() << "T[1] "; */
     if (const GenericSelectionExpr *GSE = dyn_cast<GenericSelectionExpr>(S)) {
       VisitGenericSelectionExpr(GSE);
       return;
     }
-    /* llvm::errs() << "T[2] "; */
 
     ConstStmtVisitor<ASTDumper>::Visit(S);
 
-    /* int i = 0; */
     for (const Stmt *SubStmt : S->children()){
-      /* llvm::outs() << "\n//DumpingSubStmt[" << i++ << "]//"; */
       dumpStmt(SubStmt);
     }
-    /* llvm::errs() << "T[3] "; */
   });
 }
 
@@ -2086,8 +2073,6 @@ void ASTDumper::VisitCapturedStmt(const CapturedStmt *Node) {
 
 void ASTDumper::VisitACCExecutableDirective(
     const ACCExecutableDirective *Node) {
-  llvm::outs() << "\n\n\n\n\nASTDumper::VisitACCExecutableDirective\n\n\n\n\n";
-  llvm::errs() << "\n\n\n\n\nASTDumper::VisitACCExecutableDirective\n\n\n\n\n";
   VisitStmt(Node);
   for (auto *C : Node->clauses()) {
     dumpChild([=] {

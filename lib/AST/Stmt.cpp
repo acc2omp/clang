@@ -1034,36 +1034,18 @@ CapturedStmt::CapturedStmt(Stmt *S, CapturedRegionKind Kind,
   assert(CD && "null captured declaration for captured statement");
   assert(RD && "null record declaration for captured statement");
 
-  llvm::outs() << "                ######## T[0] CapturedStmt->getCapturedStmt(): [" << getCapturedStmt() << "]\n";
-
   // Copy initialization expressions.
   Stmt **Stored = getStoredStmts();
   for (unsigned I = 0, N = NumCaptures; I != N; ++I){
     *Stored++ = CaptureInits[I];
-    /* llvm::outs()<< "                           ######## getStoredStmts()[" << I << "] = " << getStoredStmts()[I]; */
-    /* llvm::outs() << "; Stored["<<I<<"]->dumpColor()=\n"; */
-    /* (*Stored)->dumpColor(); */
   }
-  llvm::outs() << "                ######## T[1] CapturedStmt->getCapturedStmt(): [" << getCapturedStmt() << "]\n";
 
   // Copy the statement being captured.
   *Stored = S;
-  /* llvm::outs()<< "                           ######## LastStored="; */
-  /* (*Stored)->dump(); */
 
   // Copy all Capture objects.
   Capture *Buffer = getStoredCaptures();
   std::copy(Captures.begin(), Captures.end(), Buffer);
-
-  llvm::outs() << "                ######## T[2] CapturedStmt->getCapturedStmt(): [" << getCapturedStmt() << "]\n";
-
-  /* llvm::outs()<< "                           ######## Buffer="; */
-  /* llvm::outs() << "                          ---------------------------: getCaptureKind() = " << Buffer->getCaptureKind() << "\n"; */
-  /* llvm::outs() << "                          ---------------------------: capturesThis() = " << Buffer->capturesThis() << "\n"; */
-  /* llvm::outs() << "                          ---------------------------: capturesVariable() = " << Buffer->capturesVariable() << "\n"; */
-  /* llvm::outs() << "                          ---------------------------: capturesVariableByCopy() = " << Buffer->capturesVariableByCopy() << "\n"; */
-  /* llvm::outs() << "                          ---------------------------------------: getCapturedVar() = "; */
-  /* Buffer->getCapturedVar()->dump(); */
 }
 
 CapturedStmt::CapturedStmt(EmptyShell Empty, unsigned NumCaptures)
@@ -1093,63 +1075,63 @@ CapturedStmt *CapturedStmt::Create(const ASTContext &Context, Stmt *S,
   /* // ---------------------------------------MY CRAZY DEBUG-------------------------------------- */
   /* // ------------------------------------------------------------------------------------------- */
   /* // ------------------------------------------------------------------------------------------- */
-  const SourceManager &SM = Context.getSourceManager();
-  llvm::outs() << "              _______________________________\n";
-  llvm::outs() << "             |      CapturedStmt::Create     |\n";
-  llvm::outs() << "              TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n";
-  llvm::outs() << "              |||||||||||||||||||||||||||||||\n";
-  llvm::outs() << "              ||||||||||custom||dump|||||||||\n";
-  llvm::outs() << "              |||||||||||||||||||||||||||||||\n\n";
-  llvm::outs() << "              S[0] dumpColor <<<{ ";
-  S->dumpColor();
-  llvm::outs() << "\n              }>>>\n";
-  llvm::outs() << "              ArrayRef<Capture> Captures => size[" << Captures.size() << "] {\n";
-  int i = 0;
-  for (auto __iterator = Captures.begin(), __end = Captures.end();
-     __iterator != __end; __iterator++) {
-        llvm::outs() << "              ---[ Capture: [" << i << "]:\n";
-        llvm::outs() << "              ---------------------------: getCaptureKind() = " << (*__iterator).getCaptureKind() << "\n";
-        llvm::outs() << "              ---------------------------: capturesThis() = " << (*__iterator).capturesThis() << "\n";
-        llvm::outs() << "              ---------------------------: capturesVariable() = " << (*__iterator).capturesVariable() << "\n";
-        llvm::outs() << "              ---------------------------: capturesVariableByCopy() = " << (*__iterator).capturesVariableByCopy() << "\n";
-        llvm::outs() << "              ---------------------------------------: getCapturedVar() = ";
-        (*__iterator).getCapturedVar()->dump();
-        llvm::outs() << "              ---------------------------------------: source = " << (*__iterator).getLocation().printToString(SM) << "\n";
-        llvm::outs() << "\n";
-        i++;
-  }
-  llvm::outs() << "              }\n\n";
-  llvm::outs() << "              ArrayRef<Expr *> CaptureInits => size[" << CaptureInits.size() << "] {\n";
-  i = 0;
-  for (auto __iterator = CaptureInits.begin(), __end = CaptureInits.end();
-     __iterator != __end; __iterator++) {
-        llvm::outs() << "              ---[ Expr*: [" << i << "]:\n";
-        llvm::outs() << "              ---------------------------------------: dump() = ";
-        (*__iterator)->dump();
-        llvm::outs() << "\n";
-        i++;
-  }
-  llvm::outs() << "              }\n\n";
-  llvm::outs() << "              CapturedRegionKind Kind = " << Kind << "\n";
-  llvm::outs() << "              CapturedDecl CD:\n";
-  llvm::outs() << "              ------ getBody()->dump() = ";
-  CD->getBody()->dump();
-  llvm::outs() << "              ------ getNumParams() = " << CD->getNumParams() << "\n";
-  llvm::outs() << "              ------ parameters() =\n";
-  ArrayRef<ImplicitParamDecl*> params = CD->parameters();
-  i = 0;
-  for (auto __iterator = params.begin(), __end = params.end();
-     __iterator != __end; __iterator++) {
-        llvm::outs() << "              ---[ ImplicitParamDecl*: [" << i << "]:\n";
-        llvm::outs() << "              ---------------------------------------: dump() = ";
-        (*__iterator)->dump();
-        llvm::outs() << "\n";
-        i++;
-  }
-  llvm::outs() << "              RecordDecl RD:\n";
-  llvm::outs() << "              ------ getBody()->dump() = ";
-  RD->dump();
-  llvm::outs() << "\n\n\n";
+  /* const SourceManager &SM = Context.getSourceManager(); */
+  /* llvm::outs() << "              _______________________________\n"; */
+  /* llvm::outs() << "             |      CapturedStmt::Create     |\n"; */
+  /* llvm::outs() << "              TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\n"; */
+  /* llvm::outs() << "              |||||||||||||||||||||||||||||||\n"; */
+  /* llvm::outs() << "              ||||||||||custom||dump|||||||||\n"; */
+  /* llvm::outs() << "              |||||||||||||||||||||||||||||||\n\n"; */
+  /* llvm::outs() << "              S[0] dumpColor <<<{ "; */
+  /* S->dumpColor(); */
+  /* llvm::outs() << "\n              }>>>\n"; */
+  /* llvm::outs() << "              ArrayRef<Capture> Captures => size[" << Captures.size() << "] {\n"; */
+  /* int i = 0; */
+  /* for (auto __iterator = Captures.begin(), __end = Captures.end(); */
+  /*    __iterator != __end; __iterator++) { */
+  /*       llvm::outs() << "              ---[ Capture: [" << i << "]:\n"; */
+  /*       llvm::outs() << "              ---------------------------: getCaptureKind() = " << (*__iterator).getCaptureKind() << "\n"; */
+  /*       llvm::outs() << "              ---------------------------: capturesThis() = " << (*__iterator).capturesThis() << "\n"; */
+  /*       llvm::outs() << "              ---------------------------: capturesVariable() = " << (*__iterator).capturesVariable() << "\n"; */
+  /*       llvm::outs() << "              ---------------------------: capturesVariableByCopy() = " << (*__iterator).capturesVariableByCopy() << "\n"; */
+  /*       llvm::outs() << "              ---------------------------------------: getCapturedVar() = "; */
+  /*       (*__iterator).getCapturedVar()->dump(); */
+  /*       llvm::outs() << "              ---------------------------------------: source = " << (*__iterator).getLocation().printToString(SM) << "\n"; */
+  /*       llvm::outs() << "\n"; */
+  /*       i++; */
+  /* } */
+  /* llvm::outs() << "              }\n\n"; */
+  /* llvm::outs() << "              ArrayRef<Expr *> CaptureInits => size[" << CaptureInits.size() << "] {\n"; */
+  /* i = 0; */
+  /* for (auto __iterator = CaptureInits.begin(), __end = CaptureInits.end(); */
+  /*    __iterator != __end; __iterator++) { */
+  /*       llvm::outs() << "              ---[ Expr*: [" << i << "]:\n"; */
+  /*       llvm::outs() << "              ---------------------------------------: dump() = "; */
+  /*       (*__iterator)->dump(); */
+  /*       llvm::outs() << "\n"; */
+  /*       i++; */
+  /* } */
+  /* llvm::outs() << "              }\n\n"; */
+  /* llvm::outs() << "              CapturedRegionKind Kind = " << Kind << "\n"; */
+  /* llvm::outs() << "              CapturedDecl CD:\n"; */
+  /* llvm::outs() << "              ------ getBody()->dump() = "; */
+  /* CD->getBody()->dump(); */
+  /* llvm::outs() << "              ------ getNumParams() = " << CD->getNumParams() << "\n"; */
+  /* llvm::outs() << "              ------ parameters() =\n"; */
+  /* ArrayRef<ImplicitParamDecl*> params = CD->parameters(); */
+  /* i = 0; */
+  /* for (auto __iterator = params.begin(), __end = params.end(); */
+  /*    __iterator != __end; __iterator++) { */
+  /*       llvm::outs() << "              ---[ ImplicitParamDecl*: [" << i << "]:\n"; */
+  /*       llvm::outs() << "              ---------------------------------------: dump() = "; */
+  /*       (*__iterator)->dump(); */
+  /*       llvm::outs() << "\n"; */
+  /*       i++; */
+  /* } */
+  /* llvm::outs() << "              RecordDecl RD:\n"; */
+  /* llvm::outs() << "              ------ getBody()->dump() = "; */
+  /* RD->dump(); */
+  /* llvm::outs() << "\n\n\n"; */
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
   // ---------------------------------------MY CRAZY DEBUG--------------------------------------
@@ -1168,9 +1150,9 @@ CapturedStmt *CapturedStmt::Create(const ASTContext &Context, Stmt *S,
   void *Mem = Context.Allocate(Size);
   CapturedStmt* result = new (Mem) CapturedStmt(S, Kind, Captures, CaptureInits, CD, RD);
 
-  llvm::outs() << " ------------------ RESULT CAPTURED STMT ------------------\n\n";
-  llvm::outs() << "result->getCapturedStmt(): [" << result->getCapturedStmt() << "]\n";
-  llvm::outs() << "result->capture_size(): [" << result->capture_size() << "]\n";
+  /* llvm::outs() << " ------------------ RESULT CAPTURED STMT ------------------\n\n"; */
+  /* llvm::outs() << "result->getCapturedStmt(): [" << result->getCapturedStmt() << "]\n"; */
+  /* llvm::outs() << "result->capture_size(): [" << result->capture_size() << "]\n"; */
 
   /* llvm::outs() << "              resultChildren =\n"; */
   /* i = 0; */
@@ -1188,10 +1170,10 @@ CapturedStmt *CapturedStmt::Create(const ASTContext &Context, Stmt *S,
   /* llvm::outs() << "              } ^ ^ ^\n"; */
 
 
-  llvm::outs() << "\n";
-  llvm::outs() << "              |||||||||||||||||||||||||||||||\n";
-  llvm::outs() << "             |      CapturedStmt::Create     |\n";
-  llvm::outs() << "             |_______________________________|\n";
+  /* llvm::outs() << "\n"; */
+  /* llvm::outs() << "              |||||||||||||||||||||||||||||||\n"; */
+  /* llvm::outs() << "             |      CapturedStmt::Create     |\n"; */
+  /* llvm::outs() << "             |_______________________________|\n"; */
   return result;
 }
 

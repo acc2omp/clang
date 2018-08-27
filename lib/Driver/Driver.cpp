@@ -508,7 +508,7 @@ void Driver::setLTOMode(const llvm::opt::ArgList &Args) {
 Driver::OpenACCRuntimeKind Driver::getOpenACCRuntime(const ArgList &Args) const {
   StringRef RuntimeName(CLANG_DEFAULT_OPENACC_RUNTIME);
 
-  const Arg *A = Args.getLastArg(options::OPT_fopenmp_EQ);
+  const Arg *A = Args.getLastArg(options::OPT_fopenacc_EQ);
   if (A)
     RuntimeName = A->getValue();
 
@@ -585,9 +585,9 @@ void Driver::CreateOffloadingDeviceToolChains(Compilation &C,
   // OpenACC
   //
   // We need to generate an OpenACC toolchain if the user specified targets with
-  // the -fopenmp-targets option.
+  // the -fopenacc-targets option.
   if (Arg *OpenACCTargets =
-          C.getInputArgs().getLastArg(options::OPT_fopenmp_targets_EQ)) {
+          C.getInputArgs().getLastArg(options::OPT_fopenacc_targets_EQ)) {
     if (OpenACCTargets->getNumValues()) {
       // We expect that -fopenacc-targets is always used in conjunction with the
       // option -fopenacc specifying a valid runtime with offloading support,

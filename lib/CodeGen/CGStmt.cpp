@@ -201,6 +201,159 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::SEHTryStmtClass:
     EmitSEHTryStmt(cast<SEHTryStmt>(*S));
     break;
+
+  case Stmt::ACCParallelDirectiveClass:
+    EmitACCParallelDirective(cast<ACCParallelDirective>(*S));
+    break;
+  case Stmt::ACCSimdDirectiveClass:
+    EmitACCSimdDirective(cast<ACCSimdDirective>(*S));
+    break;
+  case Stmt::ACCForDirectiveClass:
+    EmitACCForDirective(cast<ACCForDirective>(*S));
+    break;
+  case Stmt::ACCForSimdDirectiveClass:
+    EmitACCForSimdDirective(cast<ACCForSimdDirective>(*S));
+    break;
+  case Stmt::ACCSectionsDirectiveClass:
+    EmitACCSectionsDirective(cast<ACCSectionsDirective>(*S));
+    break;
+  case Stmt::ACCSectionDirectiveClass:
+    EmitACCSectionDirective(cast<ACCSectionDirective>(*S));
+    break;
+  case Stmt::ACCSingleDirectiveClass:
+    EmitACCSingleDirective(cast<ACCSingleDirective>(*S));
+    break;
+  case Stmt::ACCMasterDirectiveClass:
+    EmitACCMasterDirective(cast<ACCMasterDirective>(*S));
+    break;
+  case Stmt::ACCCriticalDirectiveClass:
+    EmitACCCriticalDirective(cast<ACCCriticalDirective>(*S));
+    break;
+  case Stmt::ACCParallelForDirectiveClass:
+    EmitACCParallelForDirective(cast<ACCParallelForDirective>(*S));
+    break;
+  case Stmt::ACCParallelForSimdDirectiveClass:
+    EmitACCParallelForSimdDirective(cast<ACCParallelForSimdDirective>(*S));
+    break;
+  case Stmt::ACCParallelSectionsDirectiveClass:
+    EmitACCParallelSectionsDirective(cast<ACCParallelSectionsDirective>(*S));
+    break;
+  case Stmt::ACCTaskDirectiveClass:
+    EmitACCTaskDirective(cast<ACCTaskDirective>(*S));
+    break;
+  case Stmt::ACCTaskyieldDirectiveClass:
+    EmitACCTaskyieldDirective(cast<ACCTaskyieldDirective>(*S));
+    break;
+  case Stmt::ACCBarrierDirectiveClass:
+    EmitACCBarrierDirective(cast<ACCBarrierDirective>(*S));
+    break;
+  case Stmt::ACCTaskwaitDirectiveClass:
+    EmitACCTaskwaitDirective(cast<ACCTaskwaitDirective>(*S));
+    break;
+  case Stmt::ACCTaskgroupDirectiveClass:
+    EmitACCTaskgroupDirective(cast<ACCTaskgroupDirective>(*S));
+    break;
+  case Stmt::ACCFlushDirectiveClass:
+    EmitACCFlushDirective(cast<ACCFlushDirective>(*S));
+    break;
+  case Stmt::ACCOrderedDirectiveClass:
+    EmitACCOrderedDirective(cast<ACCOrderedDirective>(*S));
+    break;
+  case Stmt::ACCAtomicDirectiveClass:
+    EmitACCAtomicDirective(cast<ACCAtomicDirective>(*S));
+    break;
+  case Stmt::ACCTargetDirectiveClass:
+    EmitACCTargetDirective(cast<ACCTargetDirective>(*S));
+    break;
+  case Stmt::ACCTeamsDirectiveClass:
+    EmitACCTeamsDirective(cast<ACCTeamsDirective>(*S));
+    break;
+  case Stmt::ACCCancellationPointDirectiveClass:
+    EmitACCCancellationPointDirective(cast<ACCCancellationPointDirective>(*S));
+    break;
+  case Stmt::ACCCancelDirectiveClass:
+    EmitACCCancelDirective(cast<ACCCancelDirective>(*S));
+    break;
+  case Stmt::ACCTargetDataDirectiveClass:
+    EmitACCTargetDataDirective(cast<ACCTargetDataDirective>(*S));
+    break;
+  case Stmt::ACCTargetEnterDataDirectiveClass:
+    EmitACCTargetEnterDataDirective(cast<ACCTargetEnterDataDirective>(*S));
+    break;
+  case Stmt::ACCTargetExitDataDirectiveClass:
+    EmitACCTargetExitDataDirective(cast<ACCTargetExitDataDirective>(*S));
+    break;
+  case Stmt::ACCTargetParallelDirectiveClass:
+    EmitACCTargetParallelDirective(cast<ACCTargetParallelDirective>(*S));
+    break;
+  case Stmt::ACCTargetParallelForDirectiveClass:
+    EmitACCTargetParallelForDirective(cast<ACCTargetParallelForDirective>(*S));
+    break;
+  case Stmt::ACCTaskLoopDirectiveClass:
+    EmitACCTaskLoopDirective(cast<ACCTaskLoopDirective>(*S));
+    break;
+  case Stmt::ACCTaskLoopSimdDirectiveClass:
+    EmitACCTaskLoopSimdDirective(cast<ACCTaskLoopSimdDirective>(*S));
+    break;
+  case Stmt::ACCDistributeDirectiveClass:
+    EmitACCDistributeDirective(cast<ACCDistributeDirective>(*S));
+    break;
+  case Stmt::ACCTargetUpdateDirectiveClass:
+    EmitACCTargetUpdateDirective(cast<ACCTargetUpdateDirective>(*S));
+    break;
+  case Stmt::ACCDistributeParallelForDirectiveClass:
+    EmitACCDistributeParallelForDirective(
+        cast<ACCDistributeParallelForDirective>(*S));
+    break;
+  case Stmt::ACCDistributeParallelForSimdDirectiveClass:
+    EmitACCDistributeParallelForSimdDirective(
+        cast<ACCDistributeParallelForSimdDirective>(*S));
+    break;
+  case Stmt::ACCDistributeSimdDirectiveClass:
+    EmitACCDistributeSimdDirective(cast<ACCDistributeSimdDirective>(*S));
+    break;
+  case Stmt::ACCTargetParallelForSimdDirectiveClass:
+    EmitACCTargetParallelForSimdDirective(
+        cast<ACCTargetParallelForSimdDirective>(*S));
+    break;
+  case Stmt::ACCTargetSimdDirectiveClass:
+    EmitACCTargetSimdDirective(cast<ACCTargetSimdDirective>(*S));
+    break;
+  case Stmt::ACCTeamsDistributeDirectiveClass:
+    EmitACCTeamsDistributeDirective(cast<ACCTeamsDistributeDirective>(*S));
+    break;
+  case Stmt::ACCTeamsDistributeSimdDirectiveClass:
+    EmitACCTeamsDistributeSimdDirective(
+        cast<ACCTeamsDistributeSimdDirective>(*S));
+    break;
+  case Stmt::ACCTeamsDistributeParallelForSimdDirectiveClass:
+    EmitACCTeamsDistributeParallelForSimdDirective(
+        cast<ACCTeamsDistributeParallelForSimdDirective>(*S));
+    break;
+  case Stmt::ACCTeamsDistributeParallelForDirectiveClass:
+    EmitACCTeamsDistributeParallelForDirective(
+        cast<ACCTeamsDistributeParallelForDirective>(*S));
+    break;
+  case Stmt::ACCTargetTeamsDirectiveClass:
+    EmitACCTargetTeamsDirective(cast<ACCTargetTeamsDirective>(*S));
+    break;
+  case Stmt::ACCTargetTeamsDistributeDirectiveClass:
+    EmitACCTargetTeamsDistributeDirective(
+        cast<ACCTargetTeamsDistributeDirective>(*S));
+    break;
+  case Stmt::ACCTargetTeamsDistributeParallelForDirectiveClass:
+    EmitACCTargetTeamsDistributeParallelForDirective(
+        cast<ACCTargetTeamsDistributeParallelForDirective>(*S));
+    break;
+  case Stmt::ACCTargetTeamsDistributeParallelForSimdDirectiveClass:
+    EmitACCTargetTeamsDistributeParallelForSimdDirective(
+        cast<ACCTargetTeamsDistributeParallelForSimdDirective>(*S));
+    break;
+  case Stmt::ACCTargetTeamsDistributeSimdDirectiveClass:
+    EmitACCTargetTeamsDistributeSimdDirective(
+        cast<ACCTargetTeamsDistributeSimdDirective>(*S));
+    break;
+
   case Stmt::OMPParallelDirectiveClass:
     EmitOMPParallelDirective(cast<OMPParallelDirective>(*S));
     break;
