@@ -575,8 +575,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCCriticalDirectiveClass:
     K = CXCursor_ACCCriticalDirective;
     break;
-  case Stmt::ACCParallelForDirectiveClass:
-    K = CXCursor_ACCParallelForDirective;
+  case Stmt::ACCParallelLoopDirectiveClass:
+    K = CXCursor_ACCParallelLoopDirective;
     break;
   case Stmt::ACCParallelForSimdDirectiveClass:
     K = CXCursor_ACCParallelForSimdDirective;

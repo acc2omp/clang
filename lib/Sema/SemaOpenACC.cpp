@@ -2100,7 +2100,7 @@ public:
 void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) {
   switch (DKind) {
   case ACCD_parallel:
-  case ACCD_parallel_for:
+  case ACCD_parellel_loop:
   case ACCD_parallel_for_simd:
   case ACCD_parallel_sections:
   case ACCD_teams:
@@ -2720,7 +2720,7 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
              (ParentRegion == ACCD_parallel ||
               ParentRegion == ACCD_target_parallel)) ||
             (CancelRegion == ACCD_for &&
-             (ParentRegion == ACCD_for || ParentRegion == ACCD_parallel_for ||
+             (ParentRegion == ACCD_for || ParentRegion == ACCD_parellel_loop ||
               ParentRegion == ACCD_target_parallel_for ||
               ParentRegion == ACCD_distribute_parallel_for ||
               ParentRegion == ACCD_teams_distribute_parallel_for ||
@@ -2946,7 +2946,6 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     OpenACCDirectiveKind CancelRegion, ArrayRef<ACCClause *> Clauses,
     Stmt *AStmt, SourceLocation StartLoc, SourceLocation EndLoc) {
   StmtResult Res = StmtError();
-  /* llvm::outs() << "-- <<DEBUG>> Checkpoint X\n"; */
   // First check CancelRegion which is then used in checkNestingOfRegions.
   if (checkCancelRegion(*this, Kind, CancelRegion, StartLoc) ||
       checkNestingOfRegions(*this, DSAStack, Kind, DirName, CancelRegion,
@@ -2958,7 +2957,6 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   bool ErrorFound = false;
   ClausesWithImplicit.append(Clauses.begin(), Clauses.end());
 
-  /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0\n"; */
   if (AStmt && !CurContext->isDependentContext()) {
     assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
 
@@ -2968,11 +2966,8 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Stmt *S = AStmt;
     while (--ThisCaptureLevel >= 0)
       S = cast<CapturedStmt>(S)->getCapturedStmt();
-    /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0.0\n"; */
     /* S->dumpColor(); */
-    /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0.1\n"; */
     DSAChecker.Visit(S);
-    /* llvm::outs() << "-- <<DEBUG>> Checkpoint 0.2\n"; */
     if (DSAChecker.isErrorFound())
       return StmtError();
     // Generate list of implicitly defined firstprivate variables.
@@ -3013,7 +3008,6 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
         ErrorFound = true;
     }
   }
-  /* llvm::outs() << "-- <<DEBUG>> Checkpoint 1\n"; */
 
   llvm::SmallVector<OpenACCDirectiveKind, 4> AllowedNameModifiers;
   switch (Kind) {
@@ -3056,8 +3050,8 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Res = ActOnOpenACCCriticalDirective(DirName, ClausesWithImplicit, AStmt,
                                        StartLoc, EndLoc);
     break;
-  case ACCD_parallel_for:
-    Res = ActOnOpenACCParallelForDirective(ClausesWithImplicit, AStmt, StartLoc,
+  case ACCD_parellel_loop:
+    Res = ActOnOpenACCParallelLoopDirective(ClausesWithImplicit, AStmt, StartLoc,
                                           EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
@@ -3262,8 +3256,6 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   case ACCD_unknown:
     llvm_unreachable("Unknown OpenACC directive");
   }
-
-  llvm::outs() << "=============== ActOnOpenACCDirective ; end of main switch ============= \n";
 
   for (auto P : VarsWithInheritedDSA) {
     Diag(P.second->getExprLoc(), diag::err_acc_no_dsa_for_variable)
@@ -5486,7 +5478,7 @@ StmtResult Sema::ActOnOpenACCCriticalDirective(
   return Dir;
 }
 
-StmtResult Sema::ActOnOpenACCParallelForDirective(
+StmtResult Sema::ActOnOpenACCParallelLoopDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -5507,7 +5499,7 @@ StmtResult Sema::ActOnOpenACCParallelForDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_parallel_for, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_parellel_loop, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), AStmt, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -5528,7 +5520,7 @@ StmtResult Sema::ActOnOpenACCParallelForDirective(
   }
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCParallelForDirective::Create(Context, StartLoc, EndLoc,
+  return ACCParallelLoopDirective::Create(Context, StartLoc, EndLoc,
                                          NestedLoopCount, Clauses, AStmt, B,
                                          DSAStack->isCancelRegion());
 }
@@ -7802,7 +7794,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parallel_for:
+    case ACCD_parellel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target:
     case ACCD_target_simd:
@@ -7863,7 +7855,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
       break;
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parallel_for:
+    case ACCD_parellel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_distribute_parallel_for:
     case ACCD_distribute_parallel_for_simd:
@@ -7941,7 +7933,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parallel_for:
+    case ACCD_parellel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target:
     case ACCD_target_simd:
@@ -8004,7 +7996,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parallel_for:
+    case ACCD_parellel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target:
     case ACCD_target_simd:
@@ -8041,7 +8033,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     break;
   case ACCC_schedule:
     switch (DKind) {
-    case ACCD_parallel_for:
+    case ACCD_parellel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_distribute_parallel_for:
     case ACCD_distribute_parallel_for_simd:
@@ -8120,7 +8112,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute_simd:
       // Do not capture thread_limit-clause expressions.
       break;
-    case ACCD_parallel_for:
+    case ACCD_parellel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target_parallel_for_simd:
     case ACCD_target_parallel_for:
@@ -8198,7 +8190,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parallel_for:
+    case ACCD_parellel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_threadprivate:
     case ACCD_taskyield:

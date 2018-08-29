@@ -2406,7 +2406,7 @@ void ASTStmtWriter::VisitACCCriticalDirective(ACCCriticalDirective *D) {
   Code = serialization::STMT_ACC_CRITICAL_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCParallelForDirective(ACCParallelForDirective *D) {
+void ASTStmtWriter::VisitACCParallelLoopDirective(ACCParallelLoopDirective *D) {
   VisitACCLoopDirective(D);
   Record.push_back(D->hasCancel() ? 1 : 0);
   Code = serialization::STMT_ACC_PARALLEL_FOR_DIRECTIVE;

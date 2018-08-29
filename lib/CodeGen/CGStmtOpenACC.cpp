@@ -2679,13 +2679,13 @@ void CodeGenFunction::EmitACCCriticalDirective(const ACCCriticalDirective &S) {
                                             CodeGen, S.getLocStart(), Hint);
 }
 
-void CodeGenFunction::EmitACCParallelForDirective(
-    const ACCParallelForDirective &S) {
+void CodeGenFunction::EmitACCParallelLoopDirective(
+    const ACCParallelLoopDirective &S) {
   llvm::outs() << "I am generating an OpenACC Parallel Loop code";
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
-    ACCCancelStackRAII CancelRegion(CGF, ACCD_parallel_for, S.hasCancel());
+    ACCCancelStackRAII CancelRegion(CGF, ACCD_parellel_loop, S.hasCancel());
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };
@@ -3364,7 +3364,7 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopDirective &S,
           isOpenACCSimdDirective(S.getDirectiveKind())) {
         ReductionKind = ACCD_parallel_for_simd;
       } else if (isOpenACCParallelDirective(S.getDirectiveKind())) {
-        ReductionKind = ACCD_parallel_for;
+        ReductionKind = ACCD_parellel_loop;
       } else if (isOpenACCSimdDirective(S.getDirectiveKind())) {
         ReductionKind = ACCD_simd;
       } else if (!isOpenACCTeamsDirective(S.getDirectiveKind()) &&
@@ -4378,7 +4378,7 @@ CodeGenFunction::getACCCancelDestination(OpenACCDirectiveKind Kind) {
       Kind == ACCD_target_parallel)
     return ReturnBlock;
   assert(Kind == ACCD_for || Kind == ACCD_section || Kind == ACCD_sections ||
-         Kind == ACCD_parallel_sections || Kind == ACCD_parallel_for ||
+         Kind == ACCD_parallel_sections || Kind == ACCD_parellel_loop ||
          Kind == ACCD_distribute_parallel_for ||
          Kind == ACCD_target_parallel_for ||
          Kind == ACCD_teams_distribute_parallel_for ||

@@ -1317,7 +1317,7 @@ static llvm::Value *emitParallelOrTeamsOutlinedFunction(
     HasCancel = OPD->hasCancel();
   else if (auto *OPSD = dyn_cast<ACCParallelSectionsDirective>(&D))
     HasCancel = OPSD->hasCancel();
-  else if (auto *OPFD = dyn_cast<ACCParallelForDirective>(&D))
+  else if (auto *OPFD = dyn_cast<ACCParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
   else if (auto *OPFD = dyn_cast<ACCTargetParallelForDirective>(&D))
     HasCancel = OPFD->hasCancel();

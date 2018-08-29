@@ -260,7 +260,7 @@ def ACCSectionDirective : DStmt<ACCExecutableDirective>;
 def ACCSingleDirective : DStmt<ACCExecutableDirective>;
 def ACCMasterDirective : DStmt<ACCExecutableDirective>;
 def ACCCriticalDirective : DStmt<ACCExecutableDirective>;
-def ACCParallelForDirective : DStmt<ACCLoopDirective>;
+def ACCParallelLoopDirective : DStmt<ACCLoopDirective>;
 def ACCParallelForSimdDirective : DStmt<ACCLoopDirective>;
 def ACCParallelSectionsDirective : DStmt<ACCExecutableDirective>;
 def ACCTaskDirective : DStmt<ACCExecutableDirective>;

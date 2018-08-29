@@ -2011,7 +2011,7 @@ public:
   void VisitACCSingleDirective(const ACCSingleDirective *D);
   void VisitACCMasterDirective(const ACCMasterDirective *D);
   void VisitACCCriticalDirective(const ACCCriticalDirective *D);
-  void VisitACCParallelForDirective(const ACCParallelForDirective *D);
+  void VisitACCParallelLoopDirective(const ACCParallelLoopDirective *D);
   void VisitACCParallelForSimdDirective(const ACCParallelForSimdDirective *D);
   void VisitACCParallelSectionsDirective(const ACCParallelSectionsDirective *D);
   void VisitACCTaskDirective(const ACCTaskDirective *D);
@@ -3125,7 +3125,7 @@ void EnqueueVisitor::VisitACCCriticalDirective(const ACCCriticalDirective *D) {
 }
 
 void
-EnqueueVisitor::VisitACCParallelForDirective(const ACCParallelForDirective *D) {
+EnqueueVisitor::VisitACCParallelLoopDirective(const ACCParallelLoopDirective *D) {
   VisitACCLoopDirective(D);
 }
 
@@ -5932,8 +5932,8 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCMasterDirective");
   case CXCursor_ACCCriticalDirective:
     return cxstring::createRef("ACCCriticalDirective");
-  case CXCursor_ACCParallelForDirective:
-    return cxstring::createRef("ACCParallelForDirective");
+  case CXCursor_ACCParallelLoopDirective:
+    return cxstring::createRef("ACCParallelLoopDirective");
   case CXCursor_ACCParallelForSimdDirective:
     return cxstring::createRef("ACCParallelForSimdDirective");
   case CXCursor_ACCParallelSectionsDirective:

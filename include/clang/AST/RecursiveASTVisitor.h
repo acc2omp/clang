@@ -2676,7 +2676,7 @@ DEF_TRAVERSE_STMT(ACCCriticalDirective, {
   TRY_TO(TraverseACCExecutableDirective(S));
 })
 
-DEF_TRAVERSE_STMT(ACCParallelForDirective,
+DEF_TRAVERSE_STMT(ACCParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCParallelForSimdDirective,

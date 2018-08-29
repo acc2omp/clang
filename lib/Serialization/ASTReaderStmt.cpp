@@ -2777,7 +2777,7 @@ void ASTStmtReader::VisitACCCriticalDirective(ACCCriticalDirective *D) {
   ReadDeclarationNameInfo(D->DirName);
 }
 
-void ASTStmtReader::VisitACCParallelForDirective(ACCParallelForDirective *D) {
+void ASTStmtReader::VisitACCParallelLoopDirective(ACCParallelLoopDirective *D) {
   VisitACCLoopDirective(D);
   D->setHasCancel(Record.readInt());
 }
@@ -4811,7 +4811,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_PARALLEL_FOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCParallelForDirective::CreateEmpty(Context, NumClauses,
+      S = ACCParallelLoopDirective::CreateEmpty(Context, NumClauses,
                                                CollapsedNum, Empty);
       break;
     }

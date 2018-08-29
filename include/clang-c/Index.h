@@ -2338,9 +2338,9 @@ enum CXCursorKind {
    */
   CXCursor_ACCSingleDirective            = 238,
 
-  /** \brief OpenACC parallel for directive.
+  /** \brief OpenACC parallel loop directive.
    */
-  CXCursor_ACCParallelForDirective       = 239,
+  CXCursor_ACCParallelLoopDirective      = 239,
 
   /** \brief OpenACC parallel sections directive.
    */

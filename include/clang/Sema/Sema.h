@@ -8790,9 +8790,9 @@ public:
                                           ArrayRef<ACCClause *> Clauses,
                                           Stmt *AStmt, SourceLocation StartLoc,
                                           SourceLocation EndLoc);
-  /// \brief Called on well-formed '\#pragma acc parallel for' after parsing
+  /// \brief Called on well-formed '\#pragma acc parallel loop' after parsing
   /// of the  associated statement.
-  StmtResult ActOnOpenACCParallelForDirective(
+  StmtResult ActOnOpenACCParallelLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);

@@ -8282,10 +8282,10 @@ TreeTransform<Derived>::TransformACCCriticalDirective(ACCCriticalDirective *D) {
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCParallelForDirective(
-    ACCParallelForDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCParallelLoopDirective(
+    ACCParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_parallel_for, DirName,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_parellel_loop, DirName,
                                              nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());

@@ -379,9 +379,10 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_parallel_for:
+  // LUIS
+  case ACCD_parallel_loop:
     switch (CKind) {
-#define OPENACC_PARALLEL_FOR_CLAUSE(Name)                                       \
+#define OPENACC_PARALLEL_LOOP_CLAUSE(Name)                                       \
   case ACCC_##Name:                                                            \
     return true;
 #include "clang/Basic/OpenACCKinds.def"
@@ -742,7 +743,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
 
 bool clang::isOpenACCLoopDirective(OpenACCDirectiveKind DKind) {
   return DKind == ACCD_simd || DKind == ACCD_for || DKind == ACCD_for_simd ||
-         DKind == ACCD_parallel_for || DKind == ACCD_parallel_for_simd ||
+         DKind == ACCD_parellel_loop || DKind == ACCD_parallel_for_simd ||
          DKind == ACCD_taskloop || DKind == ACCD_taskloop_simd ||
          DKind == ACCD_distribute || DKind == ACCD_target_parallel_for ||
          DKind == ACCD_distribute_parallel_for ||
@@ -762,7 +763,7 @@ bool clang::isOpenACCLoopDirective(OpenACCDirectiveKind DKind) {
 bool clang::isOpenACCWorksharingDirective(OpenACCDirectiveKind DKind) {
   return DKind == ACCD_for || DKind == ACCD_for_simd ||
          DKind == ACCD_sections || DKind == ACCD_section ||
-         DKind == ACCD_single || DKind == ACCD_parallel_for ||
+         DKind == ACCD_single || DKind == ACCD_parellel_loop ||
          DKind == ACCD_parallel_for_simd || DKind == ACCD_parallel_sections ||
          DKind == ACCD_target_parallel_for ||
          DKind == ACCD_distribute_parallel_for ||
@@ -779,7 +780,7 @@ bool clang::isOpenACCTaskLoopDirective(OpenACCDirectiveKind DKind) {
 }
 
 bool clang::isOpenACCParallelDirective(OpenACCDirectiveKind DKind) {
-  return DKind == ACCD_parallel || DKind == ACCD_parallel_for ||
+  return DKind == ACCD_parallel || DKind == ACCD_parellel_loop ||
          DKind == ACCD_parallel_for_simd || DKind == ACCD_parallel_sections ||
          DKind == ACCD_target_parallel || DKind == ACCD_target_parallel_for ||
          DKind == ACCD_distribute_parallel_for ||
@@ -881,7 +882,8 @@ void clang::getOpenACCCaptureRegions(
   assert(DKind <= ACCD_unknown);
   switch (DKind) {
   case ACCD_parallel:
-  case ACCD_parallel_for:
+  // LUIS
+  case ACCD_parallel_loop:
   case ACCD_parallel_for_simd:
   case ACCD_parallel_sections:
   case ACCD_distribute_parallel_for:

@@ -1504,16 +1504,17 @@ public:
   }
 };
 
-/// \brief This represents '#pragma acc parallel for' directive.
+// LUIS
+/// \brief This represents '#pragma acc parallel loop' directive.
 ///
 /// \code
-/// #pragma acc parallel for private(a,b) reduction(+:c,d)
+/// #pragma acc parallel loop private(a,b) reduction(+:c,d)
 /// \endcode
-/// In this example directive '#pragma acc parallel for' has clauses 'private'
+/// In this example directive '#pragma acc parallel loop' has clauses 'private'
 /// with the variables 'a' and 'b' and 'reduction' with operator '+' and
 /// variables 'c' and 'd'.
 ///
-class ACCParallelForDirective : public ACCLoopDirective {
+class ACCParallelLoopDirective : public ACCLoopDirective {
   friend class ASTStmtReader;
 
   /// \brief true if current region has inner cancel directive.
@@ -1526,9 +1527,9 @@ class ACCParallelForDirective : public ACCLoopDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCParallelForDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCParallelLoopDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                           unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopDirective(this, ACCParallelForDirectiveClass, ACCD_parallel_for,
+      : ACCLoopDirective(this, ACCParallelLoopDirectiveClass, ACCD_parallel_loop,
                          StartLoc, EndLoc, CollapsedNum, NumClauses),
         HasCancel(false) {}
 

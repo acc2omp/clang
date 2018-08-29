@@ -1094,8 +1094,8 @@ void StmtPrinter::VisitACCCriticalDirective(ACCCriticalDirective *Node) {
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCParallelForDirective(ACCParallelForDirective *Node) {
-  Indent() << "#pragma acc parallel for";
+void StmtPrinter::VisitACCParallelLoopDirective(ACCParallelLoopDirective *Node) {
+  Indent() << "#pragma acc parallel loop";
   PrintACCExecutableDirective(Node);
 }
 

@@ -103,8 +103,8 @@ static OpenACCDirectiveKind ParseOpenACCDirectiveKind(Parser &P) {
     { ACCD_target_enter, ACCD_data, ACCD_target_enter_data },
     { ACCD_target_exit, ACCD_data, ACCD_target_exit_data },
     { ACCD_for, ACCD_simd, ACCD_for_simd },
-    { ACCD_parallel, ACCD_for, ACCD_parallel_for },
-    { ACCD_parallel_for, ACCD_simd, ACCD_parallel_for_simd },
+    { ACCD_parallel, ACCD_for, ACCD_parellel_loop },
+    { ACCD_parellel_loop, ACCD_simd, ACCD_parallel_for_simd },
     { ACCD_parallel, ACCD_sections, ACCD_parallel_sections },
     { ACCD_taskloop, ACCD_simd, ACCD_taskloop_simd },
     { ACCD_target, ACCD_parallel, ACCD_target_parallel },
@@ -818,7 +818,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_master:
   case ACCD_ordered:
   case ACCD_critical:
-  case ACCD_parallel_for:
+  case ACCD_parellel_loop:
   case ACCD_parallel_for_simd:
   case ACCD_parallel_sections:
   case ACCD_atomic:
@@ -985,7 +985,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_section:
   case ACCD_master:
   case ACCD_critical:
-  case ACCD_parallel_for:
+  case ACCD_parellel_loop:
   case ACCD_parallel_for_simd:
   case ACCD_parallel_sections:
   case ACCD_task:

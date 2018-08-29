@@ -773,7 +773,7 @@ void StmtProfiler::VisitACCCriticalDirective(const ACCCriticalDirective *S) {
 }
 
 void
-StmtProfiler::VisitACCParallelForDirective(const ACCParallelForDirective *S) {
+StmtProfiler::VisitACCParallelLoopDirective(const ACCParallelLoopDirective *S) {
   VisitACCLoopDirective(S);
 }
 

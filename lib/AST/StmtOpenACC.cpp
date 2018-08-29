@@ -332,15 +332,15 @@ ACCCriticalDirective *ACCCriticalDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCCriticalDirective(NumClauses);
 }
 
-ACCParallelForDirective *ACCParallelForDirective::Create(
+ACCParallelLoopDirective *ACCParallelLoopDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs, bool HasCancel) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCParallelForDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCParallelLoopDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                          sizeof(Stmt *) *
-                             numLoopChildren(CollapsedNum, ACCD_parallel_for));
+                             numLoopChildren(CollapsedNum, ACCD_parallel_loop));
 
   ACCParallelForDirective *Dir = new (Mem)
       ACCParallelForDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
@@ -371,15 +371,15 @@ ACCParallelForDirective *ACCParallelForDirective::Create(
   return Dir;
 }
 
-ACCParallelForDirective *
-ACCParallelForDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
+ACCParallelLoopDirective *
+ACCParallelLoopDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
                                      unsigned CollapsedNum, EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCParallelForDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCParallelLoopDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                          sizeof(Stmt *) *
-                             numLoopChildren(CollapsedNum, ACCD_parallel_for));
-  return new (Mem) ACCParallelForDirective(CollapsedNum, NumClauses);
+                             numLoopChildren(CollapsedNum, ACCD_parallel_loop));
+  return new (Mem) ACCParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
 ACCParallelForSimdDirective *ACCParallelForSimdDirective::Create(

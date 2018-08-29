@@ -3264,7 +3264,7 @@ public:
   void EmitACCSingleDirective(const ACCSingleDirective &S);
   void EmitACCMasterDirective(const ACCMasterDirective &S);
   void EmitACCCriticalDirective(const ACCCriticalDirective &S);
-  void EmitACCParallelForDirective(const ACCParallelForDirective &S);
+  void EmitACCParallelLoopDirective(const ACCParallelLoopDirective &S);
   void EmitACCParallelForSimdDirective(const ACCParallelForSimdDirective &S);
   void EmitACCParallelSectionsDirective(const ACCParallelSectionsDirective &S);
   void EmitACCTaskDirective(const ACCTaskDirective &S);
