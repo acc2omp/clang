@@ -208,8 +208,8 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCSimdDirectiveClass:
     EmitACCSimdDirective(cast<ACCSimdDirective>(*S));
     break;
-  case Stmt::ACCForDirectiveClass:
-    EmitACCForDirective(cast<ACCForDirective>(*S));
+  case Stmt::ACCLoopDirectiveClass:
+    EmitACCLoopDirective(cast<ACCLoopDirective>(*S));
     break;
   case Stmt::ACCForSimdDirectiveClass:
     EmitACCForSimdDirective(cast<ACCForSimdDirective>(*S));
@@ -229,8 +229,8 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCCriticalDirectiveClass:
     EmitACCCriticalDirective(cast<ACCCriticalDirective>(*S));
     break;
-  case Stmt::ACCParallelForDirectiveClass:
-    EmitACCParallelForDirective(cast<ACCParallelForDirective>(*S));
+  case Stmt::ACCParallelLoopDirectiveClass:
+    EmitACCParallelLoopDirective(cast<ACCParallelLoopDirective>(*S));
     break;
   case Stmt::ACCParallelForSimdDirectiveClass:
     EmitACCParallelForSimdDirective(cast<ACCParallelForSimdDirective>(*S));

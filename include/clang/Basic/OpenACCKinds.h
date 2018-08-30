@@ -144,7 +144,7 @@ bool isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
 /// \param DKind Specified directive.
 /// \return true - the directive is a loop-associated directive like 'omp simd'
 /// or 'omp for' directive, otherwise - false.
-bool isOpenACCLoopDirective(OpenACCDirectiveKind DKind);
+bool isOpenACCLoopLikeDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a worksharing directive.
 /// \param DKind Specified directive.

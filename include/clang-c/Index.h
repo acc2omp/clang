@@ -2324,7 +2324,7 @@ enum CXCursorKind {
 
   /** \brief OpenACC for directive.
    */
-  CXCursor_ACCForDirective               = 235,
+  CXCursor_ACCLoopDirective               = 235,
 
   /** \brief OpenACC sections directive.
    */

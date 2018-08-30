@@ -554,8 +554,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCSimdDirectiveClass:
     K = CXCursor_ACCSimdDirective;
     break;
-  case Stmt::ACCForDirectiveClass:
-    K = CXCursor_ACCForDirective;
+  case Stmt::ACCLoopDirectiveClass:
+    K = CXCursor_ACCLoopDirective;
     break;
   case Stmt::ACCForSimdDirectiveClass:
     K = CXCursor_ACCForSimdDirective;

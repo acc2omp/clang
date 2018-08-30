@@ -23,32 +23,32 @@ void ACCExecutableDirective::setClauses(ArrayRef<ACCClause *> Clauses) {
   std::copy(Clauses.begin(), Clauses.end(), getClauses().begin());
 }
 
-void ACCLoopDirective::setCounters(ArrayRef<Expr *> A) {
+void ACCLoopLikeDirective::setCounters(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of loop counters is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getCounters().begin());
 }
 
-void ACCLoopDirective::setPrivateCounters(ArrayRef<Expr *> A) {
+void ACCLoopLikeDirective::setPrivateCounters(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() && "Number of loop private counters "
                                              "is not the same as the collapsed "
                                              "number");
   std::copy(A.begin(), A.end(), getPrivateCounters().begin());
 }
 
-void ACCLoopDirective::setInits(ArrayRef<Expr *> A) {
+void ACCLoopLikeDirective::setInits(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of counter inits is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getInits().begin());
 }
 
-void ACCLoopDirective::setUpdates(ArrayRef<Expr *> A) {
+void ACCLoopLikeDirective::setUpdates(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of counter updates is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getUpdates().begin());
 }
 
-void ACCLoopDirective::setFinals(ArrayRef<Expr *> A) {
+void ACCLoopLikeDirective::setFinals(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of counter finals is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getFinals().begin());
@@ -119,17 +119,17 @@ ACCSimdDirective *ACCSimdDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCSimdDirective(CollapsedNum, NumClauses);
 }
 
-ACCForDirective *
-ACCForDirective::Create(const ASTContext &C, SourceLocation StartLoc,
+ACCLoopDirective *
+ACCLoopDirective::Create(const ASTContext &C, SourceLocation StartLoc,
                         SourceLocation EndLoc, unsigned CollapsedNum,
                         ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
                         const HelperExprs &Exprs, bool HasCancel) {
-  unsigned Size = llvm::alignTo(sizeof(ACCForDirective), alignof(ACCClause *));
+  unsigned Size = llvm::alignTo(sizeof(ACCLoopDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_for));
-  ACCForDirective *Dir =
-      new (Mem) ACCForDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop));
+  ACCLoopDirective *Dir =
+      new (Mem) ACCLoopDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   Dir->setIterationVariable(Exprs.IterationVarRef);
@@ -157,15 +157,15 @@ ACCForDirective::Create(const ASTContext &C, SourceLocation StartLoc,
   return Dir;
 }
 
-ACCForDirective *ACCForDirective::CreateEmpty(const ASTContext &C,
+ACCLoopDirective *ACCLoopDirective::CreateEmpty(const ASTContext &C,
                                               unsigned NumClauses,
                                               unsigned CollapsedNum,
                                               EmptyShell) {
-  unsigned Size = llvm::alignTo(sizeof(ACCForDirective), alignof(ACCClause *));
+  unsigned Size = llvm::alignTo(sizeof(ACCLoopDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_for));
-  return new (Mem) ACCForDirective(CollapsedNum, NumClauses);
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop));
+  return new (Mem) ACCLoopDirective(CollapsedNum, NumClauses);
 }
 
 ACCForSimdDirective *
@@ -342,8 +342,8 @@ ACCParallelLoopDirective *ACCParallelLoopDirective::Create(
                          sizeof(Stmt *) *
                              numLoopChildren(CollapsedNum, ACCD_parallel_loop));
 
-  ACCParallelForDirective *Dir = new (Mem)
-      ACCParallelForDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
+  ACCParallelLoopDirective *Dir = new (Mem)
+      ACCParallelLoopDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   Dir->setIterationVariable(Exprs.IterationVarRef);

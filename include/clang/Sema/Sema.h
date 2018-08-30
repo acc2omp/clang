@@ -8756,7 +8756,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc for' after parsing
   /// of the associated statement.
-  StmtResult ActOnOpenACCForDirective(
+  StmtResult ActOnOpenACCLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);

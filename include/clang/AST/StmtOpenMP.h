@@ -333,14 +333,14 @@ public:
 /// \brief This is a common base class for loop directives ('omp simd', 'omp
 /// for', 'omp for simd' etc.). It is responsible for the loop code generation.
 ///
-class OMPLoopDirective : public OMPExecutableDirective {
+class OMPLoopLikeDirective : public OMPExecutableDirective {
   friend class ASTStmtReader;
   /// \brief Number of collapsed loops as specified by 'collapse' clause.
   unsigned CollapsedNum;
 
   /// \brief Offsets to the stored exprs.
   /// This enumeration contains offsets to all the pointers to children
-  /// expressions stored in OMPLoopDirective.
+  /// expressions stored in OMPLoopLikeDirective.
   /// The first 9 children are necessary for all the loop directives,
   /// the next 8 are specific to the worksharing ones, and the next 11 are
   /// used for combined constructs containing two pragmas associated to loops.
@@ -445,7 +445,7 @@ protected:
   /// \param NumSpecialChildren Number of additional directive-specific stmts.
   ///
   template <typename T>
-  OMPLoopDirective(const T *That, StmtClass SC, OpenMPDirectiveKind Kind,
+  OMPLoopLikeDirective(const T *That, StmtClass SC, OpenMPDirectiveKind Kind,
                    SourceLocation StartLoc, SourceLocation EndLoc,
                    unsigned CollapsedNum, unsigned NumClauses,
                    unsigned NumSpecialChildren = 0)
@@ -935,31 +935,31 @@ public:
   ArrayRef<Expr *> counters() { return getCounters(); }
 
   ArrayRef<Expr *> counters() const {
-    return const_cast<OMPLoopDirective *>(this)->getCounters();
+    return const_cast<OMPLoopLikeDirective *>(this)->getCounters();
   }
 
   ArrayRef<Expr *> private_counters() { return getPrivateCounters(); }
 
   ArrayRef<Expr *> private_counters() const {
-    return const_cast<OMPLoopDirective *>(this)->getPrivateCounters();
+    return const_cast<OMPLoopLikeDirective *>(this)->getPrivateCounters();
   }
 
   ArrayRef<Expr *> inits() { return getInits(); }
 
   ArrayRef<Expr *> inits() const {
-    return const_cast<OMPLoopDirective *>(this)->getInits();
+    return const_cast<OMPLoopLikeDirective *>(this)->getInits();
   }
 
   ArrayRef<Expr *> updates() { return getUpdates(); }
 
   ArrayRef<Expr *> updates() const {
-    return const_cast<OMPLoopDirective *>(this)->getUpdates();
+    return const_cast<OMPLoopLikeDirective *>(this)->getUpdates();
   }
 
   ArrayRef<Expr *> finals() { return getFinals(); }
 
   ArrayRef<Expr *> finals() const {
-    return const_cast<OMPLoopDirective *>(this)->getFinals();
+    return const_cast<OMPLoopLikeDirective *>(this)->getFinals();
   }
 
   static bool classof(const Stmt *T) {
@@ -1000,7 +1000,7 @@ public:
 /// with the variables 'a' and 'b', 'linear' with variables 'i', 'j' and
 /// linear step 's', 'reduction' with operator '+' and variables 'c' and 'd'.
 ///
-class OMPSimdDirective : public OMPLoopDirective {
+class OMPSimdDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -1011,7 +1011,7 @@ class OMPSimdDirective : public OMPLoopDirective {
   ///
   OMPSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                    unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPSimdDirectiveClass, OMPD_simd, StartLoc,
+      : OMPLoopLikeDirective(this, OMPSimdDirectiveClass, OMPD_simd, StartLoc,
                          EndLoc, CollapsedNum, NumClauses) {}
 
   /// \brief Build an empty directive.
@@ -1020,7 +1020,7 @@ class OMPSimdDirective : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPSimdDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPSimdDirectiveClass, OMPD_simd,
+      : OMPLoopLikeDirective(this, OMPSimdDirectiveClass, OMPD_simd,
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -1065,7 +1065,7 @@ public:
 /// variables 'a' and 'b' and 'reduction' with operator '+' and variables 'c'
 /// and 'd'.
 ///
-class OMPForDirective : public OMPLoopDirective {
+class OMPForDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// \brief true if current directive has inner cancel directive.
@@ -1080,7 +1080,7 @@ class OMPForDirective : public OMPLoopDirective {
   ///
   OMPForDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                   unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPForDirectiveClass, OMPD_for, StartLoc, EndLoc,
+      : OMPLoopLikeDirective(this, OMPForDirectiveClass, OMPD_for, StartLoc, EndLoc,
                          CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -1090,7 +1090,7 @@ class OMPForDirective : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPForDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPForDirectiveClass, OMPD_for, SourceLocation(),
+      : OMPLoopLikeDirective(this, OMPForDirectiveClass, OMPD_for, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -1142,7 +1142,7 @@ public:
 /// with the variables 'a' and 'b', 'linear' with variables 'i', 'j' and
 /// linear step 's', 'reduction' with operator '+' and variables 'c' and 'd'.
 ///
-class OMPForSimdDirective : public OMPLoopDirective {
+class OMPForSimdDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -1153,7 +1153,7 @@ class OMPForSimdDirective : public OMPLoopDirective {
   ///
   OMPForSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                       unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPForSimdDirectiveClass, OMPD_for_simd,
+      : OMPLoopLikeDirective(this, OMPForSimdDirectiveClass, OMPD_for_simd,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
 
   /// \brief Build an empty directive.
@@ -1162,7 +1162,7 @@ class OMPForSimdDirective : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPForSimdDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPForSimdDirectiveClass, OMPD_for_simd,
+      : OMPLoopLikeDirective(this, OMPForSimdDirectiveClass, OMPD_for_simd,
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -1513,7 +1513,7 @@ public:
 /// with the variables 'a' and 'b' and 'reduction' with operator '+' and
 /// variables 'c' and 'd'.
 ///
-class OMPParallelForDirective : public OMPLoopDirective {
+class OMPParallelForDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// \brief true if current region has inner cancel directive.
@@ -1528,7 +1528,7 @@ class OMPParallelForDirective : public OMPLoopDirective {
   ///
   OMPParallelForDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                           unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPParallelForDirectiveClass, OMPD_parallel_for,
+      : OMPLoopLikeDirective(this, OMPParallelForDirectiveClass, OMPD_parallel_for,
                          StartLoc, EndLoc, CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -1538,7 +1538,7 @@ class OMPParallelForDirective : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPParallelForDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPParallelForDirectiveClass, OMPD_parallel_for,
+      : OMPLoopLikeDirective(this, OMPParallelForDirectiveClass, OMPD_parallel_for,
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses),
         HasCancel(false) {}
@@ -1593,7 +1593,7 @@ public:
 /// and linear step 's', 'reduction' with operator '+' and variables 'c' and
 /// 'd'.
 ///
-class OMPParallelForSimdDirective : public OMPLoopDirective {
+class OMPParallelForSimdDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -1604,7 +1604,7 @@ class OMPParallelForSimdDirective : public OMPLoopDirective {
   ///
   OMPParallelForSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                               unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPParallelForSimdDirectiveClass,
                          OMPD_parallel_for_simd, StartLoc, EndLoc, CollapsedNum,
                          NumClauses) {}
 
@@ -1615,7 +1615,7 @@ class OMPParallelForSimdDirective : public OMPLoopDirective {
   ///
   explicit OMPParallelForSimdDirective(unsigned CollapsedNum,
                                        unsigned NumClauses)
-      : OMPLoopDirective(this, OMPParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPParallelForSimdDirectiveClass,
                          OMPD_parallel_for_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -2542,7 +2542,7 @@ public:
 /// 'private' with the variables 'a' and 'b' and 'reduction' with operator '+'
 /// and variables 'c' and 'd'.
 ///
-class OMPTargetParallelForDirective : public OMPLoopDirective {
+class OMPTargetParallelForDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// \brief true if current region has inner cancel directive.
@@ -2557,7 +2557,7 @@ class OMPTargetParallelForDirective : public OMPLoopDirective {
   ///
   OMPTargetParallelForDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                                 unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetParallelForDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetParallelForDirectiveClass,
                          OMPD_target_parallel_for, StartLoc, EndLoc,
                          CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -2569,7 +2569,7 @@ class OMPTargetParallelForDirective : public OMPLoopDirective {
   ///
   explicit OMPTargetParallelForDirective(unsigned CollapsedNum,
                                          unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetParallelForDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetParallelForDirectiveClass,
                          OMPD_target_parallel_for, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -2802,7 +2802,7 @@ public:
 /// with the variables 'a' and 'b', 'grainsize' with expression 'val' and
 /// 'num_tasks' with expression 'num'.
 ///
-class OMPTaskLoopDirective : public OMPLoopDirective {
+class OMPTaskLoopDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -2813,7 +2813,7 @@ class OMPTaskLoopDirective : public OMPLoopDirective {
   ///
   OMPTaskLoopDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                        unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTaskLoopDirectiveClass, OMPD_taskloop,
+      : OMPLoopLikeDirective(this, OMPTaskLoopDirectiveClass, OMPD_taskloop,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
 
   /// \brief Build an empty directive.
@@ -2822,7 +2822,7 @@ class OMPTaskLoopDirective : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPTaskLoopDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTaskLoopDirectiveClass, OMPD_taskloop,
+      : OMPLoopLikeDirective(this, OMPTaskLoopDirectiveClass, OMPD_taskloop,
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -2867,7 +2867,7 @@ public:
 /// with the variables 'a' and 'b', 'grainsize' with expression 'val' and
 /// 'num_tasks' with expression 'num'.
 ///
-class OMPTaskLoopSimdDirective : public OMPLoopDirective {
+class OMPTaskLoopSimdDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -2878,7 +2878,7 @@ class OMPTaskLoopSimdDirective : public OMPLoopDirective {
   ///
   OMPTaskLoopSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                            unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTaskLoopSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTaskLoopSimdDirectiveClass,
                          OMPD_taskloop_simd, StartLoc, EndLoc, CollapsedNum,
                          NumClauses) {}
 
@@ -2888,7 +2888,7 @@ class OMPTaskLoopSimdDirective : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPTaskLoopSimdDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTaskLoopSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTaskLoopSimdDirectiveClass,
                          OMPD_taskloop_simd, SourceLocation(), SourceLocation(),
                          CollapsedNum, NumClauses) {}
 
@@ -2933,7 +2933,7 @@ public:
 /// In this example directive '#pragma omp distribute' has clauses 'private'
 /// with the variables 'a' and 'b'
 ///
-class OMPDistributeDirective : public OMPLoopDirective {
+class OMPDistributeDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// \brief Build directive with the given start and end location.
@@ -2945,7 +2945,7 @@ class OMPDistributeDirective : public OMPLoopDirective {
   ///
   OMPDistributeDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                          unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeDirectiveClass, OMPD_distribute,
+      : OMPLoopLikeDirective(this, OMPDistributeDirectiveClass, OMPD_distribute,
                          StartLoc, EndLoc, CollapsedNum, NumClauses)
         {}
 
@@ -2955,7 +2955,7 @@ class OMPDistributeDirective : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPDistributeDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeDirectiveClass, OMPD_distribute,
+      : OMPLoopLikeDirective(this, OMPDistributeDirectiveClass, OMPD_distribute,
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses)
         {}
@@ -3060,7 +3060,7 @@ public:
 /// In this example directive '#pragma omp distribute parallel for' has clause
 /// 'private' with the variables 'a' and 'b'
 ///
-class OMPDistributeParallelForDirective : public OMPLoopDirective {
+class OMPDistributeParallelForDirective : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
   bool HasCancel = false;
@@ -3075,7 +3075,7 @@ class OMPDistributeParallelForDirective : public OMPLoopDirective {
   OMPDistributeParallelForDirective(SourceLocation StartLoc,
                                     SourceLocation EndLoc,
                                     unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeParallelForDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPDistributeParallelForDirectiveClass,
                          OMPD_distribute_parallel_for, StartLoc, EndLoc,
                          CollapsedNum, NumClauses), HasCancel(false) {}
 
@@ -3086,7 +3086,7 @@ class OMPDistributeParallelForDirective : public OMPLoopDirective {
   ///
   explicit OMPDistributeParallelForDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeParallelForDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPDistributeParallelForDirectiveClass,
                          OMPD_distribute_parallel_for, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -3140,7 +3140,7 @@ public:
 /// In this example directive '#pragma omp distribute parallel for simd' has
 /// clause 'private' with the variables 'x'
 ///
-class OMPDistributeParallelForSimdDirective final : public OMPLoopDirective {
+class OMPDistributeParallelForSimdDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3154,7 +3154,7 @@ class OMPDistributeParallelForSimdDirective final : public OMPLoopDirective {
                                         SourceLocation EndLoc,
                                         unsigned CollapsedNum,
                                         unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPDistributeParallelForSimdDirectiveClass,
                          OMPD_distribute_parallel_for_simd, StartLoc, 
                          EndLoc, CollapsedNum, NumClauses) {}
 
@@ -3165,7 +3165,7 @@ class OMPDistributeParallelForSimdDirective final : public OMPLoopDirective {
   ///
   explicit OMPDistributeParallelForSimdDirective(unsigned CollapsedNum,
                                                  unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPDistributeParallelForSimdDirectiveClass,
                          OMPD_distribute_parallel_for_simd, 
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
@@ -3209,7 +3209,7 @@ public:
 /// In this example directive '#pragma omp distribute simd' has clause
 /// 'private' with the variables 'x'
 ///
-class OMPDistributeSimdDirective final : public OMPLoopDirective {
+class OMPDistributeSimdDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3221,7 +3221,7 @@ class OMPDistributeSimdDirective final : public OMPLoopDirective {
   ///
   OMPDistributeSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                              unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPDistributeSimdDirectiveClass,
                          OMPD_distribute_simd, StartLoc, EndLoc, CollapsedNum,
                          NumClauses) {}
 
@@ -3232,7 +3232,7 @@ class OMPDistributeSimdDirective final : public OMPLoopDirective {
   ///
   explicit OMPDistributeSimdDirective(unsigned CollapsedNum, 
                                       unsigned NumClauses)
-      : OMPLoopDirective(this, OMPDistributeSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPDistributeSimdDirectiveClass,
                          OMPD_distribute_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -3277,7 +3277,7 @@ public:
 /// 'private' with the variable 'a', 'map' with the variable 'b' and 'safelen'
 /// with the variable 'c'.
 ///
-class OMPTargetParallelForSimdDirective final : public OMPLoopDirective {
+class OMPTargetParallelForSimdDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3289,7 +3289,7 @@ class OMPTargetParallelForSimdDirective final : public OMPLoopDirective {
   ///
   OMPTargetParallelForSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                                 unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetParallelForSimdDirectiveClass,
                          OMPD_target_parallel_for_simd, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
@@ -3300,7 +3300,7 @@ class OMPTargetParallelForSimdDirective final : public OMPLoopDirective {
   ///
   explicit OMPTargetParallelForSimdDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetParallelForSimdDirectiveClass,
                          OMPD_target_parallel_for_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -3345,7 +3345,7 @@ public:
 /// with the variable 'a', 'map' with the variable 'b' and 'safelen' with
 /// the variable 'c'.
 ///
-class OMPTargetSimdDirective final : public OMPLoopDirective {
+class OMPTargetSimdDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3357,7 +3357,7 @@ class OMPTargetSimdDirective final : public OMPLoopDirective {
   ///
   OMPTargetSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                          unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetSimdDirectiveClass,
                          OMPD_target_simd, StartLoc, EndLoc, CollapsedNum,
                          NumClauses) {}
 
@@ -3367,7 +3367,7 @@ class OMPTargetSimdDirective final : public OMPLoopDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit OMPTargetSimdDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetSimdDirectiveClass, OMPD_target_simd, 
+      : OMPLoopLikeDirective(this, OMPTargetSimdDirectiveClass, OMPD_target_simd, 
                          SourceLocation(),SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -3411,7 +3411,7 @@ public:
 /// In this example directive '#pragma omp teams distribute' has clauses
 /// 'private' with the variables 'a' and 'b'
 ///
-class OMPTeamsDistributeDirective final : public OMPLoopDirective {
+class OMPTeamsDistributeDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3423,7 +3423,7 @@ class OMPTeamsDistributeDirective final : public OMPLoopDirective {
   ///
   OMPTeamsDistributeDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                               unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeDirectiveClass, 
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeDirectiveClass, 
                          OMPD_teams_distribute, StartLoc, EndLoc, 
                          CollapsedNum, NumClauses) {}
 
@@ -3434,7 +3434,7 @@ class OMPTeamsDistributeDirective final : public OMPLoopDirective {
   ///
   explicit OMPTeamsDistributeDirective(unsigned CollapsedNum,
                                        unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeDirectiveClass,
                          OMPD_teams_distribute, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -3479,7 +3479,7 @@ public:
 /// In this example directive '#pragma omp teams distribute simd'
 /// has clause 'private' with the variables 'a' and 'b'
 ///
-class OMPTeamsDistributeSimdDirective final : public OMPLoopDirective {
+class OMPTeamsDistributeSimdDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3492,7 +3492,7 @@ class OMPTeamsDistributeSimdDirective final : public OMPLoopDirective {
   OMPTeamsDistributeSimdDirective(SourceLocation StartLoc,
                                   SourceLocation EndLoc, unsigned CollapsedNum,
                                   unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeSimdDirectiveClass,
                          OMPD_teams_distribute_simd, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
@@ -3503,7 +3503,7 @@ class OMPTeamsDistributeSimdDirective final : public OMPLoopDirective {
   ///
   explicit OMPTeamsDistributeSimdDirective(unsigned CollapsedNum,
                                            unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeSimdDirectiveClass,
                          OMPD_teams_distribute_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -3550,7 +3550,7 @@ public:
 /// has clause 'private' with the variables 'x'
 ///
 class OMPTeamsDistributeParallelForSimdDirective final
-    : public OMPLoopDirective {
+    : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3564,7 +3564,7 @@ class OMPTeamsDistributeParallelForSimdDirective final
                                              SourceLocation EndLoc,
                                              unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeParallelForSimdDirectiveClass,
                          OMPD_teams_distribute_parallel_for_simd, StartLoc, 
                          EndLoc, CollapsedNum, NumClauses) {}
 
@@ -3575,7 +3575,7 @@ class OMPTeamsDistributeParallelForSimdDirective final
   ///
   explicit OMPTeamsDistributeParallelForSimdDirective(unsigned CollapsedNum,
                                                       unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeParallelForSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeParallelForSimdDirectiveClass,
                          OMPD_teams_distribute_parallel_for_simd, 
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
@@ -3620,7 +3620,7 @@ public:
 /// In this example directive '#pragma omp teams distribute parallel for'
 /// has clause 'private' with the variables 'x'
 ///
-class OMPTeamsDistributeParallelForDirective final : public OMPLoopDirective {
+class OMPTeamsDistributeParallelForDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
   bool HasCancel = false;
@@ -3636,7 +3636,7 @@ class OMPTeamsDistributeParallelForDirective final : public OMPLoopDirective {
                                          SourceLocation EndLoc,
                                          unsigned CollapsedNum,
                                          unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeParallelForDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeParallelForDirectiveClass,
                          OMPD_teams_distribute_parallel_for, StartLoc, EndLoc,
                          CollapsedNum, NumClauses), HasCancel(false) {}
 
@@ -3647,7 +3647,7 @@ class OMPTeamsDistributeParallelForDirective final : public OMPLoopDirective {
   ///
   explicit OMPTeamsDistributeParallelForDirective(unsigned CollapsedNum,
                                                   unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTeamsDistributeParallelForDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTeamsDistributeParallelForDirectiveClass,
                          OMPD_teams_distribute_parallel_for, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -3757,7 +3757,7 @@ public:
 /// In this example directive '#pragma omp target teams distribute' has clause
 /// 'private' with the variables 'x'
 ///
-class OMPTargetTeamsDistributeDirective final : public OMPLoopDirective {
+class OMPTargetTeamsDistributeDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3770,7 +3770,7 @@ class OMPTargetTeamsDistributeDirective final : public OMPLoopDirective {
   OMPTargetTeamsDistributeDirective(SourceLocation StartLoc,
                                     SourceLocation EndLoc,
                                     unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetTeamsDistributeDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetTeamsDistributeDirectiveClass,
                          OMPD_target_teams_distribute, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
@@ -3781,7 +3781,7 @@ class OMPTargetTeamsDistributeDirective final : public OMPLoopDirective {
   ///
   explicit OMPTargetTeamsDistributeDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetTeamsDistributeDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetTeamsDistributeDirectiveClass,
                          OMPD_target_teams_distribute, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -3826,7 +3826,7 @@ public:
 /// for' has clause 'private' with the variables 'x'
 ///
 class OMPTargetTeamsDistributeParallelForDirective final
-    : public OMPLoopDirective {
+    : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
   bool HasCancel = false;
@@ -3842,7 +3842,7 @@ class OMPTargetTeamsDistributeParallelForDirective final
                                                SourceLocation EndLoc,
                                                unsigned CollapsedNum,
                                                unsigned NumClauses)
-      : OMPLoopDirective(this,
+      : OMPLoopLikeDirective(this,
                          OMPTargetTeamsDistributeParallelForDirectiveClass,
                          OMPD_target_teams_distribute_parallel_for, StartLoc,
                          EndLoc, CollapsedNum, NumClauses),
@@ -3855,7 +3855,7 @@ class OMPTargetTeamsDistributeParallelForDirective final
   ///
   explicit OMPTargetTeamsDistributeParallelForDirective(unsigned CollapsedNum,
                                                         unsigned NumClauses)
-      : OMPLoopDirective(
+      : OMPLoopLikeDirective(
             this, OMPTargetTeamsDistributeParallelForDirectiveClass,
             OMPD_target_teams_distribute_parallel_for, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses),
@@ -3910,7 +3910,7 @@ public:
 /// for simd' has clause 'private' with the variables 'x'
 ///
 class OMPTargetTeamsDistributeParallelForSimdDirective final
-    : public OMPLoopDirective {
+    : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3924,7 +3924,7 @@ class OMPTargetTeamsDistributeParallelForSimdDirective final
                                                    SourceLocation EndLoc,
                                                    unsigned CollapsedNum,
                                                    unsigned NumClauses)
-      : OMPLoopDirective(this,
+      : OMPLoopLikeDirective(this,
                          OMPTargetTeamsDistributeParallelForSimdDirectiveClass,
                          OMPD_target_teams_distribute_parallel_for_simd,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
@@ -3936,7 +3936,7 @@ class OMPTargetTeamsDistributeParallelForSimdDirective final
   ///
   explicit OMPTargetTeamsDistributeParallelForSimdDirective(
       unsigned CollapsedNum, unsigned NumClauses)
-      : OMPLoopDirective(
+      : OMPLoopLikeDirective(
             this, OMPTargetTeamsDistributeParallelForSimdDirectiveClass,
             OMPD_target_teams_distribute_parallel_for_simd, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses) {}
@@ -3982,7 +3982,7 @@ public:
 /// In this example directive '#pragma omp target teams distribute simd'
 /// has clause 'private' with the variables 'x'
 ///
-class OMPTargetTeamsDistributeSimdDirective final : public OMPLoopDirective {
+class OMPTargetTeamsDistributeSimdDirective final : public OMPLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3996,7 +3996,7 @@ class OMPTargetTeamsDistributeSimdDirective final : public OMPLoopDirective {
                                         SourceLocation EndLoc,
                                         unsigned CollapsedNum,
                                         unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetTeamsDistributeSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetTeamsDistributeSimdDirectiveClass,
                          OMPD_target_teams_distribute_simd, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
@@ -4007,7 +4007,7 @@ class OMPTargetTeamsDistributeSimdDirective final : public OMPLoopDirective {
   ///
   explicit OMPTargetTeamsDistributeSimdDirective(unsigned CollapsedNum,
                                                  unsigned NumClauses)
-      : OMPLoopDirective(this, OMPTargetTeamsDistributeSimdDirectiveClass,
+      : OMPLoopLikeDirective(this, OMPTargetTeamsDistributeSimdDirectiveClass,
                          OMPD_target_teams_distribute_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 

@@ -2100,7 +2100,7 @@ public:
 void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) {
   switch (DKind) {
   case ACCD_parallel:
-  case ACCD_parellel_loop:
+  case ACCD_parallel_loop:
   case ACCD_parallel_for_simd:
   case ACCD_parallel_sections:
   case ACCD_teams:
@@ -2192,7 +2192,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
     break;
   }
   case ACCD_simd:
-  case ACCD_for:
+  case ACCD_loop:
   case ACCD_for_simd:
   case ACCD_sections:
   case ACCD_section:
@@ -2635,7 +2635,7 @@ static bool checkCancelRegion(Sema &SemaRef, OpenACCDirectiveKind CurrentRegion,
   if (CurrentRegion != ACCD_cancel && CurrentRegion != ACCD_cancellation_point)
     return false;
 
-  if (CancelRegion == ACCD_parallel || CancelRegion == ACCD_for ||
+  if (CancelRegion == ACCD_parallel || CancelRegion == ACCD_loop ||
       CancelRegion == ACCD_sections || CancelRegion == ACCD_taskgroup)
     return false;
 
@@ -2719,8 +2719,8 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
           !((CancelRegion == ACCD_parallel &&
              (ParentRegion == ACCD_parallel ||
               ParentRegion == ACCD_target_parallel)) ||
-            (CancelRegion == ACCD_for &&
-             (ParentRegion == ACCD_for || ParentRegion == ACCD_parellel_loop ||
+            (CancelRegion == ACCD_loop &&
+             (ParentRegion == ACCD_loop || ParentRegion == ACCD_parallel_loop ||
               ParentRegion == ACCD_target_parallel_for ||
               ParentRegion == ACCD_distribute_parallel_for ||
               ParentRegion == ACCD_teams_distribute_parallel_for ||
@@ -3020,8 +3020,8 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Res = ActOnOpenACCSimdDirective(ClausesWithImplicit, AStmt, StartLoc, EndLoc,
                                    VarsWithInheritedDSA);
     break;
-  case ACCD_for:
-    Res = ActOnOpenACCForDirective(ClausesWithImplicit, AStmt, StartLoc, EndLoc,
+  case ACCD_loop:
+    Res = ActOnOpenACCLoopDirective(ClausesWithImplicit, AStmt, StartLoc, EndLoc,
                                   VarsWithInheritedDSA);
     break;
   case ACCD_for_simd:
@@ -3050,7 +3050,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Res = ActOnOpenACCCriticalDirective(DirName, ClausesWithImplicit, AStmt,
                                        StartLoc, EndLoc);
     break;
-  case ACCD_parellel_loop:
+  case ACCD_parallel_loop:
     Res = ActOnOpenACCParallelLoopDirective(ClausesWithImplicit, AStmt, StartLoc,
                                           EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
@@ -4212,7 +4212,7 @@ void Sema::ActOnOpenACCLoopInitialization(SourceLocation ForLoc, Stmt *Init) {
   assert(Init && "Expected loop in canonical form.");
   unsigned AssociatedLoops = DSAStack->getAssociatedLoops();
   if (AssociatedLoops > 0 &&
-      isOpenACCLoopDirective(DSAStack->getCurrentDirective())) {
+      isOpenACCLoopLikeDirective(DSAStack->getCurrentDirective())) {
     OpenACCIterationSpaceChecker ISC(*this, ForLoc);
     if (!ISC.CheckInit(Init, /*EmitDiags=*/false)) {
       if (auto *D = ISC.GetLoopDecl()) {
@@ -4348,7 +4348,7 @@ static bool CheckOpenACCIterationSpace(
       DSA.addDSA(LCDecl, LoopDeclRefExpr, PredeterminedCKind);
     }
 
-    assert(isOpenACCLoopDirective(DKind) && "DSA for non-loop vars");
+    assert(isOpenACCLoopLikeDirective(DKind) && "DSA for non-loop vars");
 
     // Check test-expr.
     HasErrors |= ISC.CheckCond(For->getCond());
@@ -4561,7 +4561,7 @@ CheckOpenACCLoop(OpenACCDirectiveKind DKind, Expr *CollapseLoopCountExpr,
                 Expr *OrderedLoopCountExpr, Stmt *AStmt, Sema &SemaRef,
                 DSAStackTy &DSA,
                 llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA,
-                ACCLoopDirective::HelperExprs &Built) {
+                ACCLoopLikeDirective::HelperExprs &Built) {
   unsigned NestedLoopCount = 1;
   if (CollapseLoopCountExpr) {
     // Found 'collapse' clause - calculate collapse number.
@@ -5216,7 +5216,7 @@ StmtResult Sema::ActOnOpenACCSimdDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
@@ -5247,7 +5247,7 @@ StmtResult Sema::ActOnOpenACCSimdDirective(
                                   Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCForDirective(
+StmtResult Sema::ActOnOpenACCLoopDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -5255,11 +5255,11 @@ StmtResult Sema::ActOnOpenACCForDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_for, getCollapseNumberExpr(Clauses), getOrderedNumberExpr(Clauses),
+      ACCD_loop, getCollapseNumberExpr(Clauses), getOrderedNumberExpr(Clauses),
       AStmt, *this, *DSAStack, VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
     return StmtError();
@@ -5279,7 +5279,7 @@ StmtResult Sema::ActOnOpenACCForDirective(
   }
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCForDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
+  return ACCLoopDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
                                  Clauses, AStmt, B, DSAStack->isCancelRegion());
 }
 
@@ -5291,7 +5291,7 @@ StmtResult Sema::ActOnOpenACCForSimdDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -5495,11 +5495,11 @@ StmtResult Sema::ActOnOpenACCParallelLoopDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_parellel_loop, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_parallel_loop, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), AStmt, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -5540,7 +5540,7 @@ StmtResult Sema::ActOnOpenACCParallelForSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6531,7 +6531,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6818,7 +6818,7 @@ StmtResult Sema::ActOnOpenACCTaskLoopDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6855,7 +6855,7 @@ StmtResult Sema::ActOnOpenACCTaskLoopSimdDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6905,7 +6905,7 @@ StmtResult Sema::ActOnOpenACCDistributeDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6949,7 +6949,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
@@ -6994,7 +6994,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
@@ -7051,7 +7051,7 @@ StmtResult Sema::ActOnOpenACCDistributeSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -7108,7 +7108,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
@@ -7164,7 +7164,7 @@ StmtResult Sema::ActOnOpenACCTargetSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will define the
   // nested loops number.
   unsigned NestedLoopCount =
@@ -7221,7 +7221,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -7269,7 +7269,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeSimdDirective(
   }
 
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
@@ -7332,7 +7332,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
@@ -7395,7 +7395,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
@@ -7475,7 +7475,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
@@ -7519,7 +7519,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
@@ -7575,7 +7575,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount =
@@ -7635,7 +7635,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  ACCLoopDirective::HelperExprs B;
+  ACCLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
@@ -7794,7 +7794,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parellel_loop:
+    case ACCD_parallel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target:
     case ACCD_target_simd:
@@ -7821,7 +7821,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_end_declare_target:
     case ACCD_teams:
     case ACCD_simd:
-    case ACCD_for:
+    case ACCD_loop:
     case ACCD_for_simd:
     case ACCD_sections:
     case ACCD_section:
@@ -7855,7 +7855,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
       break;
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parellel_loop:
+    case ACCD_parallel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_distribute_parallel_for:
     case ACCD_distribute_parallel_for_simd:
@@ -7886,7 +7886,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_end_declare_target:
     case ACCD_teams:
     case ACCD_simd:
-    case ACCD_for:
+    case ACCD_loop:
     case ACCD_for_simd:
     case ACCD_sections:
     case ACCD_section:
@@ -7933,7 +7933,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parellel_loop:
+    case ACCD_parallel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target:
     case ACCD_target_simd:
@@ -7951,7 +7951,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_declare_target:
     case ACCD_end_declare_target:
     case ACCD_simd:
-    case ACCD_for:
+    case ACCD_loop:
     case ACCD_for_simd:
     case ACCD_sections:
     case ACCD_section:
@@ -7996,7 +7996,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parellel_loop:
+    case ACCD_parallel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target:
     case ACCD_target_simd:
@@ -8014,7 +8014,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_declare_target:
     case ACCD_end_declare_target:
     case ACCD_simd:
-    case ACCD_for:
+    case ACCD_loop:
     case ACCD_for_simd:
     case ACCD_sections:
     case ACCD_section:
@@ -8033,7 +8033,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     break;
   case ACCC_schedule:
     switch (DKind) {
-    case ACCD_parellel_loop:
+    case ACCD_parallel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_distribute_parallel_for:
     case ACCD_distribute_parallel_for_simd:
@@ -8045,7 +8045,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_target_teams_distribute_parallel_for_simd:
       CaptureRegion = ACCD_parallel;
       break;
-    case ACCD_for:
+    case ACCD_loop:
     case ACCD_for_simd:
       // Do not capture schedule-clause expressions.
       break;
@@ -8112,7 +8112,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute_simd:
       // Do not capture thread_limit-clause expressions.
       break;
-    case ACCD_parellel_loop:
+    case ACCD_parallel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_target_parallel_for_simd:
     case ACCD_target_parallel_for:
@@ -8141,7 +8141,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_declare_target:
     case ACCD_end_declare_target:
     case ACCD_simd:
-    case ACCD_for:
+    case ACCD_loop:
     case ACCD_for_simd:
     case ACCD_sections:
     case ACCD_section:
@@ -8190,7 +8190,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
-    case ACCD_parellel_loop:
+    case ACCD_parallel_loop:
     case ACCD_parallel_for_simd:
     case ACCD_threadprivate:
     case ACCD_taskyield:
@@ -8203,7 +8203,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_declare_target:
     case ACCD_end_declare_target:
     case ACCD_simd:
-    case ACCD_for:
+    case ACCD_loop:
     case ACCD_for_simd:
     case ACCD_sections:
     case ACCD_section:

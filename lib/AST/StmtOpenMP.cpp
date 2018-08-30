@@ -23,32 +23,32 @@ void OMPExecutableDirective::setClauses(ArrayRef<OMPClause *> Clauses) {
   std::copy(Clauses.begin(), Clauses.end(), getClauses().begin());
 }
 
-void OMPLoopDirective::setCounters(ArrayRef<Expr *> A) {
+void OMPLoopLikeDirective::setCounters(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of loop counters is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getCounters().begin());
 }
 
-void OMPLoopDirective::setPrivateCounters(ArrayRef<Expr *> A) {
+void OMPLoopLikeDirective::setPrivateCounters(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() && "Number of loop private counters "
                                              "is not the same as the collapsed "
                                              "number");
   std::copy(A.begin(), A.end(), getPrivateCounters().begin());
 }
 
-void OMPLoopDirective::setInits(ArrayRef<Expr *> A) {
+void OMPLoopLikeDirective::setInits(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of counter inits is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getInits().begin());
 }
 
-void OMPLoopDirective::setUpdates(ArrayRef<Expr *> A) {
+void OMPLoopLikeDirective::setUpdates(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of counter updates is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getUpdates().begin());
 }
 
-void OMPLoopDirective::setFinals(ArrayRef<Expr *> A) {
+void OMPLoopLikeDirective::setFinals(ArrayRef<Expr *> A) {
   assert(A.size() == getCollapsedNumber() &&
          "Number of counter finals is not the same as the collapsed number");
   std::copy(A.begin(), A.end(), getFinals().begin());

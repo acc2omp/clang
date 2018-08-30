@@ -82,7 +82,7 @@ static unsigned getOpenACCDirectiveKindEx(StringRef S) {
 
 static OpenACCDirectiveKind ParseOpenACCDirectiveKind(Parser &P) {
   // Array of foldings: F[i][0] F[i][1] ===> F[i][2].
-  // E.g.: ACCD_for ACCD_simd ===> ACCD_for_simd
+  // E.g.: ACCD_loop ACCD_simd ===> ACCD_for_simd
   // TODO: add other combined directives in topological order.
   static const unsigned F[][3] = {
     { ACCD_cancellation, ACCD_point, ACCD_cancellation_point },
@@ -90,7 +90,7 @@ static OpenACCDirectiveKind ParseOpenACCDirectiveKind(Parser &P) {
     { ACCD_declare, ACCD_simd, ACCD_declare_simd },
     { ACCD_declare, ACCD_target, ACCD_declare_target },
     { ACCD_distribute, ACCD_parallel, ACCD_distribute_parallel },
-    { ACCD_distribute_parallel, ACCD_for, ACCD_distribute_parallel_for },
+    { ACCD_distribute_parallel, ACCD_loop, ACCD_distribute_parallel_for },
     { ACCD_distribute_parallel_for, ACCD_simd, 
       ACCD_distribute_parallel_for_simd },
     { ACCD_distribute, ACCD_simd, ACCD_distribute_simd },
@@ -102,25 +102,25 @@ static OpenACCDirectiveKind ParseOpenACCDirectiveKind(Parser &P) {
     { ACCD_target, ACCD_update, ACCD_target_update },
     { ACCD_target_enter, ACCD_data, ACCD_target_enter_data },
     { ACCD_target_exit, ACCD_data, ACCD_target_exit_data },
-    { ACCD_for, ACCD_simd, ACCD_for_simd },
-    { ACCD_parallel, ACCD_for, ACCD_parellel_loop },
-    { ACCD_parellel_loop, ACCD_simd, ACCD_parallel_for_simd },
+    { ACCD_loop, ACCD_simd, ACCD_for_simd },
+    { ACCD_parallel, ACCD_loop, ACCD_parallel_loop },
+    { ACCD_parallel_loop, ACCD_simd, ACCD_parallel_for_simd },
     { ACCD_parallel, ACCD_sections, ACCD_parallel_sections },
     { ACCD_taskloop, ACCD_simd, ACCD_taskloop_simd },
     { ACCD_target, ACCD_parallel, ACCD_target_parallel },
     { ACCD_target, ACCD_simd, ACCD_target_simd },
-    { ACCD_target_parallel, ACCD_for, ACCD_target_parallel_for },
+    { ACCD_target_parallel, ACCD_loop, ACCD_target_parallel_for },
     { ACCD_target_parallel_for, ACCD_simd, ACCD_target_parallel_for_simd },
     { ACCD_teams, ACCD_distribute, ACCD_teams_distribute },
     { ACCD_teams_distribute, ACCD_simd, ACCD_teams_distribute_simd },
     { ACCD_teams_distribute, ACCD_parallel, ACCD_teams_distribute_parallel },
-    { ACCD_teams_distribute_parallel, ACCD_for, ACCD_teams_distribute_parallel_for },
+    { ACCD_teams_distribute_parallel, ACCD_loop, ACCD_teams_distribute_parallel_for },
     { ACCD_teams_distribute_parallel_for, ACCD_simd, ACCD_teams_distribute_parallel_for_simd },
     { ACCD_target, ACCD_teams, ACCD_target_teams },
     { ACCD_target_teams, ACCD_distribute, ACCD_target_teams_distribute },
     { ACCD_target_teams_distribute, ACCD_parallel, ACCD_target_teams_distribute_parallel },
     { ACCD_target_teams_distribute, ACCD_simd, ACCD_target_teams_distribute_simd },
-    { ACCD_target_teams_distribute_parallel, ACCD_for, ACCD_target_teams_distribute_parallel_for },
+    { ACCD_target_teams_distribute_parallel, ACCD_loop, ACCD_target_teams_distribute_parallel_for },
     { ACCD_target_teams_distribute_parallel_for, ACCD_simd, ACCD_target_teams_distribute_parallel_for_simd }
   };
   enum { CancellationPoint = 0, DeclareReduction = 1, TargetData = 2 };
@@ -810,7 +810,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_taskwait:
   case ACCD_taskgroup:
   case ACCD_flush:
-  case ACCD_for:
+  case ACCD_loop:
   case ACCD_for_simd:
   case ACCD_sections:
   case ACCD_section:
@@ -818,7 +818,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_master:
   case ACCD_ordered:
   case ACCD_critical:
-  case ACCD_parellel_loop:
+  case ACCD_parallel_loop:
   case ACCD_parallel_for_simd:
   case ACCD_parallel_sections:
   case ACCD_atomic:
@@ -978,14 +978,14 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     LLVM_FALLTHROUGH;
   case ACCD_parallel:
   case ACCD_simd:
-  case ACCD_for:
+  case ACCD_loop:
   case ACCD_for_simd:
   case ACCD_sections:
   case ACCD_single:
   case ACCD_section:
   case ACCD_master:
   case ACCD_critical:
-  case ACCD_parellel_loop:
+  case ACCD_parallel_loop:
   case ACCD_parallel_for_simd:
   case ACCD_parallel_sections:
   case ACCD_task:
@@ -1035,9 +1035,9 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
         ConsumeToken();
     }
 
-    if (isOpenACCLoopDirective(DKind)){
-      llvm::outs() << "------------ isOpenACCLoopDirective! ------------\n";
-      ScopeFlags |= Scope::OpenACCLoopDirectiveScope;
+    if (isOpenACCLoopLikeDirective(DKind)){
+      llvm::outs() << "------------ isOpenACCLoopLikeDirective! ------------\n";
+      ScopeFlags |= Scope::OpenACCLoopLikeDirectiveScope;
     }
     if (isOpenACCSimdDirective(DKind))
       ScopeFlags |= Scope::OpenACCSimdDirectiveScope;

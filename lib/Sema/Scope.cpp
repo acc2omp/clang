@@ -160,7 +160,7 @@ void Scope::dumpImpl(raw_ostream &OS) const {
       {TryScope, "TryScope"},
       {FnTryCatchScope, "FnTryCatchScope"},
       {OpenACCDirectiveScope, "OpenACCDirectiveScope"},
-      {OpenACCLoopDirectiveScope, "OpenACCLoopDirectiveScope"},
+      {OpenACCLoopLikeDirectiveScope, "OpenACCLoopLikeDirectiveScope"},
       {OpenACCSimdDirectiveScope, "OpenACCSimdDirectiveScope"},
       {OpenMPDirectiveScope, "OpenMPDirectiveScope"},
       {OpenMPLoopDirectiveScope, "OpenMPLoopDirectiveScope"},

@@ -39,7 +39,7 @@ class Expr;
 class GlobalDecl;
 class OMPDependClause;
 class OMPExecutableDirective;
-class OMPLoopDirective;
+class OMPLoopLikeDirective;
 class VarDecl;
 class OMPDeclareReductionDecl;
 class IdentifierInfo;
@@ -1025,7 +1025,7 @@ public:
   /// \param Data Additional data for task generation like tiednsee, final
   /// state, list of privates etc.
   virtual void emitTaskLoopCall(
-      CodeGenFunction &CGF, SourceLocation Loc, const OMPLoopDirective &D,
+      CodeGenFunction &CGF, SourceLocation Loc, const OMPLoopLikeDirective &D,
       llvm::Value *TaskFunction, QualType SharedsTy, Address Shareds,
       const Expr *IfCond, const OMPTaskDataTy &Data);
 
@@ -1331,7 +1331,7 @@ public:
   /// Emit initialization for doacross loop nesting support.
   /// \param D Loop-based construct used in doacross nesting construct.
   virtual void emitDoacrossInit(CodeGenFunction &CGF,
-                                const OMPLoopDirective &D);
+                                const OMPLoopLikeDirective &D);
 
   /// Emit code for doacross ordered directive with 'depend' clause.
   /// \param C 'depend' clause with 'sink|source' dependency kind.
@@ -1689,7 +1689,7 @@ public:
   /// \param Data Additional data for task generation like tiednsee, final
   /// state, list of privates etc.
   void emitTaskLoopCall(CodeGenFunction &CGF, SourceLocation Loc,
-                        const OMPLoopDirective &D, llvm::Value *TaskFunction,
+                        const OMPLoopLikeDirective &D, llvm::Value *TaskFunction,
                         QualType SharedsTy, Address Shareds, const Expr *IfCond,
                         const OMPTaskDataTy &Data) override;
 
@@ -1904,7 +1904,7 @@ public:
   /// Emit initialization for doacross loop nesting support.
   /// \param D Loop-based construct used in doacross nesting construct.
   void emitDoacrossInit(CodeGenFunction &CGF,
-                        const OMPLoopDirective &D) override;
+                        const OMPLoopLikeDirective &D) override;
 
   /// Emit code for doacross ordered directive with 'depend' clause.
   /// \param C 'depend' clause with 'sink|source' dependency kind.

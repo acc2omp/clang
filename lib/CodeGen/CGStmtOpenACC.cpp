@@ -119,7 +119,7 @@ public:
 /// Private scope for OpenACC loop-based directives, that supports capturing
 /// of used expression from loop statement.
 class ACCLoopScope : public CodeGenFunction::RunCleanupsScope {
-  void emitPreInitStmt(CodeGenFunction &CGF, const ACCLoopDirective &S) {
+  void emitPreInitStmt(CodeGenFunction &CGF, const ACCLoopLikeDirective &S) {
     CodeGenFunction::ACCPrivateScope PreCondScope(CGF);
     for (auto *E : S.counters()) {
       const auto *VD = cast<VarDecl>(cast<DeclRefExpr>(E)->getDecl());
@@ -128,7 +128,7 @@ class ACCLoopScope : public CodeGenFunction::RunCleanupsScope {
       });
     }
     (void)PreCondScope.Privatize();
-    if (auto *LD = dyn_cast<ACCLoopDirective>(&S)) {
+    if (auto *LD = dyn_cast<ACCLoopLikeDirective>(&S)) {
       if (auto *PreInits = cast_or_null<DeclStmt>(LD->getPreInits())) {
         for (const auto *I : PreInits->decls())
           CGF.EmitVarDecl(cast<VarDecl>(*I));
@@ -137,7 +137,7 @@ class ACCLoopScope : public CodeGenFunction::RunCleanupsScope {
   }
 
 public:
-  ACCLoopScope(CodeGenFunction &CGF, const ACCLoopDirective &S)
+  ACCLoopScope(CodeGenFunction &CGF, const ACCLoopLikeDirective &S)
       : CodeGenFunction::RunCleanupsScope(CGF) {
     emitPreInitStmt(CGF, S);
   }
@@ -925,7 +925,7 @@ bool CodeGenFunction::EmitACCLastprivateClauseInit(
   bool HasAtLeastOneLastprivate = false;
   llvm::DenseSet<const VarDecl *> SIMDLCVs;
   if (isOpenACCSimdDirective(D.getDirectiveKind())) {
-    auto *LoopDirective = cast<ACCLoopDirective>(&D);
+    auto *LoopDirective = cast<ACCLoopLikeDirective>(&D);
     for (auto *C : LoopDirective->counters()) {
       SIMDLCVs.insert(
           cast<VarDecl>(cast<DeclRefExpr>(C)->getDecl())->getCanonicalDecl());
@@ -998,7 +998,7 @@ void CodeGenFunction::EmitACCLastprivateClauseFinal(
   }
   llvm::DenseSet<const VarDecl *> AlreadyEmittedVars;
   llvm::DenseMap<const VarDecl *, const Expr *> LoopCountersAndUpdates;
-  if (auto *LoopDirective = dyn_cast<ACCLoopDirective>(&D)) {
+  if (auto *LoopDirective = dyn_cast<ACCLoopLikeDirective>(&D)) {
     auto IC = LoopDirective->counters().begin();
     for (auto F : LoopDirective->finals()) {
       auto *D =
@@ -1287,7 +1287,7 @@ void CodeGenFunction::EmitACCParallelDirective(const ACCParallelDirective &S) {
       *this, S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCLoopBody(const ACCLoopDirective &D,
+void CodeGenFunction::EmitACCLoopBody(const ACCLoopLikeDirective &D,
                                       JumpDest LoopExit) {
   RunCleanupsScope BodyScope(*this);
   // Update counters values on current iteration.
@@ -1363,7 +1363,7 @@ void CodeGenFunction::EmitACCInnerLoop(
   EmitBlock(LoopExit.getBlock());
 }
 
-bool CodeGenFunction::EmitACCLinearClauseInit(const ACCLoopDirective &D) {
+bool CodeGenFunction::EmitACCLinearClauseInit(const ACCLoopLikeDirective &D) {
   if (!HaveInsertPoint())
     return false;
   // Emit inits for the linear variables.
@@ -1399,7 +1399,7 @@ bool CodeGenFunction::EmitACCLinearClauseInit(const ACCLoopDirective &D) {
 }
 
 void CodeGenFunction::EmitACCLinearClauseFinal(
-    const ACCLoopDirective &D,
+    const ACCLoopLikeDirective &D,
     const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen) {
   if (!HaveInsertPoint())
     return;
@@ -1470,7 +1470,7 @@ static void emitAlignedClause(CodeGenFunction &CGF,
 }
 
 void CodeGenFunction::EmitACCPrivateLoopCounters(
-    const ACCLoopDirective &S, CodeGenFunction::ACCPrivateScope &LoopScope) {
+    const ACCLoopLikeDirective &S, CodeGenFunction::ACCPrivateScope &LoopScope) {
   if (!HaveInsertPoint())
     return;
   auto I = S.private_counters().begin();
@@ -1501,7 +1501,7 @@ void CodeGenFunction::EmitACCPrivateLoopCounters(
   }
 }
 
-static void emitPreCond(CodeGenFunction &CGF, const ACCLoopDirective &S,
+static void emitPreCond(CodeGenFunction &CGF, const ACCLoopLikeDirective &S,
                         const Expr *Cond, llvm::BasicBlock *TrueBlock,
                         llvm::BasicBlock *FalseBlock, uint64_t TrueCount) {
   if (!CGF.HaveInsertPoint())
@@ -1520,12 +1520,12 @@ static void emitPreCond(CodeGenFunction &CGF, const ACCLoopDirective &S,
 }
 
 void CodeGenFunction::EmitACCLinearClause(
-    const ACCLoopDirective &D, CodeGenFunction::ACCPrivateScope &PrivateScope) {
+    const ACCLoopLikeDirective &D, CodeGenFunction::ACCPrivateScope &PrivateScope) {
   if (!HaveInsertPoint())
     return;
   llvm::DenseSet<const VarDecl *> SIMDLCVs;
   if (isOpenACCSimdDirective(D.getDirectiveKind())) {
-    auto *LoopDirective = cast<ACCLoopDirective>(&D);
+    auto *LoopDirective = cast<ACCLoopLikeDirective>(&D);
     for (auto *C : LoopDirective->counters()) {
       SIMDLCVs.insert(
           cast<VarDecl>(cast<DeclRefExpr>(C)->getDecl())->getCanonicalDecl());
@@ -1580,7 +1580,7 @@ static void emitSimdlenSafelenClause(CodeGenFunction &CGF,
   }
 }
 
-void CodeGenFunction::EmitACCSimdInit(const ACCLoopDirective &D,
+void CodeGenFunction::EmitACCSimdInit(const ACCLoopLikeDirective &D,
                                       bool IsMonotonic) {
   // Walk clauses and process safelen/lastprivate.
   LoopStack.setParallel(!IsMonotonic);
@@ -1589,7 +1589,7 @@ void CodeGenFunction::EmitACCSimdInit(const ACCLoopDirective &D,
 }
 
 void CodeGenFunction::EmitACCSimdFinal(
-    const ACCLoopDirective &D,
+    const ACCLoopLikeDirective &D,
     const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen) {
   if (!HaveInsertPoint())
     return;
@@ -1635,7 +1635,7 @@ void CodeGenFunction::EmitACCSimdFinal(
 }
 
 static void emitACCLoopBodyWithStopPoint(CodeGenFunction &CGF,
-                                         const ACCLoopDirective &S,
+                                         const ACCLoopLikeDirective &S,
                                          CodeGenFunction::JumpDest LoopExit) {
   CGF.EmitACCLoopBody(S, LoopExit);
   CGF.EmitStopPoint(&S);
@@ -1649,7 +1649,7 @@ static LValue EmitACCHelperVar(CodeGenFunction &CGF,
   return CGF.EmitLValue(Helper);
 }
 
-static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopDirective &S,
+static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopLikeDirective &S,
                               ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
   assert(isOpenACCSimdDirective(S.getDirectiveKind()) &&
@@ -1745,7 +1745,7 @@ void CodeGenFunction::EmitACCSimdDirective(const ACCSimdDirective &S) {
 }
 
 void CodeGenFunction::EmitACCOuterLoop(
-    bool DynamicOrOrdered, bool IsMonotonic, const ACCLoopDirective &S,
+    bool DynamicOrOrdered, bool IsMonotonic, const ACCLoopLikeDirective &S,
     CodeGenFunction::ACCPrivateScope &LoopScope,
     const CodeGenFunction::ACCLoopArguments &LoopArgs,
     const CodeGenFunction::ACCCodeGenLoopTy &CodeGenLoop,
@@ -1851,7 +1851,7 @@ void CodeGenFunction::EmitACCOuterLoop(
 
 void CodeGenFunction::EmitACCForOuterLoop(
     const OpenACCScheduleTy &ScheduleKind, bool IsMonotonic,
-    const ACCLoopDirective &S, ACCPrivateScope &LoopScope, bool Ordered,
+    const ACCLoopLikeDirective &S, ACCPrivateScope &LoopScope, bool Ordered,
     const ACCLoopArguments &LoopArgs,
     const ACCCodeGenDispatchBoundsTy &CGDispatchBounds) {
   auto &RT = CGM.getOpenACCRuntime();
@@ -1959,7 +1959,7 @@ static void emitEmptyOrdered(CodeGenFunction &, SourceLocation Loc,
                              const unsigned IVSize, const bool IVSigned) {}
 
 void CodeGenFunction::EmitACCDistributeOuterLoop(
-    OpenACCDistScheduleClauseKind ScheduleKind, const ACCLoopDirective &S,
+    OpenACCDistScheduleClauseKind ScheduleKind, const ACCLoopLikeDirective &S,
     ACCPrivateScope &LoopScope, const ACCLoopArguments &LoopArgs,
     const ACCCodeGenLoopTy &CodeGenLoopContent) {
 
@@ -2021,7 +2021,7 @@ void CodeGenFunction::EmitACCDistributeOuterLoop(
 static std::pair<LValue, LValue>
 emitDistributeParallelForInnerBounds(CodeGenFunction &CGF,
                                      const ACCExecutableDirective &S) {
-  const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
+  const ACCLoopLikeDirective &LS = cast<ACCLoopLikeDirective>(S);
   LValue LB =
       EmitACCHelperVar(CGF, cast<DeclRefExpr>(LS.getLowerBoundVariable()));
   LValue UB =
@@ -2065,7 +2065,7 @@ static std::pair<llvm::Value *, llvm::Value *>
 emitDistributeParallelForDispatchBounds(CodeGenFunction &CGF,
                                         const ACCExecutableDirective &S,
                                         Address LB, Address UB) {
-  const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
+  const ACCLoopLikeDirective &LS = cast<ACCLoopLikeDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();
   // when implementing a dynamic schedule for a 'for' combined with a
   // 'distribute' (e.g. 'distribute parallel for'), the 'for' loop
@@ -2082,7 +2082,7 @@ emitDistributeParallelForDispatchBounds(CodeGenFunction &CGF,
 static void emitDistributeParallelForDistributeInnerBoundParams(
     CodeGenFunction &CGF, const ACCExecutableDirective &S,
     llvm::SmallVectorImpl<llvm::Value *> &CapturedVars) {
-  const auto &Dir = cast<ACCLoopDirective>(S);
+  const auto &Dir = cast<ACCLoopLikeDirective>(S);
   LValue LB =
       CGF.EmitLValue(cast<DeclRefExpr>(Dir.getCombinedLowerBoundVariable()));
   auto LBCast = CGF.Builder.CreateIntCast(
@@ -2098,7 +2098,7 @@ static void emitDistributeParallelForDistributeInnerBoundParams(
 
 static void
 emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
-                                 const ACCLoopDirective &S,
+                                 const ACCLoopLikeDirective &S,
                                  CodeGenFunction::JumpDest LoopExit) {
   auto &&CGInlinedWorksharingLoop = [&S](CodeGenFunction &CGF,
                                          ACCPrePostActionTy &) {
@@ -2121,7 +2121,7 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
 
   emitCommonACCParallelDirective(
       CGF, S,
-      isOpenACCSimdDirective(S.getDirectiveKind()) ? ACCD_for_simd : ACCD_for,
+      isOpenACCSimdDirective(S.getDirectiveKind()) ? ACCD_for_simd : ACCD_loop,
       CGInlinedWorksharingLoop,
       emitDistributeParallelForDistributeInnerBoundParams);
 }
@@ -2190,7 +2190,7 @@ namespace {
 } // namespace
 
 bool CodeGenFunction::EmitACCWorksharingLoop(
-    const ACCLoopDirective &S, Expr *EUB,
+    const ACCLoopLikeDirective &S, Expr *EUB,
     const ACCCodeGenLoopBoundsTy &CodeGenLoopBounds,
     const ACCCodeGenDispatchBoundsTy &CGDispatchBounds) {
   // Emit the loop iteration variable.
@@ -2382,7 +2382,7 @@ bool CodeGenFunction::EmitACCWorksharingLoop(
 /// of the associated 'for' or 'distribute' loop.
 static std::pair<LValue, LValue>
 emitForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S) {
-  const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
+  const ACCLoopLikeDirective &LS = cast<ACCLoopLikeDirective>(S);
   LValue LB =
       EmitACCHelperVar(CGF, cast<DeclRefExpr>(LS.getLowerBoundVariable()));
   LValue UB =
@@ -2397,7 +2397,7 @@ emitForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S) {
 static std::pair<llvm::Value *, llvm::Value *>
 emitDispatchForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S,
                           Address LB, Address UB) {
-  const ACCLoopDirective &LS = cast<ACCLoopDirective>(S);
+  const ACCLoopLikeDirective &LS = cast<ACCLoopLikeDirective>(S);
   const Expr *IVExpr = LS.getIterationVariable();
   const unsigned IVSize = CGF.getContext().getTypeSize(IVExpr->getType());
   llvm::Value *LBVal = CGF.Builder.getIntN(IVSize, 0);
@@ -2405,24 +2405,24 @@ emitDispatchForLoopBounds(CodeGenFunction &CGF, const ACCExecutableDirective &S,
   return {LBVal, UBVal};
 }
 
-void CodeGenFunction::EmitACCForDirective(const ACCForDirective &S) {
+void CodeGenFunction::EmitACCLoopDirective(const ACCLoopDirective &S) {
   bool HasLastprivates = false;
   auto &&CodeGen = [&S, &HasLastprivates](CodeGenFunction &CGF,
                                           ACCPrePostActionTy &) {
-    ACCCancelStackRAII CancelRegion(CGF, ACCD_for, S.hasCancel());
+    ACCCancelStackRAII CancelRegion(CGF, ACCD_loop, S.hasCancel());
     HasLastprivates = CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(),
                                                  emitForLoopBounds,
                                                  emitDispatchForLoopBounds);
   };
   {
     ACCLexicalScope Scope(*this, S, ACCD_unknown);
-    CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_for, CodeGen,
+    CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_loop, CodeGen,
                                                 S.hasCancel());
   }
 
   // Emit an implicit barrier at the end.
   if (!S.getSingleClause<ACCNowaitClause>() || HasLastprivates) {
-    CGM.getOpenACCRuntime().emitBarrierCall(*this, S.getLocStart(), ACCD_for);
+    CGM.getOpenACCRuntime().emitBarrierCall(*this, S.getLocStart(), ACCD_loop);
   }
 }
 
@@ -2441,7 +2441,7 @@ void CodeGenFunction::EmitACCForSimdDirective(const ACCForSimdDirective &S) {
 
   // Emit an implicit barrier at the end.
   if (!S.getSingleClause<ACCNowaitClause>() || HasLastprivates) {
-    CGM.getOpenACCRuntime().emitBarrierCall(*this, S.getLocStart(), ACCD_for);
+    CGM.getOpenACCRuntime().emitBarrierCall(*this, S.getLocStart(), ACCD_loop);
   }
 }
 
@@ -2685,11 +2685,11 @@ void CodeGenFunction::EmitACCParallelLoopDirective(
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
-    ACCCancelStackRAII CancelRegion(CGF, ACCD_parellel_loop, S.hasCancel());
+    ACCCancelStackRAII CancelRegion(CGF, ACCD_parallel_loop, S.hasCancel());
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };
-  emitCommonACCParallelDirective(*this, S, ACCD_for, CodeGen,
+  emitCommonACCParallelDirective(*this, S, ACCD_loop, CodeGen,
                                  emitEmptyBoundParameters);
 }
 
@@ -3207,7 +3207,7 @@ void CodeGenFunction::EmitACCFlushDirective(const ACCFlushDirective &S) {
   }(), S.getLocStart());
 }
 
-void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopDirective &S,
+void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
                                             const ACCCodeGenLoopTy &CodeGenLoop,
                                             Expr *IncExpr) {
   // Emit the loop iteration variable.
@@ -3364,7 +3364,7 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopDirective &S,
           isOpenACCSimdDirective(S.getDirectiveKind())) {
         ReductionKind = ACCD_parallel_for_simd;
       } else if (isOpenACCParallelDirective(S.getDirectiveKind())) {
-        ReductionKind = ACCD_parellel_loop;
+        ReductionKind = ACCD_parallel_loop;
       } else if (isOpenACCSimdDirective(S.getDirectiveKind())) {
         ReductionKind = ACCD_simd;
       } else if (!isOpenACCTeamsDirective(S.getDirectiveKind()) &&
@@ -4377,8 +4377,8 @@ CodeGenFunction::getACCCancelDestination(OpenACCDirectiveKind Kind) {
   if (Kind == ACCD_parallel || Kind == ACCD_task ||
       Kind == ACCD_target_parallel)
     return ReturnBlock;
-  assert(Kind == ACCD_for || Kind == ACCD_section || Kind == ACCD_sections ||
-         Kind == ACCD_parallel_sections || Kind == ACCD_parellel_loop ||
+  assert(Kind == ACCD_loop || Kind == ACCD_section || Kind == ACCD_sections ||
+         Kind == ACCD_parallel_sections || Kind == ACCD_parallel_loop ||
          Kind == ACCD_distribute_parallel_for ||
          Kind == ACCD_target_parallel_for ||
          Kind == ACCD_teams_distribute_parallel_for ||
@@ -4635,7 +4635,7 @@ static void emitTargetParallelForRegion(CodeGenFunction &CGF,
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };
-  emitCommonACCParallelDirective(CGF, S, ACCD_for, CodeGen,
+  emitCommonACCParallelDirective(CGF, S, ACCD_loop, CodeGen,
                                  emitEmptyBoundParameters);
 }
 
@@ -4709,7 +4709,7 @@ static void mapParam(CodeGenFunction &CGF, const DeclRefExpr *Helper,
       VDecl, [&CGF, PVD]() -> Address { return CGF.GetAddrOfLocalVar(PVD); });
 }
 
-void CodeGenFunction::EmitACCTaskLoopBasedDirective(const ACCLoopDirective &S) {
+void CodeGenFunction::EmitACCTaskLoopBasedDirective(const ACCLoopLikeDirective &S) {
   assert(isOpenACCTaskLoopDirective(S.getDirectiveKind()));
   // Emit outlined function for task construct.
   const CapturedStmt *CS = S.getCapturedStmt(ACCD_taskloop);
@@ -4886,9 +4886,9 @@ void CodeGenFunction::EmitSimpleACCExecutableDirective(
     return;
   auto &&CodeGen = [&D](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     if (isOpenACCSimdDirective(D.getDirectiveKind())) {
-      emitACCSimdRegion(CGF, cast<ACCLoopDirective>(D), Action);
+      emitACCSimdRegion(CGF, cast<ACCLoopLikeDirective>(D), Action);
     } else {
-      if (const auto *LD = dyn_cast<ACCLoopDirective>(&D)) {
+      if (const auto *LD = dyn_cast<ACCLoopLikeDirective>(&D)) {
         for (const auto *E : LD->counters()) {
           if (const auto *VD = dyn_cast<ACCCapturedExprDecl>(
                   cast<DeclRefExpr>(E)->getDecl())) {

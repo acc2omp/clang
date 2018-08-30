@@ -190,7 +190,7 @@ public:
   // TODO acc2mp
   // Get rid of this backup when u don't need it anymore
 
-  // typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopDirective &,
+  // typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopLikeDirective &,
   //                                 JumpDest)>
   //     CodeGenLoopTy;
   // typedef llvm::function_ref<void(CodeGenFunction &, SourceLocation,
@@ -207,7 +207,7 @@ public:
   //     CodeGenFunction &, const OMPExecutableDirective &S, Address LB,
   //     Address UB)>
   //     CodeGenDispatchBoundsTy;
-  typedef llvm::function_ref<void(CodeGenFunction &, const ACCLoopDirective &,
+  typedef llvm::function_ref<void(CodeGenFunction &, const ACCLoopLikeDirective &,
                                   JumpDest)>
       ACCCodeGenLoopTy;
   typedef llvm::function_ref<void(CodeGenFunction &, SourceLocation,
@@ -226,7 +226,7 @@ public:
       ACCCodeGenDispatchBoundsTy;
 
 
-  typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopDirective &,
+  typedef llvm::function_ref<void(CodeGenFunction &, const OMPLoopLikeDirective &,
                                   JumpDest)>
       OMPCodeGenLoopTy;
 
@@ -3197,13 +3197,13 @@ public:
                                      bool NoFinals,
                                      llvm::Value *IsLastIterCond = nullptr);
   /// Emit initial code for linear clauses.
-  void EmitACCLinearClause(const ACCLoopDirective &D,
+  void EmitACCLinearClause(const ACCLoopLikeDirective &D,
                            CodeGenFunction::ACCPrivateScope &PrivateScope);
   /// Emit final code for linear clauses.
   /// \param CondGen Optional conditional code for final part of codegen for
   /// linear clause.
   void EmitACCLinearClauseFinal(
-      const ACCLoopDirective &D,
+      const ACCLoopLikeDirective &D,
       const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen);
   /// \brief Emit initial code for reduction variables. Creates reduction copies
   /// and initializes them with the values according to OpenACC standard.
@@ -3227,7 +3227,7 @@ public:
   /// \param D Directive (possibly) with the 'linear' clause.
   /// \return true if at least one linear variable is found that should be
   /// initialized with the value of the original variable, false otherwise.
-  bool EmitACCLinearClauseInit(const ACCLoopDirective &D);
+  bool EmitACCLinearClauseInit(const ACCLoopLikeDirective &D);
 
 
   //TODO acc2mp
@@ -3257,7 +3257,7 @@ public:
 
   void EmitACCParallelDirective(const ACCParallelDirective &S);
   void EmitACCSimdDirective(const ACCSimdDirective &S);
-  void EmitACCForDirective(const ACCForDirective &S);
+  void EmitACCLoopDirective(const ACCLoopDirective &S);
   void EmitACCForSimdDirective(const ACCForSimdDirective &S);
   void EmitACCSectionsDirective(const ACCSectionsDirective &S);
   void EmitACCSectionDirective(const ACCSectionDirective &S);
@@ -3287,7 +3287,7 @@ public:
   void
   EmitACCCancellationPointDirective(const ACCCancellationPointDirective &S);
   void EmitACCCancelDirective(const ACCCancelDirective &S);
-  void EmitACCTaskLoopBasedDirective(const ACCLoopDirective &S);
+  void EmitACCTaskLoopBasedDirective(const ACCLoopLikeDirective &S);
   void EmitACCTaskLoopDirective(const ACCTaskLoopDirective &S);
   void EmitACCTaskLoopSimdDirective(const ACCTaskLoopSimdDirective &S);
   void EmitACCDistributeDirective(const ACCDistributeDirective &S);
@@ -3374,27 +3374,27 @@ public:
 
   JumpDest getACCCancelDestination(OpenACCDirectiveKind Kind);
   /// Emit initial code for loop counters of loop-based directives.
-  void EmitACCPrivateLoopCounters(const ACCLoopDirective &S,
+  void EmitACCPrivateLoopCounters(const ACCLoopLikeDirective &S,
                                   ACCPrivateScope &LoopScope);
 
   /// Helper for the OpenACC loop directives.
-  void EmitACCLoopBody(const ACCLoopDirective &D, JumpDest LoopExit);
+  void EmitACCLoopBody(const ACCLoopLikeDirective &D, JumpDest LoopExit);
 
   /// \brief Emit code for the worksharing loop-based directive.
   /// \return true, if this construct has any lastprivate clause, false -
   /// otherwise.
-  bool EmitACCWorksharingLoop(const ACCLoopDirective &S, Expr *EUB,
+  bool EmitACCWorksharingLoop(const ACCLoopLikeDirective &S, Expr *EUB,
                               const ACCCodeGenLoopBoundsTy &CodeGenLoopBounds,
                               const ACCCodeGenDispatchBoundsTy &CGDispatchBounds);
 
   /// Emit code for the distribute loop-based directive.
-  void EmitACCDistributeLoop(const ACCLoopDirective &S,
+  void EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
                              const ACCCodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
 
   /// Helpers for the OpenACC loop directives.
-  void EmitACCSimdInit(const ACCLoopDirective &D, bool IsMonotonic = false);
+  void EmitACCSimdInit(const ACCLoopLikeDirective &D, bool IsMonotonic = false);
   void EmitACCSimdFinal(
-      const ACCLoopDirective &D,
+      const ACCLoopLikeDirective &D,
       const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen);
 
   /// Emits the lvalue for the expression with possibly captured variable.
@@ -3493,13 +3493,13 @@ public:
                                      bool NoFinals,
                                      llvm::Value *IsLastIterCond = nullptr);
   /// Emit initial code for linear clauses.
-  void EmitOMPLinearClause(const OMPLoopDirective &D,
+  void EmitOMPLinearClause(const OMPLoopLikeDirective &D,
                            CodeGenFunction::OMPPrivateScope &PrivateScope);
   /// Emit final code for linear clauses.
   /// \param CondGen Optional conditional code for final part of codegen for
   /// linear clause.
   void EmitOMPLinearClauseFinal(
-      const OMPLoopDirective &D,
+      const OMPLoopLikeDirective &D,
       const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen);
   /// \brief Emit initial code for reduction variables. Creates reduction copies
   /// and initializes them with the values according to OpenMP standard.
@@ -3523,7 +3523,7 @@ public:
   /// \param D Directive (possibly) with the 'linear' clause.
   /// \return true if at least one linear variable is found that should be
   /// initialized with the value of the original variable, false otherwise.
-  bool EmitOMPLinearClauseInit(const OMPLoopDirective &D);
+  bool EmitOMPLinearClauseInit(const OMPLoopLikeDirective &D);
 
   typedef const llvm::function_ref<void(CodeGenFunction & /*CGF*/,
                                         llvm::Value * /*OutlinedFn*/,
@@ -3580,7 +3580,7 @@ public:
   void
   EmitOMPCancellationPointDirective(const OMPCancellationPointDirective &S);
   void EmitOMPCancelDirective(const OMPCancelDirective &S);
-  void EmitOMPTaskLoopBasedDirective(const OMPLoopDirective &S);
+  void EmitOMPTaskLoopBasedDirective(const OMPLoopLikeDirective &S);
   void EmitOMPTaskLoopDirective(const OMPTaskLoopDirective &S);
   void EmitOMPTaskLoopSimdDirective(const OMPTaskLoopSimdDirective &S);
   void EmitOMPDistributeDirective(const OMPDistributeDirective &S);
@@ -3667,27 +3667,27 @@ public:
 
   JumpDest getOMPCancelDestination(OpenMPDirectiveKind Kind);
   /// Emit initial code for loop counters of loop-based directives.
-  void EmitOMPPrivateLoopCounters(const OMPLoopDirective &S,
+  void EmitOMPPrivateLoopCounters(const OMPLoopLikeDirective &S,
                                   OMPPrivateScope &LoopScope);
 
   /// Helper for the OpenMP loop directives.
-  void EmitOMPLoopBody(const OMPLoopDirective &D, JumpDest LoopExit);
+  void EmitOMPLoopBody(const OMPLoopLikeDirective &D, JumpDest LoopExit);
 
   /// \brief Emit code for the worksharing loop-based directive.
   /// \return true, if this construct has any lastprivate clause, false -
   /// otherwise.
-  bool EmitOMPWorksharingLoop(const OMPLoopDirective &S, Expr *EUB,
+  bool EmitOMPWorksharingLoop(const OMPLoopLikeDirective &S, Expr *EUB,
                               const OMPCodeGenLoopBoundsTy &CodeGenLoopBounds,
                               const OMPCodeGenDispatchBoundsTy &CGDispatchBounds);
 
   /// Emit code for the distribute loop-based directive.
-  void EmitOMPDistributeLoop(const OMPLoopDirective &S,
+  void EmitOMPDistributeLoop(const OMPLoopLikeDirective &S,
                              const OMPCodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
 
   /// Helpers for the OpenMP loop directives.
-  void EmitOMPSimdInit(const OMPLoopDirective &D, bool IsMonotonic = false);
+  void EmitOMPSimdInit(const OMPLoopLikeDirective &D, bool IsMonotonic = false);
   void EmitOMPSimdFinal(
-      const OMPLoopDirective &D,
+      const OMPLoopLikeDirective &D,
       const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen);
 
   /// Emits the lvalue for the expression with possibly captured variable.
@@ -3736,17 +3736,17 @@ private:
           NextUB(NextUB) {}
   };
   void EmitACCOuterLoop(bool DynamicOrOrdered, bool IsMonotonic,
-                        const ACCLoopDirective &S, ACCPrivateScope &LoopScope,
+                        const ACCLoopLikeDirective &S, ACCPrivateScope &LoopScope,
                         const ACCLoopArguments &LoopArgs,
                         const ACCCodeGenLoopTy &CodeGenLoop,
                         const CodeGenOrderedTy &CodeGenOrdered);
   void EmitACCForOuterLoop(const OpenACCScheduleTy &ScheduleKind,
-                           bool IsMonotonic, const ACCLoopDirective &S,
+                           bool IsMonotonic, const ACCLoopLikeDirective &S,
                            ACCPrivateScope &LoopScope, bool Ordered,
                            const ACCLoopArguments &LoopArgs,
                            const ACCCodeGenDispatchBoundsTy &CGDispatchBounds);
   void EmitACCDistributeOuterLoop(OpenACCDistScheduleClauseKind ScheduleKind,
-                                  const ACCLoopDirective &S,
+                                  const ACCLoopLikeDirective &S,
                                   ACCPrivateScope &LoopScope,
                                   const ACCLoopArguments &LoopArgs,
                                   const ACCCodeGenLoopTy &CodeGenLoopContent);
@@ -3789,17 +3789,17 @@ private:
           NextUB(NextUB) {}
   };
   void EmitOMPOuterLoop(bool DynamicOrOrdered, bool IsMonotonic,
-                        const OMPLoopDirective &S, OMPPrivateScope &LoopScope,
+                        const OMPLoopLikeDirective &S, OMPPrivateScope &LoopScope,
                         const OMPLoopArguments &LoopArgs,
                         const OMPCodeGenLoopTy &CodeGenLoop,
                         const CodeGenOrderedTy &CodeGenOrdered);
   void EmitOMPForOuterLoop(const OpenMPScheduleTy &ScheduleKind,
-                           bool IsMonotonic, const OMPLoopDirective &S,
+                           bool IsMonotonic, const OMPLoopLikeDirective &S,
                            OMPPrivateScope &LoopScope, bool Ordered,
                            const OMPLoopArguments &LoopArgs,
                            const OMPCodeGenDispatchBoundsTy &CGDispatchBounds);
   void EmitOMPDistributeOuterLoop(OpenMPDistScheduleClauseKind ScheduleKind,
-                                  const OMPLoopDirective &S,
+                                  const OMPLoopLikeDirective &S,
                                   OMPPrivateScope &LoopScope,
                                   const OMPLoopArguments &LoopArgs,
                                   const OMPCodeGenLoopTy &CodeGenLoopContent);

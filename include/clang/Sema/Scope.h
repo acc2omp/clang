@@ -106,7 +106,7 @@ public:
     OpenACCDirectiveScope = 0x8000,
 
     /// \brief This is the scope of some OpenACC loop directive.
-    OpenACCLoopDirectiveScope = 0x10000,
+    OpenACCLoopLikeDirectiveScope = 0x10000,
 
     /// \brief This is the scope of some OpenACC simd directive.
     /// For example, it is used for 'acc simd', 'acc for simd'.
@@ -418,8 +418,8 @@ public:
 
   /// \brief Determine whether this scope is some OpenACC loop directive scope
   /// (for example, 'acc for', 'acc simd').
-  bool isOpenACCLoopDirectiveScope() const {
-    if (getFlags() & Scope::OpenACCLoopDirectiveScope) {
+  bool isOpenACCLoopLikeDirectiveScope() const {
+    if (getFlags() & Scope::OpenACCLoopLikeDirectiveScope) {
       assert(isOpenACCDirectiveScope() &&
              "OpenACC loop directive scope is not a directive scope");
       return true;
@@ -437,7 +437,7 @@ public:
   /// directive attached.
   bool isOpenACCLoopScope() const {
     const Scope *P = getParent();
-    return P && P->isOpenACCLoopDirectiveScope();
+    return P && P->isOpenACCLoopLikeDirectiveScope();
   }
 
   /// \brief Determines whether this scope is the OpenMP directive scope

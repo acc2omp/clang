@@ -4775,7 +4775,7 @@ void CGOpenMPRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
 }
 
 void CGOpenMPRuntime::emitTaskLoopCall(CodeGenFunction &CGF, SourceLocation Loc,
-                                       const OMPLoopDirective &D,
+                                       const OMPLoopLikeDirective &D,
                                        llvm::Value *TaskFunction,
                                        QualType SharedsTy, Address Shareds,
                                        const Expr *IfCond,
@@ -7975,7 +7975,7 @@ public:
 } // namespace
 
 void CGOpenMPRuntime::emitDoacrossInit(CodeGenFunction &CGF,
-                                       const OMPLoopDirective &D) {
+                                       const OMPLoopLikeDirective &D) {
   if (!CGF.HaveInsertPoint())
     return;
 
@@ -8245,7 +8245,7 @@ void CGOpenMPSIMDRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
 }
 
 void CGOpenMPSIMDRuntime::emitTaskLoopCall(
-    CodeGenFunction &CGF, SourceLocation Loc, const OMPLoopDirective &D,
+    CodeGenFunction &CGF, SourceLocation Loc, const OMPLoopLikeDirective &D,
     llvm::Value *TaskFunction, QualType SharedsTy, Address Shareds,
     const Expr *IfCond, const OMPTaskDataTy &Data) {
   llvm_unreachable("Not supported in SIMD-only mode");
@@ -8356,7 +8356,7 @@ void CGOpenMPSIMDRuntime::emitTargetDataStandAloneCall(
 }
 
 void CGOpenMPSIMDRuntime::emitDoacrossInit(CodeGenFunction &CGF,
-                                           const OMPLoopDirective &D) {
+                                           const OMPLoopLikeDirective &D) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 

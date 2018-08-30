@@ -2944,7 +2944,7 @@ void CGOpenACCRuntime::emitBarrierCall(CodeGenFunction &CGF, SourceLocation Loc,
   // Build call __kmpc_cancel_barrier(loc, thread_id);
   // Build call __kmpc_barrier(loc, thread_id);
   unsigned Flags;
-  if (Kind == ACCD_for)
+  if (Kind == ACCD_loop)
     Flags = ACC_IDENT_BARRIER_IMPL_FOR;
   else if (Kind == ACCD_sections)
     Flags = ACC_IDENT_BARRIER_IMPL_SECTIONS;
@@ -3161,7 +3161,7 @@ void CGOpenACCRuntime::emitForStaticInit(CodeGenFunction &CGF,
   assert(isOpenACCWorksharingDirective(DKind) &&
          "Expected loop-based or sections-based directive.");
   auto *UpdatedLocation = emitUpdateLocation(CGF, Loc,
-                                             isOpenACCLoopDirective(DKind)
+                                             isOpenACCLoopLikeDirective(DKind)
                                                  ? ACC_IDENT_WORK_LOOP
                                                  : ACC_IDENT_WORK_SECTIONS);
   auto *ThreadId = getThreadID(CGF, Loc);
@@ -3197,7 +3197,7 @@ void CGOpenACCRuntime::emitForStaticFinish(CodeGenFunction &CGF,
       emitUpdateLocation(CGF, Loc,
                          isOpenACCDistributeDirective(DKind)
                              ? ACC_IDENT_WORK_DISTRIBUTE
-                             : isOpenACCLoopDirective(DKind)
+                             : isOpenACCLoopLikeDirective(DKind)
                                    ? ACC_IDENT_WORK_LOOP
                                    : ACC_IDENT_WORK_SECTIONS),
       getThreadID(CGF, Loc)};
@@ -4775,7 +4775,7 @@ void CGOpenACCRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
 }
 
 void CGOpenACCRuntime::emitTaskLoopCall(CodeGenFunction &CGF, SourceLocation Loc,
-                                       const ACCLoopDirective &D,
+                                       const ACCLoopLikeDirective &D,
                                        llvm::Value *TaskFunction,
                                        QualType SharedsTy, Address Shareds,
                                        const Expr *IfCond,
@@ -5738,7 +5738,7 @@ static RTCancelKind getCancellationKind(OpenACCDirectiveKind CancelRegion) {
   RTCancelKind CancelKind = CancelNoreq;
   if (CancelRegion == ACCD_parallel)
     CancelKind = CancelParallel;
-  else if (CancelRegion == ACCD_for)
+  else if (CancelRegion == ACCD_loop)
     CancelKind = CancelLoop;
   else if (CancelRegion == ACCD_sections)
     CancelKind = CancelSections;
@@ -7975,7 +7975,7 @@ public:
 } // namespace
 
 void CGOpenACCRuntime::emitDoacrossInit(CodeGenFunction &CGF,
-                                       const ACCLoopDirective &D) {
+                                       const ACCLoopLikeDirective &D) {
   if (!CGF.HaveInsertPoint())
     return;
 
@@ -8245,7 +8245,7 @@ void CGOpenACCSIMDRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc
 }
 
 void CGOpenACCSIMDRuntime::emitTaskLoopCall(
-    CodeGenFunction &CGF, SourceLocation Loc, const ACCLoopDirective &D,
+    CodeGenFunction &CGF, SourceLocation Loc, const ACCLoopLikeDirective &D,
     llvm::Value *TaskFunction, QualType SharedsTy, Address Shareds,
     const Expr *IfCond, const ACCTaskDataTy &Data) {
   llvm_unreachable("Not supported in SIMD-only mode");
@@ -8356,7 +8356,7 @@ void CGOpenACCSIMDRuntime::emitTargetDataStandAloneCall(
 }
 
 void CGOpenACCSIMDRuntime::emitDoacrossInit(CodeGenFunction &CGF,
-                                           const ACCLoopDirective &D) {
+                                           const ACCLoopLikeDirective &D) {
   llvm_unreachable("Not supported in SIMD-only mode");
 }
 

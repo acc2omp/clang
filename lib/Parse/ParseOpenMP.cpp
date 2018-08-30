@@ -1097,15 +1097,7 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
       // the captured region. Code elsewhere assumes that any FunctionScopeInfo
       // should have at least one compound statement scope within it.
       AssociatedStmt = (Sema::CompoundScopeRAII(Actions), ParseStatement());
-      llvm::outs() << "------------ AssociatedStmt[0]: {";
-      AssociatedStmt.get()->dumpColor();
-      llvm::outs() << "}------------\n";
-
       AssociatedStmt = Actions.ActOnOpenMPRegionEnd(AssociatedStmt, Clauses);
-      llvm::outs() << "------------ AssociatedStmt[1]: {";
-      AssociatedStmt.get()->dumpColor();
-      llvm::outs() << "}------------\n";
-
     } else if (DKind == OMPD_target_update || DKind == OMPD_target_enter_data ||
                DKind == OMPD_target_exit_data) {
       Actions.ActOnOpenMPRegionStart(DKind, getCurScope());
@@ -1114,15 +1106,9 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
                                                   /*isStmtExpr=*/false));
       AssociatedStmt = Actions.ActOnOpenMPRegionEnd(AssociatedStmt, Clauses);
     }
-    llvm::outs() << "------------ AssociatedStmt: {";
-    AssociatedStmt.get()->dumpColor();
-    llvm::outs() << "}------------\n";
     Directive = Actions.ActOnOpenMPExecutableDirective(
         DKind, DirName, CancelRegion, Clauses, AssociatedStmt.get(), Loc,
         EndLoc);
-    llvm::outs() << "------------ Generated Directive is: <<<<<";
-    Directive.get()->dumpColor();
-    llvm::outs() << ">>>>> ------------\n";
 
     // Exit scope.
     Actions.EndOpenMPDSABlock(Directive.get());

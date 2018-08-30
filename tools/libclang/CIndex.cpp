@@ -2001,10 +2001,10 @@ public:
   void VisitLambdaExpr(const LambdaExpr *E);
   // -- MYHEADER --
   void VisitACCExecutableDirective(const ACCExecutableDirective *D);
-  void VisitACCLoopDirective(const ACCLoopDirective *D);
+  void VisitACCLoopLikeDirective(const ACCLoopLikeDirective *D);
   void VisitACCParallelDirective(const ACCParallelDirective *D);
   void VisitACCSimdDirective(const ACCSimdDirective *D);
-  void VisitACCForDirective(const ACCForDirective *D);
+  void VisitACCLoopDirective(const ACCLoopDirective *D);
   void VisitACCForSimdDirective(const ACCForSimdDirective *D);
   void VisitACCSectionsDirective(const ACCSectionsDirective *D);
   void VisitACCSectionDirective(const ACCSectionDirective *D);
@@ -2063,7 +2063,7 @@ public:
   // -- MYHEADER --
   // -- MYHEADER --
   void VisitOMPExecutableDirective(const OMPExecutableDirective *D);
-  void VisitOMPLoopDirective(const OMPLoopDirective *D);
+  void VisitOMPLoopLikeDirective(const OMPLoopLikeDirective *D);
   void VisitOMPParallelDirective(const OMPParallelDirective *D);
   void VisitOMPSimdDirective(const OMPSimdDirective *D);
   void VisitOMPForDirective(const OMPForDirective *D);
@@ -3083,7 +3083,7 @@ void EnqueueVisitor::VisitACCExecutableDirective(
     EnqueueChildren(*I);
 }
 
-void EnqueueVisitor::VisitACCLoopDirective(const ACCLoopDirective *D) {
+void EnqueueVisitor::VisitACCLoopLikeDirective(const ACCLoopLikeDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
@@ -3092,15 +3092,15 @@ void EnqueueVisitor::VisitACCParallelDirective(const ACCParallelDirective *D) {
 }
 
 void EnqueueVisitor::VisitACCSimdDirective(const ACCSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCForDirective(const ACCForDirective *D) {
-  VisitACCLoopDirective(D);
+void EnqueueVisitor::VisitACCLoopDirective(const ACCLoopDirective *D) {
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCForSimdDirective(const ACCForSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCSectionsDirective(const ACCSectionsDirective *D) {
@@ -3126,12 +3126,12 @@ void EnqueueVisitor::VisitACCCriticalDirective(const ACCCriticalDirective *D) {
 
 void
 EnqueueVisitor::VisitACCParallelLoopDirective(const ACCParallelLoopDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCParallelForSimdDirective(
     const ACCParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCParallelSectionsDirective(
@@ -3201,7 +3201,7 @@ void EnqueueVisitor::VisitACCTargetParallelDirective(
 
 void EnqueueVisitor::VisitACCTargetParallelForDirective(
     const ACCTargetParallelForDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTeamsDirective(const ACCTeamsDirective *D) {
@@ -3218,62 +3218,62 @@ void EnqueueVisitor::VisitACCCancelDirective(const ACCCancelDirective *D) {
 }
 
 void EnqueueVisitor::VisitACCTaskLoopDirective(const ACCTaskLoopDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTaskLoopSimdDirective(
     const ACCTaskLoopSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCDistributeDirective(
     const ACCDistributeDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCDistributeParallelForDirective(
     const ACCDistributeParallelForDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCDistributeParallelForSimdDirective(
     const ACCDistributeParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCDistributeSimdDirective(
     const ACCDistributeSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTargetParallelForSimdDirective(
     const ACCTargetParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTargetSimdDirective(
     const ACCTargetSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTeamsDistributeDirective(
     const ACCTeamsDistributeDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTeamsDistributeSimdDirective(
     const ACCTeamsDistributeSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTeamsDistributeParallelForSimdDirective(
     const ACCTeamsDistributeParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTeamsDistributeParallelForDirective(
     const ACCTeamsDistributeParallelForDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTargetTeamsDirective(
@@ -3283,22 +3283,22 @@ void EnqueueVisitor::VisitACCTargetTeamsDirective(
 
 void EnqueueVisitor::VisitACCTargetTeamsDistributeDirective(
     const ACCTargetTeamsDistributeDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelForDirective(
     const ACCTargetTeamsDistributeParallelForDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelForSimdDirective(
     const ACCTargetTeamsDistributeParallelForSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitACCTargetTeamsDistributeSimdDirective(
     const ACCTargetTeamsDistributeSimdDirective *D) {
-  VisitACCLoopDirective(D);
+  VisitACCLoopLikeDirective(D);
 }
 
 // -- MYHEADER -- 
@@ -3312,7 +3312,7 @@ void EnqueueVisitor::VisitOMPExecutableDirective(
     EnqueueChildren(*I);
 }
 
-void EnqueueVisitor::VisitOMPLoopDirective(const OMPLoopDirective *D) {
+void EnqueueVisitor::VisitOMPLoopLikeDirective(const OMPLoopLikeDirective *D) {
   VisitOMPExecutableDirective(D);
 }
 
@@ -3321,15 +3321,15 @@ void EnqueueVisitor::VisitOMPParallelDirective(const OMPParallelDirective *D) {
 }
 
 void EnqueueVisitor::VisitOMPSimdDirective(const OMPSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPForDirective(const OMPForDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPForSimdDirective(const OMPForSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPSectionsDirective(const OMPSectionsDirective *D) {
@@ -3355,12 +3355,12 @@ void EnqueueVisitor::VisitOMPCriticalDirective(const OMPCriticalDirective *D) {
 
 void
 EnqueueVisitor::VisitOMPParallelForDirective(const OMPParallelForDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPParallelForSimdDirective(
     const OMPParallelForSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPParallelSectionsDirective(
@@ -3430,7 +3430,7 @@ void EnqueueVisitor::VisitOMPTargetParallelDirective(
 
 void EnqueueVisitor::VisitOMPTargetParallelForDirective(
     const OMPTargetParallelForDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTeamsDirective(const OMPTeamsDirective *D) {
@@ -3447,62 +3447,62 @@ void EnqueueVisitor::VisitOMPCancelDirective(const OMPCancelDirective *D) {
 }
 
 void EnqueueVisitor::VisitOMPTaskLoopDirective(const OMPTaskLoopDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTaskLoopSimdDirective(
     const OMPTaskLoopSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPDistributeDirective(
     const OMPDistributeDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPDistributeParallelForDirective(
     const OMPDistributeParallelForDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPDistributeParallelForSimdDirective(
     const OMPDistributeParallelForSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPDistributeSimdDirective(
     const OMPDistributeSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTargetParallelForSimdDirective(
     const OMPTargetParallelForSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTargetSimdDirective(
     const OMPTargetSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTeamsDistributeDirective(
     const OMPTeamsDistributeDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTeamsDistributeSimdDirective(
     const OMPTeamsDistributeSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTeamsDistributeParallelForSimdDirective(
     const OMPTeamsDistributeParallelForSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTeamsDistributeParallelForDirective(
     const OMPTeamsDistributeParallelForDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTargetTeamsDirective(
@@ -3512,22 +3512,22 @@ void EnqueueVisitor::VisitOMPTargetTeamsDirective(
 
 void EnqueueVisitor::VisitOMPTargetTeamsDistributeDirective(
     const OMPTargetTeamsDistributeDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTargetTeamsDistributeParallelForDirective(
     const OMPTargetTeamsDistributeParallelForDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTargetTeamsDistributeParallelForSimdDirective(
     const OMPTargetTeamsDistributeParallelForSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 void EnqueueVisitor::VisitOMPTargetTeamsDistributeSimdDirective(
     const OMPTargetTeamsDistributeSimdDirective *D) {
-  VisitOMPLoopDirective(D);
+  VisitOMPLoopLikeDirective(D);
 }
 
 // -- MYHEADER -- 
@@ -5918,8 +5918,8 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCParallelDirective");
   case CXCursor_ACCSimdDirective:
     return cxstring::createRef("ACCSimdDirective");
-  case CXCursor_ACCForDirective:
-    return cxstring::createRef("ACCForDirective");
+  case CXCursor_ACCLoopDirective:
+    return cxstring::createRef("ACCLoopDirective");
   case CXCursor_ACCForSimdDirective:
     return cxstring::createRef("ACCForSimdDirective");
   case CXCursor_ACCSectionsDirective:

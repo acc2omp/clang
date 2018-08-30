@@ -2645,9 +2645,7 @@ StmtResult Sema::ActOnOpenMPRegionEnd(StmtResult S,
     /* SR.get()->dumpPretty(this->getASTContext()); */
     /* llvm::outs() << "\n         }>\n"; */
 
-    llvm::outs() << "@@@@@ <Debug> The end is near. This bracket is expected to never close {\n";
     SR = ActOnCapturedRegionEnd(SR.get());
-    llvm::outs() << "@@@@@ <Debug> It's a miracle. The bracket closed }\n";
     /* llvm::outs() << "         SR[1] dumpColor <{ "; */
     /* SR.get()->dumpPretty(this->getASTContext()); */
     /* SR.get()->dumpColor(); */
@@ -4596,7 +4594,7 @@ CheckOpenMPLoop(OpenMPDirectiveKind DKind, Expr *CollapseLoopCountExpr,
                 Expr *OrderedLoopCountExpr, Stmt *AStmt, Sema &SemaRef,
                 DSAStackTy &DSA,
                 llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA,
-                OMPLoopDirective::HelperExprs &Built) {
+                OMPLoopLikeDirective::HelperExprs &Built) {
   unsigned NestedLoopCount = 1;
   if (CollapseLoopCountExpr) {
     // Found 'collapse' clause - calculate collapse number.
@@ -5251,7 +5249,7 @@ StmtResult Sema::ActOnOpenMPSimdDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenMPLoop(
@@ -5290,7 +5288,7 @@ StmtResult Sema::ActOnOpenMPForDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenMPLoop(
@@ -5326,7 +5324,7 @@ StmtResult Sema::ActOnOpenMPForSimdDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -5535,7 +5533,7 @@ StmtResult Sema::ActOnOpenMPParallelForDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -5580,7 +5578,7 @@ StmtResult Sema::ActOnOpenMPParallelForSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6571,7 +6569,7 @@ StmtResult Sema::ActOnOpenMPTargetParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6858,7 +6856,7 @@ StmtResult Sema::ActOnOpenMPTaskLoopDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6895,7 +6893,7 @@ StmtResult Sema::ActOnOpenMPTaskLoopSimdDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6945,7 +6943,7 @@ StmtResult Sema::ActOnOpenMPDistributeDirective(
     return StmtError();
 
   assert(isa<CapturedStmt>(AStmt) && "Captured statement expected");
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -6989,7 +6987,7 @@ StmtResult Sema::ActOnOpenMPDistributeParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenMPLoop(
@@ -7034,7 +7032,7 @@ StmtResult Sema::ActOnOpenMPDistributeParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenMPLoop(
@@ -7091,7 +7089,7 @@ StmtResult Sema::ActOnOpenMPDistributeSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -7148,7 +7146,7 @@ StmtResult Sema::ActOnOpenMPTargetParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenMPLoop(
@@ -7204,7 +7202,7 @@ StmtResult Sema::ActOnOpenMPTargetSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will define the
   // nested loops number.
   unsigned NestedLoopCount =
@@ -7261,7 +7259,7 @@ StmtResult Sema::ActOnOpenMPTeamsDistributeDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
@@ -7309,7 +7307,7 @@ StmtResult Sema::ActOnOpenMPTeamsDistributeSimdDirective(
   }
 
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenMPLoop(
@@ -7372,7 +7370,7 @@ StmtResult Sema::ActOnOpenMPTeamsDistributeParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenMPLoop(
@@ -7435,7 +7433,7 @@ StmtResult Sema::ActOnOpenMPTeamsDistributeParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenMPLoop(
@@ -7515,7 +7513,7 @@ StmtResult Sema::ActOnOpenMPTargetTeamsDistributeDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenMPLoop(
@@ -7559,7 +7557,7 @@ StmtResult Sema::ActOnOpenMPTargetTeamsDistributeParallelForDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenMPLoop(
@@ -7615,7 +7613,7 @@ StmtResult Sema::ActOnOpenMPTargetTeamsDistributeParallelForSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount =
@@ -7675,7 +7673,7 @@ StmtResult Sema::ActOnOpenMPTargetTeamsDistributeSimdDirective(
     CS->getCapturedDecl()->setNothrow();
   }
 
-  OMPLoopDirective::HelperExprs B;
+  OMPLoopLikeDirective::HelperExprs B;
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenMPLoop(

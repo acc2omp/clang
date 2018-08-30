@@ -1054,7 +1054,7 @@ void StmtPrinter::VisitACCSimdDirective(ACCSimdDirective *Node) {
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCForDirective(ACCForDirective *Node) {
+void StmtPrinter::VisitACCLoopDirective(ACCLoopDirective *Node) {
   Indent() << "#pragma acc for";
   PrintACCExecutableDirective(Node);
 }

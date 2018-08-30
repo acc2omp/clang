@@ -8207,9 +8207,9 @@ TreeTransform<Derived>::TransformACCSimdDirective(ACCSimdDirective *D) {
 
 template <typename Derived>
 StmtResult
-TreeTransform<Derived>::TransformACCForDirective(ACCForDirective *D) {
+TreeTransform<Derived>::TransformACCLoopDirective(ACCLoopDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_for, DirName, nullptr,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_loop, DirName, nullptr,
                                              D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8285,7 +8285,7 @@ template <typename Derived>
 StmtResult TreeTransform<Derived>::TransformACCParallelLoopDirective(
     ACCParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_parellel_loop, DirName,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_parallel_loop, DirName,
                                              nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());

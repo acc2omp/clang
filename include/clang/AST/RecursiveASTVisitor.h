@@ -531,7 +531,7 @@ private:
   bool TraverseVarHelper(VarDecl *D);
 
   bool TraverseACCExecutableDirective(ACCExecutableDirective *S);
-  bool TraverseACCLoopDirective(ACCLoopDirective *S);
+  bool TraverseACCLoopLikeDirective(ACCLoopLikeDirective *S);
   bool TraverseACCClause(ACCClause *C);
 #define OPENACC_CLAUSE(Name, Class) bool Visit##Class(Class *C);
 #include "clang/Basic/OpenACCKinds.def"
@@ -542,7 +542,7 @@ private:
   bool VisitACCClauseWithPostUpdate(ACCClauseWithPostUpdate *Node);
   
   bool TraverseOMPExecutableDirective(OMPExecutableDirective *S);
-  bool TraverseOMPLoopDirective(OMPLoopDirective *S);
+  bool TraverseOMPLoopLikeDirective(OMPLoopLikeDirective *S);
   bool TraverseOMPClause(OMPClause *C);
 #define OPENMP_CLAUSE(Name, Class) bool Visit##Class(Class *C);
 #include "clang/Basic/OpenMPKinds.def"
@@ -2643,7 +2643,7 @@ bool RecursiveASTVisitor<Derived>::TraverseACCExecutableDirective(
 
 template <typename Derived>
 bool
-RecursiveASTVisitor<Derived>::TraverseACCLoopDirective(ACCLoopDirective *S) {
+RecursiveASTVisitor<Derived>::TraverseACCLoopLikeDirective(ACCLoopLikeDirective *S) {
   return TraverseACCExecutableDirective(S);
 }
 
@@ -2653,7 +2653,7 @@ DEF_TRAVERSE_STMT(ACCParallelDirective,
 DEF_TRAVERSE_STMT(ACCSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCForDirective,
+DEF_TRAVERSE_STMT(ACCLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCForSimdDirective,
@@ -2804,7 +2804,7 @@ bool RecursiveASTVisitor<Derived>::TraverseOMPExecutableDirective(
 
 template <typename Derived>
 bool
-RecursiveASTVisitor<Derived>::TraverseOMPLoopDirective(OMPLoopDirective *S) {
+RecursiveASTVisitor<Derived>::TraverseOMPLoopLikeDirective(OMPLoopLikeDirective *S) {
   return TraverseOMPExecutableDirective(S);
 }
 
