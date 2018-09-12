@@ -132,11 +132,6 @@ Parser::ParseStatementOrDeclaration(StmtVector &Stmts,
   StmtResult Res = ParseStatementOrDeclarationAfterAttributes(
       Stmts, Allowed, TrailingElseLoc, Attrs);
 
-  // TODO acc2mp remove this debug if needed
-  llvm::outs() << "<<<MAIN DEBUG>>>(ParseStatementOrDeclaration): Res ={";
-  Res.get()->dumpColor();
-  llvm::outs() << "}\n";
-
   assert((Attrs.empty() || Res.isInvalid() || Res.isUsable()) &&
          "attributes on empty statement");
 
@@ -187,7 +182,6 @@ Parser::ParseStatementOrDeclarationAfterAttributes(StmtVector &Stmts,
   // or they directly 'return;' if not.
 Retry:
   tok::TokenKind Kind  = Tok.getKind();
-  llvm::outs() << "$ ParseStatementOrDeclaration : TokenKind = " << getTokenName(Kind) << "\n";
   SourceLocation AtLoc;
   switch (Kind) {
   case tok::at: // May be a @try or @throw statement
