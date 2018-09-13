@@ -341,7 +341,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
     break;
   case ACCD_loop:
     switch (CKind) {
-#define OPENACC_FOR_CLAUSE(Name)                                                \
+#define OPENACC_LOOP_CLAUSE(Name)                                                \
   case ACCC_##Name:                                                            \
     return true;
 #include "clang/Basic/OpenACCKinds.def"
