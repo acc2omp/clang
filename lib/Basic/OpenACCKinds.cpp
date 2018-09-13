@@ -351,7 +351,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
     break;
   case ACCD_for_simd:
     switch (CKind) {
-#define OPENACC_FOR_SIMD_CLAUSE(Name)                                           \
+#define OPENACC_LOOP_SIMD_CLAUSE(Name)                                           \
   case ACCC_##Name:                                                            \
     return true;
 #include "clang/Basic/OpenACCKinds.def"
@@ -392,7 +392,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
     break;
   case ACCD_parallel_for_simd:
     switch (CKind) {
-#define OPENACC_PARALLEL_FOR_SIMD_CLAUSE(Name)                                  \
+#define OPENACC_PARALLEL_LOOP_SIMD_CLAUSE(Name)                                  \
   case ACCC_##Name:                                                            \
     return true;
 #include "clang/Basic/OpenACCKinds.def"
@@ -485,7 +485,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
     break;
   case ACCD_target_parallel_for:
     switch (CKind) {
-#define OPENACC_TARGET_PARALLEL_FOR_CLAUSE(Name)                                \
+#define OPENACC_TARGET_PARALLEL_LOOP_CLAUSE(Name)                                \
   case ACCC_##Name:                                                            \
     return true;
 #include "clang/Basic/OpenACCKinds.def"
