@@ -8218,7 +8218,7 @@ TreeTransform<Derived>::TransformACCLoopDirective(ACCLoopDirective *D) {
 
 template <typename Derived>
 StmtResult
-TreeTransform<Derived>::TransformACCForSimdDirective(ACCForSimdDirective *D) {
+TreeTransform<Derived>::TransformACCLoopSimdDirective(ACCLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(ACCD_for_simd, DirName, nullptr,
                                              D->getLocStart());
@@ -8293,8 +8293,8 @@ StmtResult TreeTransform<Derived>::TransformACCParallelLoopDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCParallelForSimdDirective(
-    ACCParallelForSimdDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCParallelLoopSimdDirective(
+    ACCParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(ACCD_parallel_for_simd, DirName,
                                              nullptr, D->getLocStart());
@@ -8458,8 +8458,8 @@ StmtResult TreeTransform<Derived>::TransformACCTargetParallelDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTargetParallelForDirective(
-    ACCTargetParallelForDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCTargetParallelLoopDirective(
+    ACCTargetParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(ACCD_target_parallel_for, DirName,
                                              nullptr, D->getLocStart());
@@ -8546,8 +8546,8 @@ StmtResult TreeTransform<Derived>::TransformACCDistributeDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCDistributeParallelForDirective(
-    ACCDistributeParallelForDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCDistributeParallelLoopDirective(
+    ACCDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
       ACCD_distribute_parallel_for, DirName, nullptr, D->getLocStart());
@@ -8558,8 +8558,8 @@ StmtResult TreeTransform<Derived>::TransformACCDistributeParallelForDirective(
 
 template <typename Derived>
 StmtResult
-TreeTransform<Derived>::TransformACCDistributeParallelForSimdDirective(
-    ACCDistributeParallelForSimdDirective *D) {
+TreeTransform<Derived>::TransformACCDistributeParallelLoopSimdDirective(
+    ACCDistributeParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
       ACCD_distribute_parallel_for_simd, DirName, nullptr, D->getLocStart());
@@ -8580,8 +8580,8 @@ StmtResult TreeTransform<Derived>::TransformACCDistributeSimdDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTargetParallelForSimdDirective(
-    ACCTargetParallelForSimdDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCTargetParallelLoopSimdDirective(
+    ACCTargetParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(ACCD_target_parallel_for_simd,
                                              DirName, nullptr,
@@ -8625,8 +8625,8 @@ StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeSimdDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelForSimdDirective(
-    ACCTeamsDistributeParallelForSimdDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelLoopSimdDirective(
+    ACCTeamsDistributeParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
       ACCD_teams_distribute_parallel_for_simd, DirName, nullptr, D->getLocStart());
@@ -8636,8 +8636,8 @@ StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelForSimdDir
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelForDirective(
-    ACCTeamsDistributeParallelForDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelLoopDirective(
+    ACCTeamsDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(ACCD_teams_distribute_parallel_for,
       DirName, nullptr, D->getLocStart());
@@ -8670,8 +8670,8 @@ StmtResult TreeTransform<Derived>::TransformACCTargetTeamsDistributeDirective(
 
 template <typename Derived>
 StmtResult
-TreeTransform<Derived>::TransformACCTargetTeamsDistributeParallelForDirective(
-    ACCTargetTeamsDistributeParallelForDirective *D) {
+TreeTransform<Derived>::TransformACCTargetTeamsDistributeParallelLoopDirective(
+    ACCTargetTeamsDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
       ACCD_target_teams_distribute_parallel_for, DirName, nullptr,
@@ -8683,8 +8683,8 @@ TreeTransform<Derived>::TransformACCTargetTeamsDistributeParallelForDirective(
 
 template <typename Derived>
 StmtResult TreeTransform<Derived>::
-    TransformACCTargetTeamsDistributeParallelForSimdDirective(
-        ACCTargetTeamsDistributeParallelForSimdDirective *D) {
+    TransformACCTargetTeamsDistributeParallelLoopSimdDirective(
+        ACCTargetTeamsDistributeParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
       ACCD_target_teams_distribute_parallel_for_simd, DirName, nullptr,

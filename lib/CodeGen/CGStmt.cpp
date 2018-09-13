@@ -211,8 +211,8 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCLoopDirectiveClass:
     EmitACCLoopDirective(cast<ACCLoopDirective>(*S));
     break;
-  case Stmt::ACCForSimdDirectiveClass:
-    EmitACCForSimdDirective(cast<ACCForSimdDirective>(*S));
+  case Stmt::ACCLoopSimdDirectiveClass:
+    EmitACCLoopSimdDirective(cast<ACCLoopSimdDirective>(*S));
     break;
   case Stmt::ACCSectionsDirectiveClass:
     EmitACCSectionsDirective(cast<ACCSectionsDirective>(*S));
@@ -232,8 +232,8 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCParallelLoopDirectiveClass:
     EmitACCParallelLoopDirective(cast<ACCParallelLoopDirective>(*S));
     break;
-  case Stmt::ACCParallelForSimdDirectiveClass:
-    EmitACCParallelForSimdDirective(cast<ACCParallelForSimdDirective>(*S));
+  case Stmt::ACCParallelLoopSimdDirectiveClass:
+    EmitACCParallelLoopSimdDirective(cast<ACCParallelLoopSimdDirective>(*S));
     break;
   case Stmt::ACCParallelSectionsDirectiveClass:
     EmitACCParallelSectionsDirective(cast<ACCParallelSectionsDirective>(*S));
@@ -286,8 +286,8 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCTargetParallelDirectiveClass:
     EmitACCTargetParallelDirective(cast<ACCTargetParallelDirective>(*S));
     break;
-  case Stmt::ACCTargetParallelForDirectiveClass:
-    EmitACCTargetParallelForDirective(cast<ACCTargetParallelForDirective>(*S));
+  case Stmt::ACCTargetParallelLoopDirectiveClass:
+    EmitACCTargetParallelLoopDirective(cast<ACCTargetParallelLoopDirective>(*S));
     break;
   case Stmt::ACCTaskLoopDirectiveClass:
     EmitACCTaskLoopDirective(cast<ACCTaskLoopDirective>(*S));
@@ -301,20 +301,20 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCTargetUpdateDirectiveClass:
     EmitACCTargetUpdateDirective(cast<ACCTargetUpdateDirective>(*S));
     break;
-  case Stmt::ACCDistributeParallelForDirectiveClass:
-    EmitACCDistributeParallelForDirective(
-        cast<ACCDistributeParallelForDirective>(*S));
+  case Stmt::ACCDistributeParallelLoopDirectiveClass:
+    EmitACCDistributeParallelLoopDirective(
+        cast<ACCDistributeParallelLoopDirective>(*S));
     break;
-  case Stmt::ACCDistributeParallelForSimdDirectiveClass:
-    EmitACCDistributeParallelForSimdDirective(
-        cast<ACCDistributeParallelForSimdDirective>(*S));
+  case Stmt::ACCDistributeParallelLoopSimdDirectiveClass:
+    EmitACCDistributeParallelLoopSimdDirective(
+        cast<ACCDistributeParallelLoopSimdDirective>(*S));
     break;
   case Stmt::ACCDistributeSimdDirectiveClass:
     EmitACCDistributeSimdDirective(cast<ACCDistributeSimdDirective>(*S));
     break;
-  case Stmt::ACCTargetParallelForSimdDirectiveClass:
-    EmitACCTargetParallelForSimdDirective(
-        cast<ACCTargetParallelForSimdDirective>(*S));
+  case Stmt::ACCTargetParallelLoopSimdDirectiveClass:
+    EmitACCTargetParallelLoopSimdDirective(
+        cast<ACCTargetParallelLoopSimdDirective>(*S));
     break;
   case Stmt::ACCTargetSimdDirectiveClass:
     EmitACCTargetSimdDirective(cast<ACCTargetSimdDirective>(*S));
@@ -326,13 +326,13 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
     EmitACCTeamsDistributeSimdDirective(
         cast<ACCTeamsDistributeSimdDirective>(*S));
     break;
-  case Stmt::ACCTeamsDistributeParallelForSimdDirectiveClass:
-    EmitACCTeamsDistributeParallelForSimdDirective(
-        cast<ACCTeamsDistributeParallelForSimdDirective>(*S));
+  case Stmt::ACCTeamsDistributeParallelLoopSimdDirectiveClass:
+    EmitACCTeamsDistributeParallelLoopSimdDirective(
+        cast<ACCTeamsDistributeParallelLoopSimdDirective>(*S));
     break;
-  case Stmt::ACCTeamsDistributeParallelForDirectiveClass:
-    EmitACCTeamsDistributeParallelForDirective(
-        cast<ACCTeamsDistributeParallelForDirective>(*S));
+  case Stmt::ACCTeamsDistributeParallelLoopDirectiveClass:
+    EmitACCTeamsDistributeParallelLoopDirective(
+        cast<ACCTeamsDistributeParallelLoopDirective>(*S));
     break;
   case Stmt::ACCTargetTeamsDirectiveClass:
     EmitACCTargetTeamsDirective(cast<ACCTargetTeamsDirective>(*S));
@@ -341,13 +341,13 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
     EmitACCTargetTeamsDistributeDirective(
         cast<ACCTargetTeamsDistributeDirective>(*S));
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelForDirectiveClass:
-    EmitACCTargetTeamsDistributeParallelForDirective(
-        cast<ACCTargetTeamsDistributeParallelForDirective>(*S));
+  case Stmt::ACCTargetTeamsDistributeParallelLoopDirectiveClass:
+    EmitACCTargetTeamsDistributeParallelLoopDirective(
+        cast<ACCTargetTeamsDistributeParallelLoopDirective>(*S));
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelForSimdDirectiveClass:
-    EmitACCTargetTeamsDistributeParallelForSimdDirective(
-        cast<ACCTargetTeamsDistributeParallelForSimdDirective>(*S));
+  case Stmt::ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass:
+    EmitACCTargetTeamsDistributeParallelLoopSimdDirective(
+        cast<ACCTargetTeamsDistributeParallelLoopSimdDirective>(*S));
     break;
   case Stmt::ACCTargetTeamsDistributeSimdDirectiveClass:
     EmitACCTargetTeamsDistributeSimdDirective(

@@ -3025,7 +3025,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
                                   VarsWithInheritedDSA);
     break;
   case ACCD_for_simd:
-    Res = ActOnOpenACCForSimdDirective(ClausesWithImplicit, AStmt, StartLoc,
+    Res = ActOnOpenACCLoopSimdDirective(ClausesWithImplicit, AStmt, StartLoc,
                                       EndLoc, VarsWithInheritedDSA);
     break;
   case ACCD_sections:
@@ -3056,7 +3056,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
   case ACCD_parallel_for_simd:
-    Res = ActOnOpenACCParallelForSimdDirective(
+    Res = ActOnOpenACCParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
@@ -3124,7 +3124,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
   case ACCD_target_parallel_for:
-    Res = ActOnOpenACCTargetParallelForDirective(
+    Res = ActOnOpenACCTargetParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
@@ -3178,12 +3178,12 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     AllowedNameModifiers.push_back(ACCD_target_update);
     break;
   case ACCD_distribute_parallel_for:
-    Res = ActOnOpenACCDistributeParallelForDirective(
+    Res = ActOnOpenACCDistributeParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
   case ACCD_distribute_parallel_for_simd:
-    Res = ActOnOpenACCDistributeParallelForSimdDirective(
+    Res = ActOnOpenACCDistributeParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
@@ -3192,7 +3192,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     break;
   case ACCD_target_parallel_for_simd:
-    Res = ActOnOpenACCTargetParallelForSimdDirective(
+    Res = ActOnOpenACCTargetParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
@@ -3211,12 +3211,12 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     break;
   case ACCD_teams_distribute_parallel_for_simd:
-    Res = ActOnOpenACCTeamsDistributeParallelForSimdDirective(
+    Res = ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
   case ACCD_teams_distribute_parallel_for:
-    Res = ActOnOpenACCTeamsDistributeParallelForDirective(
+    Res = ActOnOpenACCTeamsDistributeParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
@@ -3231,13 +3231,13 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     AllowedNameModifiers.push_back(ACCD_target);
     break;
   case ACCD_target_teams_distribute_parallel_for:
-    Res = ActOnOpenACCTargetTeamsDistributeParallelForDirective(
+    Res = ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
   case ACCD_target_teams_distribute_parallel_for_simd:
-    Res = ActOnOpenACCTargetTeamsDistributeParallelForSimdDirective(
+    Res = ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
@@ -5283,7 +5283,7 @@ StmtResult Sema::ActOnOpenACCLoopDirective(
                                  Clauses, AStmt, B, DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCForSimdDirective(
+StmtResult Sema::ActOnOpenACCLoopSimdDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -5319,7 +5319,7 @@ StmtResult Sema::ActOnOpenACCForSimdDirective(
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCForSimdDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
+  return ACCLoopSimdDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
                                      Clauses, AStmt, B);
 }
 
@@ -5485,7 +5485,7 @@ StmtResult Sema::ActOnOpenACCParallelLoopDirective(
   if (!AStmt)
     return StmtError();
 
-  llvm::outs() << " F(CALL) : Sema::ActOnOpenACCParallelForDirective()\n";
+  llvm::outs() << " F(CALL) : Sema::ActOnOpenACCParallelLoopDirective()\n";
 
   CapturedStmt *CS = cast<CapturedStmt>(AStmt);
   // 1.2.2 OpenACC Language Terminology
@@ -5525,7 +5525,7 @@ StmtResult Sema::ActOnOpenACCParallelLoopDirective(
                                          DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCParallelForSimdDirective(
+StmtResult Sema::ActOnOpenACCParallelLoopSimdDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -5565,7 +5565,7 @@ StmtResult Sema::ActOnOpenACCParallelForSimdDirective(
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCParallelForSimdDirective::Create(
+  return ACCParallelLoopSimdDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -6506,7 +6506,7 @@ Sema::ActOnOpenACCTargetParallelDirective(ArrayRef<ACCClause *> Clauses,
                                             AStmt);
 }
 
-StmtResult Sema::ActOnOpenACCTargetParallelForDirective(
+StmtResult Sema::ActOnOpenACCTargetParallelLoopDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -6556,7 +6556,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelForDirective(
   }
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetParallelForDirective::Create(Context, StartLoc, EndLoc,
+  return ACCTargetParallelLoopDirective::Create(Context, StartLoc, EndLoc,
                                                NestedLoopCount, Clauses, AStmt,
                                                B, DSAStack->isCancelRegion());
 }
@@ -6923,7 +6923,7 @@ StmtResult Sema::ActOnOpenACCDistributeDirective(
                                         NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCDistributeParallelForDirective(
+StmtResult Sema::ActOnOpenACCDistributeParallelLoopDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -6963,12 +6963,12 @@ StmtResult Sema::ActOnOpenACCDistributeParallelForDirective(
          "acc for loop exprs were not built");
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCDistributeParallelForDirective::Create(
+  return ACCDistributeParallelLoopDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B,
       DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCDistributeParallelForSimdDirective(
+StmtResult Sema::ActOnOpenACCDistributeParallelLoopSimdDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7022,7 +7022,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelForSimdDirective(
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCDistributeParallelForSimdDirective::Create(
+  return ACCDistributeParallelLoopSimdDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -7083,7 +7083,7 @@ StmtResult Sema::ActOnOpenACCDistributeSimdDirective(
                                             NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTargetParallelForSimdDirective(
+StmtResult Sema::ActOnOpenACCTargetParallelLoopSimdDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7135,7 +7135,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelForSimdDirective(
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetParallelForSimdDirective::Create(
+  return ACCTargetParallelLoopSimdDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -7305,7 +7305,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeSimdDirective(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTeamsDistributeParallelForSimdDirective(
+StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7364,11 +7364,11 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelForSimdDirective(
 
   DSAStack->setParentTeamsRegionLoc(StartLoc);
 
-  return ACCTeamsDistributeParallelForSimdDirective::Create(
+  return ACCTeamsDistributeParallelLoopSimdDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTeamsDistributeParallelForDirective(
+StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7413,7 +7413,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelForDirective(
 
   DSAStack->setParentTeamsRegionLoc(StartLoc);
 
-  return ACCTeamsDistributeParallelForDirective::Create(
+  return ACCTeamsDistributeParallelLoopDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B,
       DSAStack->isCancelRegion());
 }
@@ -7493,7 +7493,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeDirective(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelForDirective(
+StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7544,12 +7544,12 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelForDirective(
   }
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetTeamsDistributeParallelForDirective::Create(
+  return ACCTargetTeamsDistributeParallelLoopDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B,
       DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelForSimdDirective(
+StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7605,7 +7605,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelForSimdDirective(
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetTeamsDistributeParallelForSimdDirective::Create(
+  return ACCTargetTeamsDistributeParallelLoopSimdDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 

@@ -2656,7 +2656,7 @@ DEF_TRAVERSE_STMT(ACCSimdDirective,
 DEF_TRAVERSE_STMT(ACCLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCForSimdDirective,
+DEF_TRAVERSE_STMT(ACCLoopSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCSectionsDirective,
@@ -2679,7 +2679,7 @@ DEF_TRAVERSE_STMT(ACCCriticalDirective, {
 DEF_TRAVERSE_STMT(ACCParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCParallelForSimdDirective,
+DEF_TRAVERSE_STMT(ACCParallelLoopSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCParallelSectionsDirective,
@@ -2730,7 +2730,7 @@ DEF_TRAVERSE_STMT(ACCTargetExitDataDirective,
 DEF_TRAVERSE_STMT(ACCTargetParallelDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetParallelForDirective,
+DEF_TRAVERSE_STMT(ACCTargetParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTeamsDirective,
@@ -2748,16 +2748,16 @@ DEF_TRAVERSE_STMT(ACCTaskLoopSimdDirective,
 DEF_TRAVERSE_STMT(ACCDistributeDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCDistributeParallelForDirective,
+DEF_TRAVERSE_STMT(ACCDistributeParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCDistributeParallelForSimdDirective,
+DEF_TRAVERSE_STMT(ACCDistributeParallelLoopSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCDistributeSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetParallelForSimdDirective,
+DEF_TRAVERSE_STMT(ACCTargetParallelLoopSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTargetSimdDirective,
@@ -2769,10 +2769,10 @@ DEF_TRAVERSE_STMT(ACCTeamsDistributeDirective,
 DEF_TRAVERSE_STMT(ACCTeamsDistributeSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelForSimdDirective,
+DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelLoopSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelForDirective,
+DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTargetTeamsDirective,
@@ -2781,10 +2781,10 @@ DEF_TRAVERSE_STMT(ACCTargetTeamsDirective,
 DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelForDirective,
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelForSimdDirective,
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelLoopSimdDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeSimdDirective,

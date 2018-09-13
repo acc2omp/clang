@@ -2365,7 +2365,7 @@ void ASTStmtWriter::VisitACCLoopDirective(ACCLoopDirective *D) {
   Code = serialization::STMT_ACC_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCForSimdDirective(ACCForSimdDirective *D) {
+void ASTStmtWriter::VisitACCLoopSimdDirective(ACCLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_FOR_SIMD_DIRECTIVE;
 }
@@ -2412,8 +2412,8 @@ void ASTStmtWriter::VisitACCParallelLoopDirective(ACCParallelLoopDirective *D) {
   Code = serialization::STMT_ACC_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCParallelForSimdDirective(
-    ACCParallelForSimdDirective *D) {
+void ASTStmtWriter::VisitACCParallelLoopSimdDirective(
+    ACCParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_PARALLEL_FOR_SIMD_DIRECTIVE;
 }
@@ -2486,8 +2486,8 @@ void ASTStmtWriter::VisitACCTargetParallelDirective(
   Code = serialization::STMT_ACC_TARGET_PARALLEL_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetParallelForDirective(
-    ACCTargetParallelForDirective *D) {
+void ASTStmtWriter::VisitACCTargetParallelLoopDirective(
+    ACCTargetParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   Record.push_back(D->hasCancel() ? 1 : 0);
   Code = serialization::STMT_ACC_TARGET_PARALLEL_FOR_DIRECTIVE;
@@ -2578,15 +2578,15 @@ void ASTStmtWriter::VisitACCTargetUpdateDirective(ACCTargetUpdateDirective *D) {
   Code = serialization::STMT_ACC_TARGET_UPDATE_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCDistributeParallelForDirective(
-    ACCDistributeParallelForDirective *D) {
+void ASTStmtWriter::VisitACCDistributeParallelLoopDirective(
+    ACCDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   Record.push_back(D->hasCancel() ? 1 : 0);
   Code = serialization::STMT_ACC_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCDistributeParallelForSimdDirective(
-    ACCDistributeParallelForSimdDirective *D) {
+void ASTStmtWriter::VisitACCDistributeParallelLoopSimdDirective(
+    ACCDistributeParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
 }
@@ -2597,8 +2597,8 @@ void ASTStmtWriter::VisitACCDistributeSimdDirective(
   Code = serialization::STMT_ACC_DISTRIBUTE_SIMD_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetParallelForSimdDirective(
-    ACCTargetParallelForSimdDirective *D) {
+void ASTStmtWriter::VisitACCTargetParallelLoopSimdDirective(
+    ACCTargetParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE;
 }
@@ -2620,14 +2620,14 @@ void ASTStmtWriter::VisitACCTeamsDistributeSimdDirective(
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeParallelForSimdDirective(
-    ACCTeamsDistributeParallelForSimdDirective *D) {
+void ASTStmtWriter::VisitACCTeamsDistributeParallelLoopSimdDirective(
+    ACCTeamsDistributeParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeParallelForDirective(
-    ACCTeamsDistributeParallelForDirective *D) {
+void ASTStmtWriter::VisitACCTeamsDistributeParallelLoopDirective(
+    ACCTeamsDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   Record.push_back(D->hasCancel() ? 1 : 0);
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
@@ -2646,15 +2646,15 @@ void ASTStmtWriter::VisitACCTargetTeamsDistributeDirective(
   Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelForDirective(
-    ACCTargetTeamsDistributeParallelForDirective *D) {
+void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelLoopDirective(
+    ACCTargetTeamsDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   Record.push_back(D->hasCancel() ? 1 : 0);
   Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelForSimdDirective(
-    ACCTargetTeamsDistributeParallelForSimdDirective *D) {
+void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
+    ACCTargetTeamsDistributeParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::
       STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;

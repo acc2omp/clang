@@ -1319,14 +1319,14 @@ static llvm::Value *emitParallelOrTeamsOutlinedFunction(
     HasCancel = OPSD->hasCancel();
   else if (auto *OPFD = dyn_cast<ACCParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
-  else if (auto *OPFD = dyn_cast<ACCTargetParallelForDirective>(&D))
+  else if (auto *OPFD = dyn_cast<ACCTargetParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
-  else if (auto *OPFD = dyn_cast<ACCDistributeParallelForDirective>(&D))
+  else if (auto *OPFD = dyn_cast<ACCDistributeParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
-  else if (auto *OPFD = dyn_cast<ACCTeamsDistributeParallelForDirective>(&D))
+  else if (auto *OPFD = dyn_cast<ACCTeamsDistributeParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
   else if (auto *OPFD =
-               dyn_cast<ACCTargetTeamsDistributeParallelForDirective>(&D))
+               dyn_cast<ACCTargetTeamsDistributeParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
   CGOpenACCOutlinedRegionInfo CGInfo(*CS, ThreadIDVar, CodeGen, InnermostKind,
                                     HasCancel, OutlinedHelperName);
@@ -7335,28 +7335,28 @@ void CGOpenACCRuntime::scanForTargetRegionsFunctions(const Stmt *S,
       CodeGenFunction::EmitACCTargetTeamsDistributeSimdDeviceFunction(
           CGM, ParentName, cast<ACCTargetTeamsDistributeSimdDirective>(*S));
       break;
-    case Stmt::ACCTargetParallelForDirectiveClass:
+    case Stmt::ACCTargetParallelLoopDirectiveClass:
       CodeGenFunction::EmitACCTargetParallelForDeviceFunction(
-          CGM, ParentName, cast<ACCTargetParallelForDirective>(*S));
+          CGM, ParentName, cast<ACCTargetParallelLoopDirective>(*S));
       break;
-    case Stmt::ACCTargetParallelForSimdDirectiveClass:
+    case Stmt::ACCTargetParallelLoopSimdDirectiveClass:
       CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
-          CGM, ParentName, cast<ACCTargetParallelForSimdDirective>(*S));
+          CGM, ParentName, cast<ACCTargetParallelLoopSimdDirective>(*S));
       break;
     case Stmt::ACCTargetSimdDirectiveClass:
       CodeGenFunction::EmitACCTargetSimdDeviceFunction(
           CGM, ParentName, cast<ACCTargetSimdDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeParallelForDirectiveClass:
+    case Stmt::ACCTargetTeamsDistributeParallelLoopDirectiveClass:
       CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
           CGM, ParentName,
-          cast<ACCTargetTeamsDistributeParallelForDirective>(*S));
+          cast<ACCTargetTeamsDistributeParallelLoopDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeParallelForSimdDirectiveClass:
+    case Stmt::ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass:
       CodeGenFunction::
           EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
               CGM, ParentName,
-              cast<ACCTargetTeamsDistributeParallelForSimdDirective>(*S));
+              cast<ACCTargetTeamsDistributeParallelLoopSimdDirective>(*S));
       break;
     default:
       llvm_unreachable("Unknown target directive for OpenACC device codegen.");

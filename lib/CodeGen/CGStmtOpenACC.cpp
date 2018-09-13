@@ -2104,12 +2104,12 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
                                          ACCPrePostActionTy &) {
     bool HasCancel = false;
     if (!isOpenACCSimdDirective(S.getDirectiveKind())) {
-      if (const auto *D = dyn_cast<ACCTeamsDistributeParallelForDirective>(&S))
+      if (const auto *D = dyn_cast<ACCTeamsDistributeParallelLoopDirective>(&S))
         HasCancel = D->hasCancel();
-      else if (const auto *D = dyn_cast<ACCDistributeParallelForDirective>(&S))
+      else if (const auto *D = dyn_cast<ACCDistributeParallelLoopDirective>(&S))
         HasCancel = D->hasCancel();
       else if (const auto *D =
-                   dyn_cast<ACCTargetTeamsDistributeParallelForDirective>(&S))
+                   dyn_cast<ACCTargetTeamsDistributeParallelLoopDirective>(&S))
         HasCancel = D->hasCancel();
     }
     CodeGenFunction::ACCCancelStackRAII CancelRegion(CGF, S.getDirectiveKind(),
@@ -2126,8 +2126,8 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
       emitDistributeParallelForDistributeInnerBoundParams);
 }
 
-void CodeGenFunction::EmitACCDistributeParallelForDirective(
-    const ACCDistributeParallelForDirective &S) {
+void CodeGenFunction::EmitACCDistributeParallelLoopDirective(
+    const ACCDistributeParallelLoopDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -2136,8 +2136,8 @@ void CodeGenFunction::EmitACCDistributeParallelForDirective(
   CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_distribute, CodeGen);
 }
 
-void CodeGenFunction::EmitACCDistributeParallelForSimdDirective(
-    const ACCDistributeParallelForSimdDirective &S) {
+void CodeGenFunction::EmitACCDistributeParallelLoopSimdDirective(
+    const ACCDistributeParallelLoopSimdDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -2426,7 +2426,7 @@ void CodeGenFunction::EmitACCLoopDirective(const ACCLoopDirective &S) {
   }
 }
 
-void CodeGenFunction::EmitACCForSimdDirective(const ACCForSimdDirective &S) {
+void CodeGenFunction::EmitACCLoopSimdDirective(const ACCLoopSimdDirective &S) {
   bool HasLastprivates = false;
   auto &&CodeGen = [&S, &HasLastprivates](CodeGenFunction &CGF,
                                           ACCPrePostActionTy &) {
@@ -2693,8 +2693,8 @@ void CodeGenFunction::EmitACCParallelLoopDirective(
                                  emitEmptyBoundParameters);
 }
 
-void CodeGenFunction::EmitACCParallelForSimdDirective(
-    const ACCParallelForSimdDirective &S) {
+void CodeGenFunction::EmitACCParallelLoopSimdDirective(
+    const ACCParallelLoopSimdDirective &S) {
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
@@ -4210,8 +4210,8 @@ void CodeGenFunction::EmitACCTeamsDistributeSimdDirective(
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeParallelForDirective(
-    const ACCTeamsDistributeParallelForDirective &S) {
+void CodeGenFunction::EmitACCTeamsDistributeParallelLoopDirective(
+    const ACCTeamsDistributeParallelLoopDirective &S) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -4232,8 +4232,8 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelForDirective(
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeParallelForSimdDirective(
-    const ACCTeamsDistributeParallelForSimdDirective &S) {
+void CodeGenFunction::EmitACCTeamsDistributeParallelLoopSimdDirective(
+    const ACCTeamsDistributeParallelLoopSimdDirective &S) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -4255,7 +4255,7 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelForSimdDirective(
 }
 
 static void emitTargetTeamsDistributeParallelForRegion(
-    CodeGenFunction &CGF, const ACCTargetTeamsDistributeParallelForDirective &S,
+    CodeGenFunction &CGF, const ACCTargetTeamsDistributeParallelLoopDirective &S,
     ACCPrePostActionTy &Action) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
@@ -4281,7 +4281,7 @@ static void emitTargetTeamsDistributeParallelForRegion(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeParallelForDirective &S) {
+    const ACCTargetTeamsDistributeParallelLoopDirective &S) {
   // Emit SPMD target teams distribute parallel for region as a standalone
   // region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
@@ -4295,8 +4295,8 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDirective(
-    const ACCTargetTeamsDistributeParallelForDirective &S) {
+void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopDirective(
+    const ACCTargetTeamsDistributeParallelLoopDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForRegion(CGF, S, Action);
   };
@@ -4305,7 +4305,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDirective(
 
 static void emitTargetTeamsDistributeParallelForSimdRegion(
     CodeGenFunction &CGF,
-    const ACCTargetTeamsDistributeParallelForSimdDirective &S,
+    const ACCTargetTeamsDistributeParallelLoopSimdDirective &S,
     ACCPrePostActionTy &Action) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
@@ -4331,7 +4331,7 @@ static void emitTargetTeamsDistributeParallelForSimdRegion(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeParallelForSimdDirective &S) {
+    const ACCTargetTeamsDistributeParallelLoopSimdDirective &S) {
   // Emit SPMD target teams distribute parallel for simd region as a standalone
   // region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
@@ -4345,8 +4345,8 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDirective(
-    const ACCTargetTeamsDistributeParallelForSimdDirective &S) {
+void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopSimdDirective(
+    const ACCTargetTeamsDistributeParallelLoopSimdDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForSimdRegion(CGF, S, Action);
   };
@@ -4624,7 +4624,7 @@ void CodeGenFunction::EmitACCTargetParallelDirective(
 }
 
 static void emitTargetParallelForRegion(CodeGenFunction &CGF,
-                                        const ACCTargetParallelForDirective &S,
+                                        const ACCTargetParallelLoopDirective &S,
                                         ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
   // Emit directive as a combined directive that consists of two implicit
@@ -4641,7 +4641,7 @@ static void emitTargetParallelForRegion(CodeGenFunction &CGF,
 
 void CodeGenFunction::EmitACCTargetParallelForDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetParallelForDirective &S) {
+    const ACCTargetParallelLoopDirective &S) {
   // Emit SPMD target parallel for region as a standalone region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForRegion(CGF, S, Action);
@@ -4654,8 +4654,8 @@ void CodeGenFunction::EmitACCTargetParallelForDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetParallelForDirective(
-    const ACCTargetParallelForDirective &S) {
+void CodeGenFunction::EmitACCTargetParallelLoopDirective(
+    const ACCTargetParallelLoopDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForRegion(CGF, S, Action);
   };
@@ -4664,7 +4664,7 @@ void CodeGenFunction::EmitACCTargetParallelForDirective(
 
 static void
 emitTargetParallelForSimdRegion(CodeGenFunction &CGF,
-                                const ACCTargetParallelForSimdDirective &S,
+                                const ACCTargetParallelLoopSimdDirective &S,
                                 ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
   // Emit directive as a combined directive that consists of two implicit
@@ -4679,7 +4679,7 @@ emitTargetParallelForSimdRegion(CodeGenFunction &CGF,
 
 void CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetParallelForSimdDirective &S) {
+    const ACCTargetParallelLoopSimdDirective &S) {
   // Emit SPMD target parallel for region as a standalone region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForSimdRegion(CGF, S, Action);
@@ -4692,8 +4692,8 @@ void CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetParallelForSimdDirective(
-    const ACCTargetParallelForSimdDirective &S) {
+void CodeGenFunction::EmitACCTargetParallelLoopSimdDirective(
+    const ACCTargetParallelLoopSimdDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetParallelForSimdRegion(CGF, S, Action);
   };

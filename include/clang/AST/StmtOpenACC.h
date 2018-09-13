@@ -965,27 +965,27 @@ public:
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == ACCSimdDirectiveClass ||
            T->getStmtClass() == ACCLoopDirectiveClass ||
-           T->getStmtClass() == ACCForSimdDirectiveClass ||
+           T->getStmtClass() == ACCLoopSimdDirectiveClass ||
            T->getStmtClass() == ACCParallelLoopDirectiveClass ||
-           T->getStmtClass() == ACCParallelForSimdDirectiveClass ||
+           T->getStmtClass() == ACCParallelLoopSimdDirectiveClass ||
            T->getStmtClass() == ACCTaskLoopDirectiveClass ||
            T->getStmtClass() == ACCTaskLoopSimdDirectiveClass ||
            T->getStmtClass() == ACCDistributeDirectiveClass ||
-           T->getStmtClass() == ACCTargetParallelForDirectiveClass ||
-           T->getStmtClass() == ACCDistributeParallelForDirectiveClass ||
-           T->getStmtClass() == ACCDistributeParallelForSimdDirectiveClass ||
+           T->getStmtClass() == ACCTargetParallelLoopDirectiveClass ||
+           T->getStmtClass() == ACCDistributeParallelLoopDirectiveClass ||
+           T->getStmtClass() == ACCDistributeParallelLoopSimdDirectiveClass ||
            T->getStmtClass() == ACCDistributeSimdDirectiveClass ||
-           T->getStmtClass() == ACCTargetParallelForSimdDirectiveClass ||
+           T->getStmtClass() == ACCTargetParallelLoopSimdDirectiveClass ||
            T->getStmtClass() == ACCTargetSimdDirectiveClass ||
            T->getStmtClass() == ACCTeamsDistributeDirectiveClass ||
            T->getStmtClass() == ACCTeamsDistributeSimdDirectiveClass ||
            T->getStmtClass() ==
-               ACCTeamsDistributeParallelForSimdDirectiveClass ||
-           T->getStmtClass() == ACCTeamsDistributeParallelForDirectiveClass ||
+               ACCTeamsDistributeParallelLoopSimdDirectiveClass ||
+           T->getStmtClass() == ACCTeamsDistributeParallelLoopDirectiveClass ||
            T->getStmtClass() ==
-               ACCTargetTeamsDistributeParallelForDirectiveClass ||
+               ACCTargetTeamsDistributeParallelLoopDirectiveClass ||
            T->getStmtClass() ==
-               ACCTargetTeamsDistributeParallelForSimdDirectiveClass ||
+               ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass ||
            T->getStmtClass() == ACCTargetTeamsDistributeDirectiveClass ||
            T->getStmtClass() == ACCTargetTeamsDistributeSimdDirectiveClass;
   }
@@ -1142,7 +1142,7 @@ public:
 /// with the variables 'a' and 'b', 'linear' with variables 'i', 'j' and
 /// linear step 's', 'reduction' with operator '+' and variables 'c' and 'd'.
 ///
-class ACCForSimdDirective : public ACCLoopLikeDirective {
+class ACCLoopSimdDirective : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -1151,9 +1151,9 @@ class ACCForSimdDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCForSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCLoopSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                       unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCForSimdDirectiveClass, ACCD_for_simd,
+      : ACCLoopLikeDirective(this, ACCLoopSimdDirectiveClass, ACCD_for_simd,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
 
   /// \brief Build an empty directive.
@@ -1161,8 +1161,8 @@ class ACCForSimdDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCForSimdDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCForSimdDirectiveClass, ACCD_for_simd,
+  explicit ACCLoopSimdDirective(unsigned CollapsedNum, unsigned NumClauses)
+      : ACCLoopLikeDirective(this, ACCLoopSimdDirectiveClass, ACCD_for_simd,
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -1177,7 +1177,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCForSimdDirective *
+  static ACCLoopSimdDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -1189,12 +1189,12 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCForSimdDirective *CreateEmpty(const ASTContext &C,
+  static ACCLoopSimdDirective *CreateEmpty(const ASTContext &C,
                                           unsigned NumClauses,
                                           unsigned CollapsedNum, EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCForSimdDirectiveClass;
+    return T->getStmtClass() == ACCLoopSimdDirectiveClass;
   }
 };
 
@@ -1594,7 +1594,7 @@ public:
 /// and linear step 's', 'reduction' with operator '+' and variables 'c' and
 /// 'd'.
 ///
-class ACCParallelForSimdDirective : public ACCLoopLikeDirective {
+class ACCParallelLoopSimdDirective : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -1603,9 +1603,9 @@ class ACCParallelForSimdDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCParallelForSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCParallelLoopSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                               unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCParallelLoopSimdDirectiveClass,
                          ACCD_parallel_for_simd, StartLoc, EndLoc, CollapsedNum,
                          NumClauses) {}
 
@@ -1614,9 +1614,9 @@ class ACCParallelForSimdDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCParallelForSimdDirective(unsigned CollapsedNum,
+  explicit ACCParallelLoopSimdDirective(unsigned CollapsedNum,
                                        unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCParallelLoopSimdDirectiveClass,
                          ACCD_parallel_for_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -1631,7 +1631,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCParallelForSimdDirective *
+  static ACCParallelLoopSimdDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -1643,13 +1643,13 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCParallelForSimdDirective *CreateEmpty(const ASTContext &C,
+  static ACCParallelLoopSimdDirective *CreateEmpty(const ASTContext &C,
                                                   unsigned NumClauses,
                                                   unsigned CollapsedNum,
                                                   EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCParallelForSimdDirectiveClass;
+    return T->getStmtClass() == ACCParallelLoopSimdDirectiveClass;
   }
 };
 
@@ -2543,7 +2543,7 @@ public:
 /// 'private' with the variables 'a' and 'b' and 'reduction' with operator '+'
 /// and variables 'c' and 'd'.
 ///
-class ACCTargetParallelForDirective : public ACCLoopLikeDirective {
+class ACCTargetParallelLoopDirective : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// \brief true if current region has inner cancel directive.
@@ -2556,9 +2556,9 @@ class ACCTargetParallelForDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetParallelForDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCTargetParallelLoopDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                                 unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetParallelForDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTargetParallelLoopDirectiveClass,
                          ACCD_target_parallel_for, StartLoc, EndLoc,
                          CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -2568,9 +2568,9 @@ class ACCTargetParallelForDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetParallelForDirective(unsigned CollapsedNum,
+  explicit ACCTargetParallelLoopDirective(unsigned CollapsedNum,
                                          unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetParallelForDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTargetParallelLoopDirectiveClass,
                          ACCD_target_parallel_for, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -2590,7 +2590,7 @@ public:
   /// \param Exprs Helper expressions for CodeGen.
   /// \param HasCancel true if current directive has inner cancel directive.
   ///
-  static ACCTargetParallelForDirective *
+  static ACCTargetParallelLoopDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs, bool HasCancel);
@@ -2602,7 +2602,7 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetParallelForDirective *CreateEmpty(const ASTContext &C,
+  static ACCTargetParallelLoopDirective *CreateEmpty(const ASTContext &C,
                                                     unsigned NumClauses,
                                                     unsigned CollapsedNum,
                                                     EmptyShell);
@@ -2611,7 +2611,7 @@ public:
   bool hasCancel() const { return HasCancel; }
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTargetParallelForDirectiveClass;
+    return T->getStmtClass() == ACCTargetParallelLoopDirectiveClass;
   }
 };
 
@@ -3061,7 +3061,7 @@ public:
 /// In this example directive '#pragma acc distribute parallel for' has clause
 /// 'private' with the variables 'a' and 'b'
 ///
-class ACCDistributeParallelForDirective : public ACCLoopLikeDirective {
+class ACCDistributeParallelLoopDirective : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
   bool HasCancel = false;
@@ -3073,10 +3073,10 @@ class ACCDistributeParallelForDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCDistributeParallelForDirective(SourceLocation StartLoc,
+  ACCDistributeParallelLoopDirective(SourceLocation StartLoc,
                                     SourceLocation EndLoc,
                                     unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCDistributeParallelForDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCDistributeParallelLoopDirectiveClass,
                          ACCD_distribute_parallel_for, StartLoc, EndLoc,
                          CollapsedNum, NumClauses), HasCancel(false) {}
 
@@ -3085,9 +3085,9 @@ class ACCDistributeParallelForDirective : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCDistributeParallelForDirective(unsigned CollapsedNum,
+  explicit ACCDistributeParallelLoopDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCDistributeParallelForDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCDistributeParallelLoopDirectiveClass,
                          ACCD_distribute_parallel_for, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -3107,7 +3107,7 @@ public:
   /// \param Exprs Helper expressions for CodeGen.
   /// \param HasCancel true if this directive has inner cancel directive.
   ///
-  static ACCDistributeParallelForDirective *
+  static ACCDistributeParallelLoopDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs, bool HasCancel);
@@ -3119,7 +3119,7 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCDistributeParallelForDirective *CreateEmpty(const ASTContext &C,
+  static ACCDistributeParallelLoopDirective *CreateEmpty(const ASTContext &C,
                                                         unsigned NumClauses,
                                                         unsigned CollapsedNum,
                                                         EmptyShell);
@@ -3128,7 +3128,7 @@ public:
   bool hasCancel() const { return HasCancel; }
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCDistributeParallelForDirectiveClass;
+    return T->getStmtClass() == ACCDistributeParallelLoopDirectiveClass;
   }
 };
 
@@ -3141,7 +3141,7 @@ public:
 /// In this example directive '#pragma acc distribute parallel for simd' has
 /// clause 'private' with the variables 'x'
 ///
-class ACCDistributeParallelForSimdDirective final : public ACCLoopLikeDirective {
+class ACCDistributeParallelLoopSimdDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3151,11 +3151,11 @@ class ACCDistributeParallelForSimdDirective final : public ACCLoopLikeDirective 
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCDistributeParallelForSimdDirective(SourceLocation StartLoc,
+  ACCDistributeParallelLoopSimdDirective(SourceLocation StartLoc,
                                         SourceLocation EndLoc,
                                         unsigned CollapsedNum,
                                         unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCDistributeParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCDistributeParallelLoopSimdDirectiveClass,
                          ACCD_distribute_parallel_for_simd, StartLoc, 
                          EndLoc, CollapsedNum, NumClauses) {}
 
@@ -3164,9 +3164,9 @@ class ACCDistributeParallelForSimdDirective final : public ACCLoopLikeDirective 
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCDistributeParallelForSimdDirective(unsigned CollapsedNum,
+  explicit ACCDistributeParallelLoopSimdDirective(unsigned CollapsedNum,
                                                  unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCDistributeParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCDistributeParallelLoopSimdDirectiveClass,
                          ACCD_distribute_parallel_for_simd, 
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
@@ -3182,7 +3182,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCDistributeParallelForSimdDirective *Create(
+  static ACCDistributeParallelLoopSimdDirective *Create(
       const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
       unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
       Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3193,12 +3193,12 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCDistributeParallelForSimdDirective *CreateEmpty(
+  static ACCDistributeParallelLoopSimdDirective *CreateEmpty(
       const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
       EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCDistributeParallelForSimdDirectiveClass;
+    return T->getStmtClass() == ACCDistributeParallelLoopSimdDirectiveClass;
   }
 };
 
@@ -3278,7 +3278,7 @@ public:
 /// 'private' with the variable 'a', 'map' with the variable 'b' and 'safelen'
 /// with the variable 'c'.
 ///
-class ACCTargetParallelForSimdDirective final : public ACCLoopLikeDirective {
+class ACCTargetParallelLoopSimdDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3288,9 +3288,9 @@ class ACCTargetParallelForSimdDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetParallelForSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCTargetParallelLoopSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                                 unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTargetParallelLoopSimdDirectiveClass,
                          ACCD_target_parallel_for_simd, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
@@ -3299,9 +3299,9 @@ class ACCTargetParallelForSimdDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetParallelForSimdDirective(unsigned CollapsedNum,
+  explicit ACCTargetParallelLoopSimdDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTargetParallelLoopSimdDirectiveClass,
                          ACCD_target_parallel_for_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -3316,7 +3316,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTargetParallelForSimdDirective *
+  static ACCTargetParallelLoopSimdDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3327,13 +3327,13 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetParallelForSimdDirective *CreateEmpty(const ASTContext &C,
+  static ACCTargetParallelLoopSimdDirective *CreateEmpty(const ASTContext &C,
                                                         unsigned NumClauses,
                                                         unsigned CollapsedNum,
                                                         EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTargetParallelForSimdDirectiveClass;
+    return T->getStmtClass() == ACCTargetParallelLoopSimdDirectiveClass;
   }
 };
 
@@ -3550,7 +3550,7 @@ public:
 /// In this example directive '#pragma acc teams distribute parallel for simd'
 /// has clause 'private' with the variables 'x'
 ///
-class ACCTeamsDistributeParallelForSimdDirective final
+class ACCTeamsDistributeParallelLoopSimdDirective final
     : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
@@ -3561,11 +3561,11 @@ class ACCTeamsDistributeParallelForSimdDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTeamsDistributeParallelForSimdDirective(SourceLocation StartLoc,
+  ACCTeamsDistributeParallelLoopSimdDirective(SourceLocation StartLoc,
                                              SourceLocation EndLoc,
                                              unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopSimdDirectiveClass,
                          ACCD_teams_distribute_parallel_for_simd, StartLoc, 
                          EndLoc, CollapsedNum, NumClauses) {}
 
@@ -3574,9 +3574,9 @@ class ACCTeamsDistributeParallelForSimdDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTeamsDistributeParallelForSimdDirective(unsigned CollapsedNum,
+  explicit ACCTeamsDistributeParallelLoopSimdDirective(unsigned CollapsedNum,
                                                       unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelForSimdDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopSimdDirectiveClass,
                          ACCD_teams_distribute_parallel_for_simd, 
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
@@ -3592,7 +3592,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTeamsDistributeParallelForSimdDirective *
+  static ACCTeamsDistributeParallelLoopSimdDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3603,12 +3603,12 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTeamsDistributeParallelForSimdDirective *
+  static ACCTeamsDistributeParallelLoopSimdDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTeamsDistributeParallelForSimdDirectiveClass;
+    return T->getStmtClass() == ACCTeamsDistributeParallelLoopSimdDirectiveClass;
   }
 };
 
@@ -3621,7 +3621,7 @@ public:
 /// In this example directive '#pragma acc teams distribute parallel for'
 /// has clause 'private' with the variables 'x'
 ///
-class ACCTeamsDistributeParallelForDirective final : public ACCLoopLikeDirective {
+class ACCTeamsDistributeParallelLoopDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
   bool HasCancel = false;
@@ -3633,11 +3633,11 @@ class ACCTeamsDistributeParallelForDirective final : public ACCLoopLikeDirective
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTeamsDistributeParallelForDirective(SourceLocation StartLoc,
+  ACCTeamsDistributeParallelLoopDirective(SourceLocation StartLoc,
                                          SourceLocation EndLoc,
                                          unsigned CollapsedNum,
                                          unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelForDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopDirectiveClass,
                          ACCD_teams_distribute_parallel_for, StartLoc, EndLoc,
                          CollapsedNum, NumClauses), HasCancel(false) {}
 
@@ -3646,9 +3646,9 @@ class ACCTeamsDistributeParallelForDirective final : public ACCLoopLikeDirective
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTeamsDistributeParallelForDirective(unsigned CollapsedNum,
+  explicit ACCTeamsDistributeParallelLoopDirective(unsigned CollapsedNum,
                                                   unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelForDirectiveClass,
+      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopDirectiveClass,
                          ACCD_teams_distribute_parallel_for, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -3668,7 +3668,7 @@ public:
   /// \param Exprs Helper expressions for CodeGen.
   /// \param HasCancel true if this directive has inner cancel directive.
   ///
-  static ACCTeamsDistributeParallelForDirective *
+  static ACCTeamsDistributeParallelLoopDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs, bool HasCancel);
@@ -3679,7 +3679,7 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTeamsDistributeParallelForDirective *
+  static ACCTeamsDistributeParallelLoopDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
@@ -3687,7 +3687,7 @@ public:
   bool hasCancel() const { return HasCancel; }
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTeamsDistributeParallelForDirectiveClass;
+    return T->getStmtClass() == ACCTeamsDistributeParallelLoopDirectiveClass;
   }
 };
 
@@ -3826,7 +3826,7 @@ public:
 /// In this example directive '#pragma acc target teams distribute parallel
 /// for' has clause 'private' with the variables 'x'
 ///
-class ACCTargetTeamsDistributeParallelForDirective final
+class ACCTargetTeamsDistributeParallelLoopDirective final
     : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
@@ -3839,12 +3839,12 @@ class ACCTargetTeamsDistributeParallelForDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetTeamsDistributeParallelForDirective(SourceLocation StartLoc,
+  ACCTargetTeamsDistributeParallelLoopDirective(SourceLocation StartLoc,
                                                SourceLocation EndLoc,
                                                unsigned CollapsedNum,
                                                unsigned NumClauses)
       : ACCLoopLikeDirective(this,
-                         ACCTargetTeamsDistributeParallelForDirectiveClass,
+                         ACCTargetTeamsDistributeParallelLoopDirectiveClass,
                          ACCD_target_teams_distribute_parallel_for, StartLoc,
                          EndLoc, CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -3854,10 +3854,10 @@ class ACCTargetTeamsDistributeParallelForDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetTeamsDistributeParallelForDirective(unsigned CollapsedNum,
+  explicit ACCTargetTeamsDistributeParallelLoopDirective(unsigned CollapsedNum,
                                                         unsigned NumClauses)
       : ACCLoopLikeDirective(
-            this, ACCTargetTeamsDistributeParallelForDirectiveClass,
+            this, ACCTargetTeamsDistributeParallelLoopDirectiveClass,
             ACCD_target_teams_distribute_parallel_for, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
@@ -3877,7 +3877,7 @@ public:
   /// \param Exprs Helper expressions for CodeGen.
   /// \param HasCancel true if this directive has inner cancel directive.
   ///
-  static ACCTargetTeamsDistributeParallelForDirective *
+  static ACCTargetTeamsDistributeParallelLoopDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs, bool HasCancel);
@@ -3888,7 +3888,7 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetTeamsDistributeParallelForDirective *
+  static ACCTargetTeamsDistributeParallelLoopDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
@@ -3897,7 +3897,7 @@ public:
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() ==
-           ACCTargetTeamsDistributeParallelForDirectiveClass;
+           ACCTargetTeamsDistributeParallelLoopDirectiveClass;
   }
 };
 
@@ -3910,7 +3910,7 @@ public:
 /// In this example directive '#pragma acc target teams distribute parallel
 /// for simd' has clause 'private' with the variables 'x'
 ///
-class ACCTargetTeamsDistributeParallelForSimdDirective final
+class ACCTargetTeamsDistributeParallelLoopSimdDirective final
     : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
@@ -3921,12 +3921,12 @@ class ACCTargetTeamsDistributeParallelForSimdDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetTeamsDistributeParallelForSimdDirective(SourceLocation StartLoc,
+  ACCTargetTeamsDistributeParallelLoopSimdDirective(SourceLocation StartLoc,
                                                    SourceLocation EndLoc,
                                                    unsigned CollapsedNum,
                                                    unsigned NumClauses)
       : ACCLoopLikeDirective(this,
-                         ACCTargetTeamsDistributeParallelForSimdDirectiveClass,
+                         ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass,
                          ACCD_target_teams_distribute_parallel_for_simd,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
 
@@ -3935,10 +3935,10 @@ class ACCTargetTeamsDistributeParallelForSimdDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetTeamsDistributeParallelForSimdDirective(
+  explicit ACCTargetTeamsDistributeParallelLoopSimdDirective(
       unsigned CollapsedNum, unsigned NumClauses)
       : ACCLoopLikeDirective(
-            this, ACCTargetTeamsDistributeParallelForSimdDirectiveClass,
+            this, ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass,
             ACCD_target_teams_distribute_parallel_for_simd, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses) {}
 
@@ -3953,7 +3953,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTargetTeamsDistributeParallelForSimdDirective *
+  static ACCTargetTeamsDistributeParallelLoopSimdDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3964,13 +3964,13 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetTeamsDistributeParallelForSimdDirective *
+  static ACCTargetTeamsDistributeParallelLoopSimdDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() ==
-           ACCTargetTeamsDistributeParallelForSimdDirectiveClass;
+           ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass;
   }
 };
 

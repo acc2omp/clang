@@ -2739,7 +2739,7 @@ void ASTStmtReader::VisitACCLoopDirective(ACCLoopDirective *D) {
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCForSimdDirective(ACCForSimdDirective *D) {
+void ASTStmtReader::VisitACCLoopSimdDirective(ACCLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -2782,8 +2782,8 @@ void ASTStmtReader::VisitACCParallelLoopDirective(ACCParallelLoopDirective *D) {
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCParallelForSimdDirective(
-    ACCParallelForSimdDirective *D) {
+void ASTStmtReader::VisitACCParallelLoopSimdDirective(
+    ACCParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -2888,8 +2888,8 @@ void ASTStmtReader::VisitACCTargetParallelDirective(
   VisitACCExecutableDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetParallelForDirective(
-    ACCTargetParallelForDirective *D) {
+void ASTStmtReader::VisitACCTargetParallelLoopDirective(
+    ACCTargetParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   D->setHasCancel(Record.readInt());
 }
@@ -2933,14 +2933,14 @@ void ASTStmtReader::VisitACCTargetUpdateDirective(ACCTargetUpdateDirective *D) {
   Record.skipInts(1);
   VisitACCExecutableDirective(D);
 }
-void ASTStmtReader::VisitACCDistributeParallelForDirective(
-    ACCDistributeParallelForDirective *D) {
+void ASTStmtReader::VisitACCDistributeParallelLoopDirective(
+    ACCDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCDistributeParallelForSimdDirective(
-    ACCDistributeParallelForSimdDirective *D) {
+void ASTStmtReader::VisitACCDistributeParallelLoopSimdDirective(
+    ACCDistributeParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -2949,8 +2949,8 @@ void ASTStmtReader::VisitACCDistributeSimdDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetParallelForSimdDirective(
-    ACCTargetParallelForSimdDirective *D) {
+void ASTStmtReader::VisitACCTargetParallelLoopSimdDirective(
+    ACCTargetParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -2968,13 +2968,13 @@ void ASTStmtReader::VisitACCTeamsDistributeSimdDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeParallelForSimdDirective(
-    ACCTeamsDistributeParallelForSimdDirective *D) {
+void ASTStmtReader::VisitACCTeamsDistributeParallelLoopSimdDirective(
+    ACCTeamsDistributeParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeParallelForDirective(
-    ACCTeamsDistributeParallelForDirective *D) {
+void ASTStmtReader::VisitACCTeamsDistributeParallelLoopDirective(
+    ACCTeamsDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   D->setHasCancel(Record.readInt());
 }
@@ -2991,14 +2991,14 @@ void ASTStmtReader::VisitACCTargetTeamsDistributeDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForDirective(
-    ACCTargetTeamsDistributeParallelForDirective *D) {
+void ASTStmtReader::VisitACCTargetTeamsDistributeParallelLoopDirective(
+    ACCTargetTeamsDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeParallelForSimdDirective(
-    ACCTargetTeamsDistributeParallelForSimdDirective *D) {
+void ASTStmtReader::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
+    ACCTargetTeamsDistributeParallelLoopSimdDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -4780,7 +4780,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_FOR_SIMD_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCForSimdDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+      S = ACCLoopSimdDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
                                            Empty);
       break;
     }
@@ -4819,7 +4819,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_PARALLEL_FOR_SIMD_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCParallelForSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCParallelLoopSimdDirective::CreateEmpty(Context, NumClauses,
                                                    CollapsedNum, Empty);
       break;
     }
@@ -4894,7 +4894,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_PARALLEL_FOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetParallelForDirective::CreateEmpty(Context, NumClauses,
+      S = ACCTargetParallelLoopDirective::CreateEmpty(Context, NumClauses,
                                                      CollapsedNum, Empty);
       break;
     }
@@ -4945,7 +4945,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCDistributeParallelForDirective::CreateEmpty(Context, NumClauses,
+      S = ACCDistributeParallelLoopDirective::CreateEmpty(Context, NumClauses,
                                                          CollapsedNum, Empty);
       break;
     }
@@ -4953,7 +4953,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCDistributeParallelForSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCDistributeParallelLoopSimdDirective::CreateEmpty(Context, NumClauses,
                                                              CollapsedNum,
                                                              Empty);
       break;
@@ -4970,7 +4970,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetParallelForSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCTargetParallelLoopSimdDirective::CreateEmpty(Context, NumClauses,
                                                          CollapsedNum, Empty);
       break;
     }
@@ -5002,7 +5002,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeParallelForSimdDirective::CreateEmpty(
+      S = ACCTeamsDistributeParallelLoopSimdDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
@@ -5010,7 +5010,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeParallelForDirective::CreateEmpty(
+      S = ACCTeamsDistributeParallelLoopDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
@@ -5032,7 +5032,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeParallelForDirective::CreateEmpty(
+      S = ACCTargetTeamsDistributeParallelLoopDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
@@ -5040,7 +5040,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeParallelForSimdDirective::CreateEmpty(
+      S = ACCTargetTeamsDistributeParallelLoopSimdDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }

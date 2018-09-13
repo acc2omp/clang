@@ -557,8 +557,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCLoopDirectiveClass:
     K = CXCursor_ACCLoopDirective;
     break;
-  case Stmt::ACCForSimdDirectiveClass:
-    K = CXCursor_ACCForSimdDirective;
+  case Stmt::ACCLoopSimdDirectiveClass:
+    K = CXCursor_ACCLoopSimdDirective;
     break;
   case Stmt::ACCSectionsDirectiveClass:
     K = CXCursor_ACCSectionsDirective;
@@ -578,8 +578,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCParallelLoopDirectiveClass:
     K = CXCursor_ACCParallelLoopDirective;
     break;
-  case Stmt::ACCParallelForSimdDirectiveClass:
-    K = CXCursor_ACCParallelForSimdDirective;
+  case Stmt::ACCParallelLoopSimdDirectiveClass:
+    K = CXCursor_ACCParallelLoopSimdDirective;
     break;
   case Stmt::ACCParallelSectionsDirectiveClass:
     K = CXCursor_ACCParallelSectionsDirective;
@@ -623,8 +623,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCTargetParallelDirectiveClass:
     K = CXCursor_ACCTargetParallelDirective;
     break;
-  case Stmt::ACCTargetParallelForDirectiveClass:
-    K = CXCursor_ACCTargetParallelForDirective;
+  case Stmt::ACCTargetParallelLoopDirectiveClass:
+    K = CXCursor_ACCTargetParallelLoopDirective;
     break;
   case Stmt::ACCTargetUpdateDirectiveClass:
     K = CXCursor_ACCTargetUpdateDirective;
@@ -647,17 +647,17 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCDistributeDirectiveClass:
     K = CXCursor_ACCDistributeDirective;
     break;
-  case Stmt::ACCDistributeParallelForDirectiveClass:
-    K = CXCursor_ACCDistributeParallelForDirective;
+  case Stmt::ACCDistributeParallelLoopDirectiveClass:
+    K = CXCursor_ACCDistributeParallelLoopDirective;
     break;
-  case Stmt::ACCDistributeParallelForSimdDirectiveClass:
-    K = CXCursor_ACCDistributeParallelForSimdDirective;
+  case Stmt::ACCDistributeParallelLoopSimdDirectiveClass:
+    K = CXCursor_ACCDistributeParallelLoopSimdDirective;
     break;
   case Stmt::ACCDistributeSimdDirectiveClass:
     K = CXCursor_ACCDistributeSimdDirective;
     break;
-  case Stmt::ACCTargetParallelForSimdDirectiveClass:
-    K = CXCursor_ACCTargetParallelForSimdDirective;
+  case Stmt::ACCTargetParallelLoopSimdDirectiveClass:
+    K = CXCursor_ACCTargetParallelLoopSimdDirective;
     break;
   case Stmt::ACCTargetSimdDirectiveClass:
     K = CXCursor_ACCTargetSimdDirective;
@@ -668,11 +668,11 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCTeamsDistributeSimdDirectiveClass:
     K = CXCursor_ACCTeamsDistributeSimdDirective;
     break;
-  case Stmt::ACCTeamsDistributeParallelForSimdDirectiveClass:
-    K = CXCursor_ACCTeamsDistributeParallelForSimdDirective;
+  case Stmt::ACCTeamsDistributeParallelLoopSimdDirectiveClass:
+    K = CXCursor_ACCTeamsDistributeParallelLoopSimdDirective;
     break;
-  case Stmt::ACCTeamsDistributeParallelForDirectiveClass:
-    K = CXCursor_ACCTeamsDistributeParallelForDirective;
+  case Stmt::ACCTeamsDistributeParallelLoopDirectiveClass:
+    K = CXCursor_ACCTeamsDistributeParallelLoopDirective;
     break;
   case Stmt::ACCTargetTeamsDirectiveClass:
     K = CXCursor_ACCTargetTeamsDirective;
@@ -680,11 +680,11 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCTargetTeamsDistributeDirectiveClass:
     K = CXCursor_ACCTargetTeamsDistributeDirective;
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelForDirectiveClass:
-    K = CXCursor_ACCTargetTeamsDistributeParallelForDirective;
+  case Stmt::ACCTargetTeamsDistributeParallelLoopDirectiveClass:
+    K = CXCursor_ACCTargetTeamsDistributeParallelLoopDirective;
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelForSimdDirectiveClass:
-    K = CXCursor_ACCTargetTeamsDistributeParallelForSimdDirective;
+  case Stmt::ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass:
+    K = CXCursor_ACCTargetTeamsDistributeParallelLoopSimdDirective;
     break;
   case Stmt::ACCTargetTeamsDistributeSimdDirectiveClass:
     K = CXCursor_ACCTargetTeamsDistributeSimdDirective;

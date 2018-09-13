@@ -3258,14 +3258,14 @@ public:
   void EmitACCParallelDirective(const ACCParallelDirective &S);
   void EmitACCSimdDirective(const ACCSimdDirective &S);
   void EmitACCLoopDirective(const ACCLoopDirective &S);
-  void EmitACCForSimdDirective(const ACCForSimdDirective &S);
+  void EmitACCLoopSimdDirective(const ACCLoopSimdDirective &S);
   void EmitACCSectionsDirective(const ACCSectionsDirective &S);
   void EmitACCSectionDirective(const ACCSectionDirective &S);
   void EmitACCSingleDirective(const ACCSingleDirective &S);
   void EmitACCMasterDirective(const ACCMasterDirective &S);
   void EmitACCCriticalDirective(const ACCCriticalDirective &S);
   void EmitACCParallelLoopDirective(const ACCParallelLoopDirective &S);
-  void EmitACCParallelForSimdDirective(const ACCParallelForSimdDirective &S);
+  void EmitACCParallelLoopSimdDirective(const ACCParallelLoopSimdDirective &S);
   void EmitACCParallelSectionsDirective(const ACCParallelSectionsDirective &S);
   void EmitACCTaskDirective(const ACCTaskDirective &S);
   void EmitACCTaskyieldDirective(const ACCTaskyieldDirective &S);
@@ -3282,7 +3282,7 @@ public:
   void EmitACCTargetUpdateDirective(const ACCTargetUpdateDirective &S);
   void EmitACCTargetParallelDirective(const ACCTargetParallelDirective &S);
   void
-  EmitACCTargetParallelForDirective(const ACCTargetParallelForDirective &S);
+  EmitACCTargetParallelLoopDirective(const ACCTargetParallelLoopDirective &S);
   void EmitACCTeamsDirective(const ACCTeamsDirective &S);
   void
   EmitACCCancellationPointDirective(const ACCCancellationPointDirective &S);
@@ -3291,28 +3291,28 @@ public:
   void EmitACCTaskLoopDirective(const ACCTaskLoopDirective &S);
   void EmitACCTaskLoopSimdDirective(const ACCTaskLoopSimdDirective &S);
   void EmitACCDistributeDirective(const ACCDistributeDirective &S);
-  void EmitACCDistributeParallelForDirective(
-      const ACCDistributeParallelForDirective &S);
-  void EmitACCDistributeParallelForSimdDirective(
-      const ACCDistributeParallelForSimdDirective &S);
+  void EmitACCDistributeParallelLoopDirective(
+      const ACCDistributeParallelLoopDirective &S);
+  void EmitACCDistributeParallelLoopSimdDirective(
+      const ACCDistributeParallelLoopSimdDirective &S);
   void EmitACCDistributeSimdDirective(const ACCDistributeSimdDirective &S);
-  void EmitACCTargetParallelForSimdDirective(
-      const ACCTargetParallelForSimdDirective &S);
+  void EmitACCTargetParallelLoopSimdDirective(
+      const ACCTargetParallelLoopSimdDirective &S);
   void EmitACCTargetSimdDirective(const ACCTargetSimdDirective &S);
   void EmitACCTeamsDistributeDirective(const ACCTeamsDistributeDirective &S);
   void
   EmitACCTeamsDistributeSimdDirective(const ACCTeamsDistributeSimdDirective &S);
-  void EmitACCTeamsDistributeParallelForSimdDirective(
-      const ACCTeamsDistributeParallelForSimdDirective &S);
-  void EmitACCTeamsDistributeParallelForDirective(
-      const ACCTeamsDistributeParallelForDirective &S);
+  void EmitACCTeamsDistributeParallelLoopSimdDirective(
+      const ACCTeamsDistributeParallelLoopSimdDirective &S);
+  void EmitACCTeamsDistributeParallelLoopDirective(
+      const ACCTeamsDistributeParallelLoopDirective &S);
   void EmitACCTargetTeamsDirective(const ACCTargetTeamsDirective &S);
   void EmitACCTargetTeamsDistributeDirective(
       const ACCTargetTeamsDistributeDirective &S);
-  void EmitACCTargetTeamsDistributeParallelForDirective(
-      const ACCTargetTeamsDistributeParallelForDirective &S);
-  void EmitACCTargetTeamsDistributeParallelForSimdDirective(
-      const ACCTargetTeamsDistributeParallelForSimdDirective &S);
+  void EmitACCTargetTeamsDistributeParallelLoopDirective(
+      const ACCTargetTeamsDistributeParallelLoopDirective &S);
+  void EmitACCTargetTeamsDistributeParallelLoopSimdDirective(
+      const ACCTargetTeamsDistributeParallelLoopSimdDirective &S);
   void EmitACCTargetTeamsDistributeSimdDirective(
       const ACCTargetTeamsDistributeSimdDirective &S);
 
@@ -3326,11 +3326,11 @@ public:
   /// Emit device code for the target parallel for directive.
   static void EmitACCTargetParallelForDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetParallelForDirective &S);
+      const ACCTargetParallelLoopDirective &S);
   /// Emit device code for the target parallel for simd directive.
   static void EmitACCTargetParallelForSimdDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetParallelForSimdDirective &S);
+      const ACCTargetParallelLoopSimdDirective &S);
   /// Emit device code for the target teams directive.
   static void
   EmitACCTargetTeamsDeviceFunction(CodeGenModule &CGM, StringRef ParentName,
@@ -3351,11 +3351,11 @@ public:
   /// directive.
   static void EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeParallelForSimdDirective &S);
+      const ACCTargetTeamsDistributeParallelLoopSimdDirective &S);
 
   static void EmitACCTargetTeamsDistributeParallelForDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeParallelForDirective &S);
+      const ACCTargetTeamsDistributeParallelLoopDirective &S);
   /// \brief Emit inner loop of the worksharing/simd construct.
   ///
   /// \param S Directive, for which the inner loop must be emitted.

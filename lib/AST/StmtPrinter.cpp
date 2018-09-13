@@ -1059,7 +1059,7 @@ void StmtPrinter::VisitACCLoopDirective(ACCLoopDirective *Node) {
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCForSimdDirective(ACCForSimdDirective *Node) {
+void StmtPrinter::VisitACCLoopSimdDirective(ACCLoopSimdDirective *Node) {
   Indent() << "#pragma acc for simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1099,8 +1099,8 @@ void StmtPrinter::VisitACCParallelLoopDirective(ACCParallelLoopDirective *Node) 
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCParallelForSimdDirective(
-    ACCParallelForSimdDirective *Node) {
+void StmtPrinter::VisitACCParallelLoopSimdDirective(
+    ACCParallelLoopSimdDirective *Node) {
   Indent() << "#pragma acc parallel for simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1179,8 +1179,8 @@ void StmtPrinter::VisitACCTargetParallelDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetParallelForDirective(
-    ACCTargetParallelForDirective *Node) {
+void StmtPrinter::VisitACCTargetParallelLoopDirective(
+    ACCTargetParallelLoopDirective *Node) {
   Indent() << "#pragma acc target parallel for";
   PrintACCExecutableDirective(Node);
 }
@@ -1225,14 +1225,14 @@ void StmtPrinter::VisitACCTargetUpdateDirective(
   PrintACCExecutableDirective(Node, /*ForceNoStmt=*/true);
 }
 
-void StmtPrinter::VisitACCDistributeParallelForDirective(
-    ACCDistributeParallelForDirective *Node) {
+void StmtPrinter::VisitACCDistributeParallelLoopDirective(
+    ACCDistributeParallelLoopDirective *Node) {
   Indent() << "#pragma acc distribute parallel for";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCDistributeParallelForSimdDirective(
-    ACCDistributeParallelForSimdDirective *Node) {
+void StmtPrinter::VisitACCDistributeParallelLoopSimdDirective(
+    ACCDistributeParallelLoopSimdDirective *Node) {
   Indent() << "#pragma acc distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1243,8 +1243,8 @@ void StmtPrinter::VisitACCDistributeSimdDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetParallelForSimdDirective(
-    ACCTargetParallelForSimdDirective *Node) {
+void StmtPrinter::VisitACCTargetParallelLoopSimdDirective(
+    ACCTargetParallelLoopSimdDirective *Node) {
   Indent() << "#pragma acc target parallel for simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1266,14 +1266,14 @@ void StmtPrinter::VisitACCTeamsDistributeSimdDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeParallelForSimdDirective(
-    ACCTeamsDistributeParallelForSimdDirective *Node) {
+void StmtPrinter::VisitACCTeamsDistributeParallelLoopSimdDirective(
+    ACCTeamsDistributeParallelLoopSimdDirective *Node) {
   Indent() << "#pragma acc teams distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeParallelForDirective(
-    ACCTeamsDistributeParallelForDirective *Node) {
+void StmtPrinter::VisitACCTeamsDistributeParallelLoopDirective(
+    ACCTeamsDistributeParallelLoopDirective *Node) {
   Indent() << "#pragma acc teams distribute parallel for";
   PrintACCExecutableDirective(Node);
 }
@@ -1289,14 +1289,14 @@ void StmtPrinter::VisitACCTargetTeamsDistributeDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeParallelForDirective(
-    ACCTargetTeamsDistributeParallelForDirective *Node) {
+void StmtPrinter::VisitACCTargetTeamsDistributeParallelLoopDirective(
+    ACCTargetTeamsDistributeParallelLoopDirective *Node) {
   Indent() << "#pragma acc target teams distribute parallel for";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeParallelForSimdDirective(
-    ACCTargetTeamsDistributeParallelForSimdDirective *Node) {
+void StmtPrinter::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
+    ACCTargetTeamsDistributeParallelLoopSimdDirective *Node) {
   Indent() << "#pragma acc target teams distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }

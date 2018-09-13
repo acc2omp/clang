@@ -8762,7 +8762,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc for simd' after parsing
   /// of the associated statement.
-  StmtResult ActOnOpenACCForSimdDirective(
+  StmtResult ActOnOpenACCLoopSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8798,7 +8798,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc parallel for simd' after
   /// parsing of the  associated statement.
-  StmtResult ActOnOpenACCParallelForSimdDirective(
+  StmtResult ActOnOpenACCParallelLoopSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8870,7 +8870,7 @@ public:
                                                 SourceLocation EndLoc);
   /// \brief Called on well-formed '\#pragma acc target parallel for' after
   /// parsing of the  associated statement.
-  StmtResult ActOnOpenACCTargetParallelForDirective(
+  StmtResult ActOnOpenACCTargetParallelLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8914,13 +8914,13 @@ public:
                                               Stmt *AStmt);
   /// \brief Called on well-formed '\#pragma acc distribute parallel for' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCDistributeParallelForDirective(
+  StmtResult ActOnOpenACCDistributeParallelLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc distribute parallel for simd'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCDistributeParallelForSimdDirective(
+  StmtResult ActOnOpenACCDistributeParallelLoopSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8932,7 +8932,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc target parallel for simd' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetParallelForSimdDirective(
+  StmtResult ActOnOpenACCTargetParallelLoopSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8956,13 +8956,13 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute parallel for simd'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeParallelForSimdDirective(
+  StmtResult ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute parallel for'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeParallelForDirective(
+  StmtResult ActOnOpenACCTeamsDistributeParallelLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8980,13 +8980,13 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams distribute parallel for'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeParallelForDirective(
+  StmtResult ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams distribute parallel for
   /// simd' after parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeParallelForSimdDirective(
+  StmtResult ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
