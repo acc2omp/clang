@@ -349,7 +349,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_for_simd:
+  case ACCD_loop_simd:
     switch (CKind) {
 #define OPENACC_LOOP_SIMD_CLAUSE(Name)                                           \
   case ACCC_##Name:                                                            \
@@ -390,7 +390,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_parallel_for_simd:
+  case ACCD_parallel_loop_simd:
     switch (CKind) {
 #define OPENACC_PARALLEL_LOOP_SIMD_CLAUSE(Name)                                  \
   case ACCC_##Name:                                                            \
@@ -483,7 +483,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_target_parallel_for:
+  case ACCD_target_parallel_loop:
     switch (CKind) {
 #define OPENACC_TARGET_PARALLEL_LOOP_CLAUSE(Name)                                \
   case ACCC_##Name:                                                            \
@@ -575,7 +575,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_distribute_parallel_for:
+  case ACCD_distribute_parallel_loop:
     switch (CKind) {
 #define OPENACC_DISTRIBUTE_PARALLEL_LOOP_CLAUSE(Name)                            \
   case ACCC_##Name:                                                            \
@@ -585,7 +585,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_distribute_parallel_for_simd:
+  case ACCD_distribute_parallel_loop_simd:
     switch (CKind) {
 #define OPENACC_DISTRIBUTE_PARALLEL_LOOP_SIMD_CLAUSE(Name)                       \
   case ACCC_##Name:                                                            \
@@ -605,7 +605,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_target_parallel_for_simd:
+  case ACCD_target_parallel_loop_simd:
     switch (CKind) {
 #define OPENACC_TARGET_PARALLEL_LOOP_SIMD_CLAUSE(Name)                           \
   case ACCC_##Name:                                                            \
@@ -645,7 +645,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_teams_distribute_parallel_for_simd:
+  case ACCD_teams_distribute_parallel_loop_simd:
     switch (CKind) {
 #define OPENACC_TEAMS_DISTRIBUTE_PARALLEL_LOOP_SIMD_CLAUSE(Name)                 \
   case ACCC_##Name:                                                            \
@@ -655,7 +655,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_teams_distribute_parallel_for:
+  case ACCD_teams_distribute_parallel_loop:
     switch (CKind) {
 #define OPENACC_TEAMS_DISTRIBUTE_PARALLEL_LOOP_CLAUSE(Name)                      \
   case ACCC_##Name:                                                            \
@@ -685,7 +685,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_target_teams_distribute_parallel_for:
+  case ACCD_target_teams_distribute_parallel_loop:
     switch (CKind) {
 #define OPENACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_LOOP_CLAUSE(Name)               \
   case ACCC_##Name:                                                            \
@@ -695,7 +695,7 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
       break;
     }
     break;
-  case ACCD_target_teams_distribute_parallel_for_simd:
+  case ACCD_target_teams_distribute_parallel_loop_simd:
     switch (CKind) {
 #define OPENACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_LOOP_SIMD_CLAUSE(Name)          \
   case ACCC_##Name:                                                            \
@@ -742,37 +742,37 @@ bool clang::isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
 }
 
 bool clang::isOpenACCLoopLikeDirective(OpenACCDirectiveKind DKind) {
-  return DKind == ACCD_simd || DKind == ACCD_loop || DKind == ACCD_for_simd ||
-         DKind == ACCD_parallel_loop || DKind == ACCD_parallel_for_simd ||
+  return DKind == ACCD_simd || DKind == ACCD_loop || DKind == ACCD_loop_simd ||
+         DKind == ACCD_parallel_loop || DKind == ACCD_parallel_loop_simd ||
          DKind == ACCD_taskloop || DKind == ACCD_taskloop_simd ||
-         DKind == ACCD_distribute || DKind == ACCD_target_parallel_for ||
-         DKind == ACCD_distribute_parallel_for ||
-         DKind == ACCD_distribute_parallel_for_simd ||
+         DKind == ACCD_distribute || DKind == ACCD_target_parallel_loop ||
+         DKind == ACCD_distribute_parallel_loop ||
+         DKind == ACCD_distribute_parallel_loop_simd ||
          DKind == ACCD_distribute_simd ||
-         DKind == ACCD_target_parallel_for_simd || DKind == ACCD_target_simd ||
+         DKind == ACCD_target_parallel_loop_simd || DKind == ACCD_target_simd ||
          DKind == ACCD_teams_distribute ||
          DKind == ACCD_teams_distribute_simd ||
-         DKind == ACCD_teams_distribute_parallel_for_simd ||
-         DKind == ACCD_teams_distribute_parallel_for ||
+         DKind == ACCD_teams_distribute_parallel_loop_simd ||
+         DKind == ACCD_teams_distribute_parallel_loop ||
          DKind == ACCD_target_teams_distribute ||
-         DKind == ACCD_target_teams_distribute_parallel_for ||
-         DKind == ACCD_target_teams_distribute_parallel_for_simd ||
+         DKind == ACCD_target_teams_distribute_parallel_loop ||
+         DKind == ACCD_target_teams_distribute_parallel_loop_simd ||
          DKind == ACCD_target_teams_distribute_simd;
 }
 
 bool clang::isOpenACCWorksharingDirective(OpenACCDirectiveKind DKind) {
-  return DKind == ACCD_loop || DKind == ACCD_for_simd ||
+  return DKind == ACCD_loop || DKind == ACCD_loop_simd ||
          DKind == ACCD_sections || DKind == ACCD_section ||
          DKind == ACCD_single || DKind == ACCD_parallel_loop ||
-         DKind == ACCD_parallel_for_simd || DKind == ACCD_parallel_sections ||
-         DKind == ACCD_target_parallel_for ||
-         DKind == ACCD_distribute_parallel_for ||
-         DKind == ACCD_distribute_parallel_for_simd ||
-         DKind == ACCD_target_parallel_for_simd ||
-         DKind == ACCD_teams_distribute_parallel_for_simd ||
-         DKind == ACCD_teams_distribute_parallel_for ||
-         DKind == ACCD_target_teams_distribute_parallel_for ||
-         DKind == ACCD_target_teams_distribute_parallel_for_simd;
+         DKind == ACCD_parallel_loop_simd || DKind == ACCD_parallel_sections ||
+         DKind == ACCD_target_parallel_loop ||
+         DKind == ACCD_distribute_parallel_loop ||
+         DKind == ACCD_distribute_parallel_loop_simd ||
+         DKind == ACCD_target_parallel_loop_simd ||
+         DKind == ACCD_teams_distribute_parallel_loop_simd ||
+         DKind == ACCD_teams_distribute_parallel_loop ||
+         DKind == ACCD_target_teams_distribute_parallel_loop ||
+         DKind == ACCD_target_teams_distribute_parallel_loop_simd;
 }
 
 bool clang::isOpenACCTaskLoopDirective(OpenACCDirectiveKind DKind) {
@@ -781,24 +781,24 @@ bool clang::isOpenACCTaskLoopDirective(OpenACCDirectiveKind DKind) {
 
 bool clang::isOpenACCParallelDirective(OpenACCDirectiveKind DKind) {
   return DKind == ACCD_parallel || DKind == ACCD_parallel_loop ||
-         DKind == ACCD_parallel_for_simd || DKind == ACCD_parallel_sections ||
-         DKind == ACCD_target_parallel || DKind == ACCD_target_parallel_for ||
-         DKind == ACCD_distribute_parallel_for ||
-         DKind == ACCD_distribute_parallel_for_simd ||
-         DKind == ACCD_target_parallel_for_simd ||
-         DKind == ACCD_teams_distribute_parallel_for ||
-         DKind == ACCD_teams_distribute_parallel_for_simd ||
-         DKind == ACCD_target_teams_distribute_parallel_for ||
-         DKind == ACCD_target_teams_distribute_parallel_for_simd;
+         DKind == ACCD_parallel_loop_simd || DKind == ACCD_parallel_sections ||
+         DKind == ACCD_target_parallel || DKind == ACCD_target_parallel_loop ||
+         DKind == ACCD_distribute_parallel_loop ||
+         DKind == ACCD_distribute_parallel_loop_simd ||
+         DKind == ACCD_target_parallel_loop_simd ||
+         DKind == ACCD_teams_distribute_parallel_loop ||
+         DKind == ACCD_teams_distribute_parallel_loop_simd ||
+         DKind == ACCD_target_teams_distribute_parallel_loop ||
+         DKind == ACCD_target_teams_distribute_parallel_loop_simd;
 }
 
 bool clang::isOpenACCTargetExecutionDirective(OpenACCDirectiveKind DKind) {
   return DKind == ACCD_target || DKind == ACCD_target_parallel ||
-         DKind == ACCD_target_parallel_for ||
-         DKind == ACCD_target_parallel_for_simd || DKind == ACCD_target_simd ||
+         DKind == ACCD_target_parallel_loop ||
+         DKind == ACCD_target_parallel_loop_simd || DKind == ACCD_target_simd ||
          DKind == ACCD_target_teams || DKind == ACCD_target_teams_distribute ||
-         DKind == ACCD_target_teams_distribute_parallel_for ||
-         DKind == ACCD_target_teams_distribute_parallel_for_simd ||
+         DKind == ACCD_target_teams_distribute_parallel_loop ||
+         DKind == ACCD_target_teams_distribute_parallel_loop_simd ||
          DKind == ACCD_target_teams_distribute_simd;
 }
 
@@ -810,33 +810,33 @@ bool clang::isOpenACCTargetDataManagementDirective(OpenACCDirectiveKind DKind) {
 bool clang::isOpenACCNestingTeamsDirective(OpenACCDirectiveKind DKind) {
   return DKind == ACCD_teams || DKind == ACCD_teams_distribute ||
          DKind == ACCD_teams_distribute_simd ||
-         DKind == ACCD_teams_distribute_parallel_for_simd ||
-         DKind == ACCD_teams_distribute_parallel_for;
+         DKind == ACCD_teams_distribute_parallel_loop_simd ||
+         DKind == ACCD_teams_distribute_parallel_loop;
 }
 
 bool clang::isOpenACCTeamsDirective(OpenACCDirectiveKind DKind) {
   return isOpenACCNestingTeamsDirective(DKind) ||
          DKind == ACCD_target_teams || DKind == ACCD_target_teams_distribute ||
-         DKind == ACCD_target_teams_distribute_parallel_for ||
-         DKind == ACCD_target_teams_distribute_parallel_for_simd ||
+         DKind == ACCD_target_teams_distribute_parallel_loop ||
+         DKind == ACCD_target_teams_distribute_parallel_loop_simd ||
          DKind == ACCD_target_teams_distribute_simd;
 }
 
 bool clang::isOpenACCSimdDirective(OpenACCDirectiveKind DKind) {
-  return DKind == ACCD_simd || DKind == ACCD_for_simd ||
-         DKind == ACCD_parallel_for_simd || DKind == ACCD_taskloop_simd ||
-         DKind == ACCD_distribute_parallel_for_simd ||
+  return DKind == ACCD_simd || DKind == ACCD_loop_simd ||
+         DKind == ACCD_parallel_loop_simd || DKind == ACCD_taskloop_simd ||
+         DKind == ACCD_distribute_parallel_loop_simd ||
          DKind == ACCD_distribute_simd || DKind == ACCD_target_simd ||
          DKind == ACCD_teams_distribute_simd ||
-         DKind == ACCD_teams_distribute_parallel_for_simd ||
-         DKind == ACCD_target_teams_distribute_parallel_for_simd ||
+         DKind == ACCD_teams_distribute_parallel_loop_simd ||
+         DKind == ACCD_target_teams_distribute_parallel_loop_simd ||
          DKind == ACCD_target_teams_distribute_simd ||
-         DKind == ACCD_target_parallel_for_simd;
+         DKind == ACCD_target_parallel_loop_simd;
 }
 
 bool clang::isOpenACCNestingDistributeDirective(OpenACCDirectiveKind Kind) {
-  return Kind == ACCD_distribute || Kind == ACCD_distribute_parallel_for ||
-         Kind == ACCD_distribute_parallel_for_simd ||
+  return Kind == ACCD_distribute || Kind == ACCD_distribute_parallel_loop ||
+         Kind == ACCD_distribute_parallel_loop_simd ||
          Kind == ACCD_distribute_simd;
   // TODO add next directives.
 }
@@ -844,11 +844,11 @@ bool clang::isOpenACCNestingDistributeDirective(OpenACCDirectiveKind Kind) {
 bool clang::isOpenACCDistributeDirective(OpenACCDirectiveKind Kind) {
   return isOpenACCNestingDistributeDirective(Kind) ||
          Kind == ACCD_teams_distribute || Kind == ACCD_teams_distribute_simd ||
-         Kind == ACCD_teams_distribute_parallel_for_simd ||
-         Kind == ACCD_teams_distribute_parallel_for ||
+         Kind == ACCD_teams_distribute_parallel_loop_simd ||
+         Kind == ACCD_teams_distribute_parallel_loop ||
          Kind == ACCD_target_teams_distribute ||
-         Kind == ACCD_target_teams_distribute_parallel_for ||
-         Kind == ACCD_target_teams_distribute_parallel_for_simd ||
+         Kind == ACCD_target_teams_distribute_parallel_loop ||
+         Kind == ACCD_target_teams_distribute_parallel_loop_simd ||
          Kind == ACCD_target_teams_distribute_simd;
 }
 
@@ -868,12 +868,12 @@ bool clang::isOpenACCTaskingDirective(OpenACCDirectiveKind Kind) {
 }
 
 bool clang::isOpenACCLoopBoundSharingDirective(OpenACCDirectiveKind Kind) {
-  return Kind == ACCD_distribute_parallel_for ||
-         Kind == ACCD_distribute_parallel_for_simd ||
-         Kind == ACCD_teams_distribute_parallel_for_simd ||
-         Kind == ACCD_teams_distribute_parallel_for ||
-         Kind == ACCD_target_teams_distribute_parallel_for ||
-         Kind == ACCD_target_teams_distribute_parallel_for_simd;
+  return Kind == ACCD_distribute_parallel_loop ||
+         Kind == ACCD_distribute_parallel_loop_simd ||
+         Kind == ACCD_teams_distribute_parallel_loop_simd ||
+         Kind == ACCD_teams_distribute_parallel_loop ||
+         Kind == ACCD_target_teams_distribute_parallel_loop ||
+         Kind == ACCD_target_teams_distribute_parallel_loop_simd;
 }
 
 void clang::getOpenACCCaptureRegions(
@@ -884,10 +884,10 @@ void clang::getOpenACCCaptureRegions(
   case ACCD_parallel:
   // LUIS
   case ACCD_parallel_loop:
-  case ACCD_parallel_for_simd:
+  case ACCD_parallel_loop_simd:
   case ACCD_parallel_sections:
-  case ACCD_distribute_parallel_for:
-  case ACCD_distribute_parallel_for_simd:
+  case ACCD_distribute_parallel_loop:
+  case ACCD_distribute_parallel_loop_simd:
     CaptureRegions.push_back(ACCD_parallel);
     break;
   case ACCD_target_teams:
@@ -907,14 +907,14 @@ void clang::getOpenACCCaptureRegions(
     CaptureRegions.push_back(ACCD_task);
     CaptureRegions.push_back(ACCD_target);
     break;
-  case ACCD_teams_distribute_parallel_for:
-  case ACCD_teams_distribute_parallel_for_simd:
+  case ACCD_teams_distribute_parallel_loop:
+  case ACCD_teams_distribute_parallel_loop_simd:
     CaptureRegions.push_back(ACCD_teams);
     CaptureRegions.push_back(ACCD_parallel);
     break;
   case ACCD_target_parallel:
-  case ACCD_target_parallel_for:
-  case ACCD_target_parallel_for_simd:
+  case ACCD_target_parallel_loop:
+  case ACCD_target_parallel_loop_simd:
     CaptureRegions.push_back(ACCD_task);
     CaptureRegions.push_back(ACCD_target);
     CaptureRegions.push_back(ACCD_parallel);
@@ -929,8 +929,8 @@ void clang::getOpenACCCaptureRegions(
   case ACCD_taskloop_simd:
     CaptureRegions.push_back(ACCD_taskloop);
     break;
-  case ACCD_target_teams_distribute_parallel_for:
-  case ACCD_target_teams_distribute_parallel_for_simd:
+  case ACCD_target_teams_distribute_parallel_loop:
+  case ACCD_target_teams_distribute_parallel_loop_simd:
     CaptureRegions.push_back(ACCD_task);
     CaptureRegions.push_back(ACCD_target);
     CaptureRegions.push_back(ACCD_teams);
@@ -938,7 +938,7 @@ void clang::getOpenACCCaptureRegions(
     break;
   case ACCD_simd:
   case ACCD_loop:
-  case ACCD_for_simd:
+  case ACCD_loop_simd:
   case ACCD_sections:
   case ACCD_section:
   case ACCD_single:

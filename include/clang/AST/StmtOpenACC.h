@@ -330,8 +330,8 @@ public:
   }
 };
 
-/// \brief This is a common base class for loop directives ('acc simd', 'acc
-/// for', 'acc for simd' etc.). It is responsible for the loop code generation.
+/// \brief This is a common base class for loop like directives ('acc simd', 'acc
+/// loop', 'acc loop simd' etc.). It is responsible for the loop code generation.
 ///
 class ACCLoopLikeDirective : public ACCExecutableDirective {
   friend class ASTStmtReader;
@@ -352,7 +352,7 @@ class ACCLoopLikeDirective : public ACCExecutableDirective {
   /// loop when combined with a further nested loop
   /// PrevEnsureUpperBound is used as the EnsureUpperBound expression for the
   /// for loop when combined with a previous distribute loop in the same pragma
-  /// (e.g. 'distribute parallel for')
+  /// (e.g. 'distribute parallel loop')
   ///
   enum {
     AssociatedStmtOffset = 0,
@@ -611,29 +611,29 @@ protected:
 
 public:
   /// The expressions built to support OpenACC loops in combined/composite
-  /// pragmas (e.g. pragma acc distribute parallel for)
+  /// pragmas (e.g. pragma acc distribute parallel loop)
   struct DistCombinedHelperExprs {
     /// DistributeLowerBound - used when composing 'acc distribute' with
-    /// 'acc for' in a same construct.
+    /// 'acc loop' in a same construct.
     Expr *LB;
     /// DistributeUpperBound - used when composing 'acc distribute' with
-    /// 'acc for' in a same construct.
+    /// 'acc loop' in a same construct.
     Expr *UB;
     /// DistributeEnsureUpperBound - used when composing 'acc distribute'
-    ///  with 'acc for' in a same construct, EUB depends on DistUB
+    ///  with 'acc loop' in a same construct, EUB depends on DistUB
     Expr *EUB;
     /// Distribute loop iteration variable init used when composing 'acc
     /// distribute'
-    ///  with 'acc for' in a same construct
+    ///  with 'acc loop' in a same construct
     Expr *Init;
     /// Distribute Loop condition used when composing 'acc distribute'
-    ///  with 'acc for' in a same construct
+    ///  with 'acc loop' in a same construct
     Expr *Cond;
     /// Update of LowerBound for statically sheduled acc loops for
-    /// outer loop in combined constructs (e.g. 'distribute parallel for')
+    /// outer loop in combined constructs (e.g. 'distribute parallel loop')
     Expr *NLB;
     /// Update of UpperBound for statically sheduled acc loops for
-    /// outer loop in combined constructs (e.g. 'distribute parallel for')
+    /// outer loop in combined constructs (e.g. 'distribute parallel loop')
     Expr *NUB;
   };
 
@@ -666,9 +666,9 @@ public:
     Expr *ST;
     /// \brief EnsureUpperBound -- expression UB = min(UB, NumIterations).
     Expr *EUB;
-    /// \brief Update of LowerBound for statically sheduled 'acc for' loops.
+    /// \brief Update of LowerBound for statically sheduled 'acc loop' loops.
     Expr *NLB;
-    /// \brief Update of UpperBound for statically sheduled 'acc for' loops.
+    /// \brief Update of UpperBound for statically sheduled 'acc loop' loops.
     Expr *NUB;
     /// \brief PreviousLowerBound - local variable passed to runtime in the
     /// enclosing schedule or null if that does not apply.
@@ -677,11 +677,11 @@ public:
     /// enclosing schedule or null if that does not apply.
     Expr *PrevUB;
     /// \brief DistInc - increment expression for distribute loop when found
-    /// combined with a further loop level (e.g. in 'distribute parallel for')
+    /// combined with a further loop level (e.g. in 'distribute parallel loop')
     /// expression IV = IV + ST
     Expr *DistInc;
     /// \brief PrevEUB - expression similar to EUB but to be used when loop
-    /// scheduling uses PrevLB and PrevUB (e.g.  in 'distribute parallel for'
+    /// scheduling uses PrevLB and PrevUB (e.g.  in 'distribute parallel loop'
     /// when ensuring that the UB is either the calculated UB by the runtime or
     /// the end of the assigned distribute chunk)
     /// expression UB = min (UB, PrevUB)
@@ -1056,12 +1056,12 @@ public:
   }
 };
 
-/// \brief This represents '#pragma acc for' directive.
+/// \brief This represents '#pragma acc loop' directive.
 ///
 /// \code
-/// #pragma acc for private(a,b) reduction(+:c,d)
+/// #pragma acc loopprivate(a,b) reduction(+:c,d)
 /// \endcode
-/// In this example directive '#pragma acc for' has clauses 'private' with the
+/// In this example directive '#pragma acc loop' has clauses 'private' with the
 /// variables 'a' and 'b' and 'reduction' with operator '+' and variables 'c'
 /// and 'd'.
 ///
@@ -1133,12 +1133,12 @@ public:
   }
 };
 
-/// \brief This represents '#pragma acc for simd' directive.
+/// \brief This represents '#pragma acc loop simd' directive.
 ///
 /// \code
-/// #pragma acc for simd private(a,b) linear(i,j:s) reduction(+:c,d)
+/// #pragma acc loop simd private(a,b) linear(i,j:s) reduction(+:c,d)
 /// \endcode
-/// In this example directive '#pragma acc for simd' has clauses 'private'
+/// In this example directive '#pragma acc loop simd' has clauses 'private'
 /// with the variables 'a' and 'b', 'linear' with variables 'i', 'j' and
 /// linear step 's', 'reduction' with operator '+' and variables 'c' and 'd'.
 ///
@@ -1153,7 +1153,7 @@ class ACCLoopSimdDirective : public ACCLoopLikeDirective {
   ///
   ACCLoopSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                       unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCLoopSimdDirectiveClass, ACCD_for_simd,
+      : ACCLoopLikeDirective(this, ACCLoopSimdDirectiveClass, ACCD_loop_simd,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
 
   /// \brief Build an empty directive.
@@ -1162,7 +1162,7 @@ class ACCLoopSimdDirective : public ACCLoopLikeDirective {
   /// \param NumClauses Number of clauses.
   ///
   explicit ACCLoopSimdDirective(unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCLoopSimdDirectiveClass, ACCD_for_simd,
+      : ACCLoopLikeDirective(this, ACCLoopSimdDirectiveClass, ACCD_loop_simd,
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -1584,12 +1584,12 @@ public:
   }
 };
 
-/// \brief This represents '#pragma acc parallel for simd' directive.
+/// \brief This represents '#pragma acc parallel loop simd' directive.
 ///
 /// \code
-/// #pragma acc parallel for simd private(a,b) linear(i,j:s) reduction(+:c,d)
+/// #pragma acc parallel loop simd private(a,b) linear(i,j:s) reduction(+:c,d)
 /// \endcode
-/// In this example directive '#pragma acc parallel for simd' has clauses
+/// In this example directive '#pragma acc parallel loop simd' has clauses
 /// 'private' with the variables 'a' and 'b', 'linear' with variables 'i', 'j'
 /// and linear step 's', 'reduction' with operator '+' and variables 'c' and
 /// 'd'.
@@ -1606,7 +1606,7 @@ class ACCParallelLoopSimdDirective : public ACCLoopLikeDirective {
   ACCParallelLoopSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                               unsigned CollapsedNum, unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCParallelLoopSimdDirectiveClass,
-                         ACCD_parallel_for_simd, StartLoc, EndLoc, CollapsedNum,
+                         ACCD_parallel_loop_simd, StartLoc, EndLoc, CollapsedNum,
                          NumClauses) {}
 
   /// \brief Build an empty directive.
@@ -1617,7 +1617,7 @@ class ACCParallelLoopSimdDirective : public ACCLoopLikeDirective {
   explicit ACCParallelLoopSimdDirective(unsigned CollapsedNum,
                                        unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCParallelLoopSimdDirectiveClass,
-                         ACCD_parallel_for_simd, SourceLocation(),
+                         ACCD_parallel_loop_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
@@ -2534,12 +2534,12 @@ public:
   }
 };
 
-/// \brief This represents '#pragma acc target parallel for' directive.
+/// \brief This represents '#pragma acc target parallel loop' directive.
 ///
 /// \code
-/// #pragma acc target parallel for private(a,b) reduction(+:c,d)
+/// #pragma acc target parallel loop private(a,b) reduction(+:c,d)
 /// \endcode
-/// In this example directive '#pragma acc target parallel for' has clauses
+/// In this example directive '#pragma acc target parallel loop' has clauses
 /// 'private' with the variables 'a' and 'b' and 'reduction' with operator '+'
 /// and variables 'c' and 'd'.
 ///
@@ -2559,7 +2559,7 @@ class ACCTargetParallelLoopDirective : public ACCLoopLikeDirective {
   ACCTargetParallelLoopDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                                 unsigned CollapsedNum, unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTargetParallelLoopDirectiveClass,
-                         ACCD_target_parallel_for, StartLoc, EndLoc,
+                         ACCD_target_parallel_loop, StartLoc, EndLoc,
                          CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -2571,7 +2571,7 @@ class ACCTargetParallelLoopDirective : public ACCLoopLikeDirective {
   explicit ACCTargetParallelLoopDirective(unsigned CollapsedNum,
                                          unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTargetParallelLoopDirectiveClass,
-                         ACCD_target_parallel_for, SourceLocation(),
+                         ACCD_target_parallel_loop, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3056,9 +3056,9 @@ public:
 ///  directive.
 ///
 /// \code
-/// #pragma acc distribute parallel for private(a,b)
+/// #pragma acc distribute parallel loop private(a,b)
 /// \endcode
-/// In this example directive '#pragma acc distribute parallel for' has clause
+/// In this example directive '#pragma acc distribute parallel loop' has clause
 /// 'private' with the variables 'a' and 'b'
 ///
 class ACCDistributeParallelLoopDirective : public ACCLoopLikeDirective {
@@ -3077,7 +3077,7 @@ class ACCDistributeParallelLoopDirective : public ACCLoopLikeDirective {
                                     SourceLocation EndLoc,
                                     unsigned CollapsedNum, unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCDistributeParallelLoopDirectiveClass,
-                         ACCD_distribute_parallel_for, StartLoc, EndLoc,
+                         ACCD_distribute_parallel_loop, StartLoc, EndLoc,
                          CollapsedNum, NumClauses), HasCancel(false) {}
 
   /// \brief Build an empty directive.
@@ -3088,7 +3088,7 @@ class ACCDistributeParallelLoopDirective : public ACCLoopLikeDirective {
   explicit ACCDistributeParallelLoopDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCDistributeParallelLoopDirectiveClass,
-                         ACCD_distribute_parallel_for, SourceLocation(),
+                         ACCD_distribute_parallel_loop, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3132,13 +3132,13 @@ public:
   }
 };
 
-/// This represents '#pragma acc distribute parallel for simd' composite
+/// This represents '#pragma acc distribute parallel loop simd' composite
 /// directive.
 ///
 /// \code
-/// #pragma acc distribute parallel for simd private(x)
+/// #pragma acc distribute parallel loop simd private(x)
 /// \endcode
-/// In this example directive '#pragma acc distribute parallel for simd' has
+/// In this example directive '#pragma acc distribute parallel loop simd' has
 /// clause 'private' with the variables 'x'
 ///
 class ACCDistributeParallelLoopSimdDirective final : public ACCLoopLikeDirective {
@@ -3156,7 +3156,7 @@ class ACCDistributeParallelLoopSimdDirective final : public ACCLoopLikeDirective
                                         unsigned CollapsedNum,
                                         unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCDistributeParallelLoopSimdDirectiveClass,
-                         ACCD_distribute_parallel_for_simd, StartLoc, 
+                         ACCD_distribute_parallel_loop_simd, StartLoc, 
                          EndLoc, CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3167,7 +3167,7 @@ class ACCDistributeParallelLoopSimdDirective final : public ACCLoopLikeDirective
   explicit ACCDistributeParallelLoopSimdDirective(unsigned CollapsedNum,
                                                  unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCDistributeParallelLoopSimdDirectiveClass,
-                         ACCD_distribute_parallel_for_simd, 
+                         ACCD_distribute_parallel_loop_simd, 
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -3269,12 +3269,12 @@ public:
   }
 };
 
-/// This represents '#pragma acc target parallel for simd' directive.
+/// This represents '#pragma acc target parallel loop simd' directive.
 ///
 /// \code
-/// #pragma acc target parallel for simd private(a) map(b) safelen(c)
+/// #pragma acc target parallel loop simd private(a) map(b) safelen(c)
 /// \endcode
-/// In this example directive '#pragma acc target parallel for simd' has clauses
+/// In this example directive '#pragma acc target parallel loop simd' has clauses
 /// 'private' with the variable 'a', 'map' with the variable 'b' and 'safelen'
 /// with the variable 'c'.
 ///
@@ -3291,7 +3291,7 @@ class ACCTargetParallelLoopSimdDirective final : public ACCLoopLikeDirective {
   ACCTargetParallelLoopSimdDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                                 unsigned CollapsedNum, unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTargetParallelLoopSimdDirectiveClass,
-                         ACCD_target_parallel_for_simd, StartLoc, EndLoc,
+                         ACCD_target_parallel_loop_simd, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3302,7 +3302,7 @@ class ACCTargetParallelLoopSimdDirective final : public ACCLoopLikeDirective {
   explicit ACCTargetParallelLoopSimdDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTargetParallelLoopSimdDirectiveClass,
-                         ACCD_target_parallel_for_simd, SourceLocation(),
+                         ACCD_target_parallel_loop_simd, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
@@ -3541,13 +3541,13 @@ public:
   }
 };
 
-/// This represents '#pragma acc teams distribute parallel for simd' composite
+/// This represents '#pragma acc teams distribute parallel loop simd' composite
 /// directive.
 ///
 /// \code
-/// #pragma acc teams distribute parallel for simd private(x)
+/// #pragma acc teams distribute parallel loop simd private(x)
 /// \endcode
-/// In this example directive '#pragma acc teams distribute parallel for simd'
+/// In this example directive '#pragma acc teams distribute parallel loop simd'
 /// has clause 'private' with the variables 'x'
 ///
 class ACCTeamsDistributeParallelLoopSimdDirective final
@@ -3566,7 +3566,7 @@ class ACCTeamsDistributeParallelLoopSimdDirective final
                                              unsigned CollapsedNum,
                                              unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopSimdDirectiveClass,
-                         ACCD_teams_distribute_parallel_for_simd, StartLoc, 
+                         ACCD_teams_distribute_parallel_loop_simd, StartLoc, 
                          EndLoc, CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3577,7 +3577,7 @@ class ACCTeamsDistributeParallelLoopSimdDirective final
   explicit ACCTeamsDistributeParallelLoopSimdDirective(unsigned CollapsedNum,
                                                       unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopSimdDirectiveClass,
-                         ACCD_teams_distribute_parallel_for_simd, 
+                         ACCD_teams_distribute_parallel_loop_simd, 
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -3612,13 +3612,13 @@ public:
   }
 };
 
-/// This represents '#pragma acc teams distribute parallel for' composite
+/// This represents '#pragma acc teams distribute parallel loop' composite
 /// directive.
 ///
 /// \code
-/// #pragma acc teams distribute parallel for private(x)
+/// #pragma acc teams distribute parallel loop private(x)
 /// \endcode
-/// In this example directive '#pragma acc teams distribute parallel for'
+/// In this example directive '#pragma acc teams distribute parallel loop'
 /// has clause 'private' with the variables 'x'
 ///
 class ACCTeamsDistributeParallelLoopDirective final : public ACCLoopLikeDirective {
@@ -3638,7 +3638,7 @@ class ACCTeamsDistributeParallelLoopDirective final : public ACCLoopLikeDirectiv
                                          unsigned CollapsedNum,
                                          unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopDirectiveClass,
-                         ACCD_teams_distribute_parallel_for, StartLoc, EndLoc,
+                         ACCD_teams_distribute_parallel_loop, StartLoc, EndLoc,
                          CollapsedNum, NumClauses), HasCancel(false) {}
 
   /// Build an empty directive.
@@ -3649,7 +3649,7 @@ class ACCTeamsDistributeParallelLoopDirective final : public ACCLoopLikeDirectiv
   explicit ACCTeamsDistributeParallelLoopDirective(unsigned CollapsedNum,
                                                   unsigned NumClauses)
       : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopDirectiveClass,
-                         ACCD_teams_distribute_parallel_for, SourceLocation(),
+                         ACCD_teams_distribute_parallel_loop, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3817,14 +3817,14 @@ public:
   }
 };
 
-/// This represents '#pragma acc target teams distribute parallel for' combined
+/// This represents '#pragma acc target teams distribute parallel loop' combined
 /// directive.
 ///
 /// \code
-/// #pragma acc target teams distribute parallel for private(x)
+/// #pragma acc target teams distribute parallel loop private(x)
 /// \endcode
 /// In this example directive '#pragma acc target teams distribute parallel
-/// for' has clause 'private' with the variables 'x'
+/// loop' has clause 'private' with the variables 'x'
 ///
 class ACCTargetTeamsDistributeParallelLoopDirective final
     : public ACCLoopLikeDirective {
@@ -3845,7 +3845,7 @@ class ACCTargetTeamsDistributeParallelLoopDirective final
                                                unsigned NumClauses)
       : ACCLoopLikeDirective(this,
                          ACCTargetTeamsDistributeParallelLoopDirectiveClass,
-                         ACCD_target_teams_distribute_parallel_for, StartLoc,
+                         ACCD_target_teams_distribute_parallel_loop, StartLoc,
                          EndLoc, CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3858,7 +3858,7 @@ class ACCTargetTeamsDistributeParallelLoopDirective final
                                                         unsigned NumClauses)
       : ACCLoopLikeDirective(
             this, ACCTargetTeamsDistributeParallelLoopDirectiveClass,
-            ACCD_target_teams_distribute_parallel_for, SourceLocation(),
+            ACCD_target_teams_distribute_parallel_loop, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3901,14 +3901,14 @@ public:
   }
 };
 
-/// This represents '#pragma acc target teams distribute parallel for simd'
+/// This represents '#pragma acc target teams distribute parallel loop simd'
 /// combined directive.
 ///
 /// \code
-/// #pragma acc target teams distribute parallel for simd private(x)
+/// #pragma acc target teams distribute parallel loop simd private(x)
 /// \endcode
 /// In this example directive '#pragma acc target teams distribute parallel
-/// for simd' has clause 'private' with the variables 'x'
+/// loop simd' has clause 'private' with the variables 'x'
 ///
 class ACCTargetTeamsDistributeParallelLoopSimdDirective final
     : public ACCLoopLikeDirective {
@@ -3927,7 +3927,7 @@ class ACCTargetTeamsDistributeParallelLoopSimdDirective final
                                                    unsigned NumClauses)
       : ACCLoopLikeDirective(this,
                          ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass,
-                         ACCD_target_teams_distribute_parallel_for_simd,
+                         ACCD_target_teams_distribute_parallel_loop_simd,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3939,7 +3939,7 @@ class ACCTargetTeamsDistributeParallelLoopSimdDirective final
       unsigned CollapsedNum, unsigned NumClauses)
       : ACCLoopLikeDirective(
             this, ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass,
-            ACCD_target_teams_distribute_parallel_for_simd, SourceLocation(),
+            ACCD_target_teams_distribute_parallel_loop_simd, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
