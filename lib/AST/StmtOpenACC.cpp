@@ -177,7 +177,7 @@ ACCLoopSimdDirective::Create(const ASTContext &C, SourceLocation StartLoc,
       llvm::alignTo(sizeof(ACCLoopSimdDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_for_simd));
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop_simd));
   ACCLoopSimdDirective *Dir = new (Mem)
       ACCLoopSimdDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
@@ -214,7 +214,7 @@ ACCLoopSimdDirective *ACCLoopSimdDirective::CreateEmpty(const ASTContext &C,
       llvm::alignTo(sizeof(ACCLoopSimdDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_for_simd));
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop_simd));
   return new (Mem) ACCLoopSimdDirective(CollapsedNum, NumClauses);
 }
 
@@ -390,7 +390,7 @@ ACCParallelLoopSimdDirective *ACCParallelLoopSimdDirective::Create(
       llvm::alignTo(sizeof(ACCParallelLoopSimdDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_for_simd));
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_loop_simd));
   ACCParallelLoopSimdDirective *Dir = new (Mem) ACCParallelLoopSimdDirective(
       StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
@@ -427,7 +427,7 @@ ACCParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
       llvm::alignTo(sizeof(ACCParallelLoopSimdDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_for_simd));
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_loop_simd));
   return new (Mem) ACCParallelLoopSimdDirective(CollapsedNum, NumClauses);
 }
 
@@ -730,7 +730,7 @@ ACCTargetParallelLoopDirective *ACCTargetParallelLoopDirective::Create(
                                 alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_target_parallel_for));
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_target_parallel_loop));
   ACCTargetParallelLoopDirective *Dir = new (Mem) ACCTargetParallelLoopDirective(
       StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
@@ -768,7 +768,7 @@ ACCTargetParallelLoopDirective::CreateEmpty(const ASTContext &C,
                                 alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_target_parallel_for));
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_target_parallel_loop));
   return new (Mem) ACCTargetParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
@@ -1042,7 +1042,7 @@ ACCDistributeParallelLoopDirective *ACCDistributeParallelLoopDirective::Create(
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_for));
+          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop));
   ACCDistributeParallelLoopDirective *Dir =
       new (Mem) ACCDistributeParallelLoopDirective(StartLoc, EndLoc,
                                                   CollapsedNum, Clauses.size());
@@ -1094,7 +1094,7 @@ ACCDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_for));
+          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop));
   return new (Mem) ACCDistributeParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
@@ -1108,7 +1108,7 @@ ACCDistributeParallelLoopSimdDirective::Create(
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_for_simd));
+          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop_simd));
   ACCDistributeParallelLoopSimdDirective *Dir = new (Mem)
       ACCDistributeParallelLoopSimdDirective(StartLoc, EndLoc, CollapsedNum,
                                             Clauses.size());
@@ -1159,7 +1159,7 @@ ACCDistributeParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_for_simd));
+          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop_simd));
   return new (Mem)
       ACCDistributeParallelLoopSimdDirective(CollapsedNum, NumClauses);
 }
@@ -1224,7 +1224,7 @@ ACCTargetParallelLoopSimdDirective *ACCTargetParallelLoopSimdDirective::Create(
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) * 
-          numLoopChildren(CollapsedNum, ACCD_target_parallel_for_simd));
+          numLoopChildren(CollapsedNum, ACCD_target_parallel_loop_simd));
   ACCTargetParallelLoopSimdDirective *Dir = 
       new (Mem) ACCTargetParallelLoopSimdDirective(StartLoc, EndLoc,
                                                   CollapsedNum, Clauses.size());
@@ -1264,7 +1264,7 @@ ACCTargetParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) * 
-          numLoopChildren(CollapsedNum, ACCD_target_parallel_for_simd));
+          numLoopChildren(CollapsedNum, ACCD_target_parallel_loop_simd));
   return new (Mem) ACCTargetParallelLoopSimdDirective(CollapsedNum, NumClauses);
 }
 
@@ -1420,7 +1420,7 @@ ACCTeamsDistributeParallelLoopSimdDirective::Create(
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                  sizeof(Stmt *) *
                      numLoopChildren(CollapsedNum,
-                                     ACCD_teams_distribute_parallel_for_simd));
+                                     ACCD_teams_distribute_parallel_loop_simd));
   ACCTeamsDistributeParallelLoopSimdDirective *Dir = new (Mem)
       ACCTeamsDistributeParallelLoopSimdDirective(StartLoc, EndLoc, CollapsedNum,
                                                  Clauses.size());
@@ -1472,7 +1472,7 @@ ACCTeamsDistributeParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                  sizeof(Stmt *) *
                      numLoopChildren(CollapsedNum,
-                                     ACCD_teams_distribute_parallel_for_simd));
+                                     ACCD_teams_distribute_parallel_loop_simd));
   return new (Mem)
       ACCTeamsDistributeParallelLoopSimdDirective(CollapsedNum, NumClauses);
 }
@@ -1487,7 +1487,7 @@ ACCTeamsDistributeParallelLoopDirective::Create(
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_teams_distribute_parallel_for));
+          numLoopChildren(CollapsedNum, ACCD_teams_distribute_parallel_loop));
   ACCTeamsDistributeParallelLoopDirective *Dir = new (Mem)
       ACCTeamsDistributeParallelLoopDirective(StartLoc, EndLoc, CollapsedNum,
                                              Clauses.size());
@@ -1539,7 +1539,7 @@ ACCTeamsDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_teams_distribute_parallel_for));
+          numLoopChildren(CollapsedNum, ACCD_teams_distribute_parallel_loop));
   return new (Mem)
       ACCTeamsDistributeParallelLoopDirective(CollapsedNum, NumClauses);
 }
@@ -1633,7 +1633,7 @@ ACCTargetTeamsDistributeParallelLoopDirective::Create(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_for));
+                          ACCD_target_teams_distribute_parallel_loop));
   ACCTargetTeamsDistributeParallelLoopDirective *Dir =
       new (Mem) ACCTargetTeamsDistributeParallelLoopDirective(
            StartLoc, EndLoc, CollapsedNum, Clauses.size());
@@ -1687,7 +1687,7 @@ ACCTargetTeamsDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
            numLoopChildren(CollapsedNum,
-                           ACCD_target_teams_distribute_parallel_for));
+                           ACCD_target_teams_distribute_parallel_loop));
   return new (Mem)
       ACCTargetTeamsDistributeParallelLoopDirective(CollapsedNum, NumClauses);
 }
@@ -1704,7 +1704,7 @@ ACCTargetTeamsDistributeParallelLoopSimdDirective::Create(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_for_simd));
+                          ACCD_target_teams_distribute_parallel_loop_simd));
   ACCTargetTeamsDistributeParallelLoopSimdDirective *Dir =
       new (Mem) ACCTargetTeamsDistributeParallelLoopSimdDirective(
            StartLoc, EndLoc, CollapsedNum, Clauses.size());
@@ -1756,7 +1756,7 @@ ACCTargetTeamsDistributeParallelLoopSimdDirective::CreateEmpty(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_for_simd));
+                          ACCD_target_teams_distribute_parallel_loop_simd));
   return new (Mem) ACCTargetTeamsDistributeParallelLoopSimdDirective(
       CollapsedNum, NumClauses);
 }

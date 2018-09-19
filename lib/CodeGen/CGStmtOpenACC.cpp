@@ -852,71 +852,71 @@ void CodeGenFunction::EmitACCPrivateClause(
   }
 }
 
-bool CodeGenFunction::EmitACCCopyinClause(const ACCExecutableDirective &D) {
-  if (!HaveInsertPoint())
-    return false;
-  // threadprivate_var1 = master_threadprivate_var1;
-  // operator=(threadprivate_var2, master_threadprivate_var2);
-  // ...
-  // __kmpc_barrier(&loc, global_tid);
-  llvm::DenseSet<const VarDecl *> CopiedVars;
-  llvm::BasicBlock *CopyBegin = nullptr, *CopyEnd = nullptr;
-  for (const auto *C : D.getClausesOfKind<ACCCopyinClause>()) {
-    auto IRef = C->varlist_begin();
-    auto ISrcRef = C->source_exprs().begin();
-    auto IDestRef = C->destination_exprs().begin();
-    for (auto *AssignOp : C->assignment_ops()) {
-      auto *VD = cast<VarDecl>(cast<DeclRefExpr>(*IRef)->getDecl());
-      QualType Type = VD->getType();
-      if (CopiedVars.insert(VD->getCanonicalDecl()).second) {
-        // Get the address of the master variable. If we are emitting code with
-        // TLS support, the address is passed from the master as field in the
-        // captured declaration.
-        Address MasterAddr = Address::invalid();
-        if (getLangOpts().OpenACCUseTLS &&
-            getContext().getTargetInfo().isTLSSupported()) {
-          assert(CapturedStmtInfo->lookup(VD) &&
-                 "Copyin threadprivates should have been captured!");
-          DeclRefExpr DRE(const_cast<VarDecl *>(VD), true, (*IRef)->getType(),
-                          VK_LValue, (*IRef)->getExprLoc());
-          MasterAddr = EmitLValue(&DRE).getAddress();
-          LocalDeclMap.erase(VD);
-        } else {
-          MasterAddr =
-            Address(VD->isStaticLocal() ? CGM.getStaticLocalDeclAddress(VD)
-                                        : CGM.GetAddrOfGlobal(VD),
-                    getContext().getDeclAlign(VD));
-        }
-        // Get the address of the threadprivate variable.
-        Address PrivateAddr = EmitLValue(*IRef).getAddress();
-        if (CopiedVars.size() == 1) {
-          // At first check if current thread is a master thread. If it is, no
-          // need to copy data.
-          CopyBegin = createBasicBlock("copyin.not.master");
-          CopyEnd = createBasicBlock("copyin.not.master.end");
-          Builder.CreateCondBr(
-              Builder.CreateICmpNE(
-                  Builder.CreatePtrToInt(MasterAddr.getPointer(), CGM.IntPtrTy),
-                  Builder.CreatePtrToInt(PrivateAddr.getPointer(), CGM.IntPtrTy)),
-              CopyBegin, CopyEnd);
-          EmitBlock(CopyBegin);
-        }
-        auto *SrcVD = cast<VarDecl>(cast<DeclRefExpr>(*ISrcRef)->getDecl());
-        auto *DestVD = cast<VarDecl>(cast<DeclRefExpr>(*IDestRef)->getDecl());
-        EmitACCCopy(Type, PrivateAddr, MasterAddr, DestVD, SrcVD, AssignOp);
-      }
-      ++IRef;
-      ++ISrcRef;
-      ++IDestRef;
-    }
-  }
-  if (CopyEnd) {
-    // Exit out of copying procedure for non-master thread.
-    EmitBlock(CopyEnd, /*IsFinished=*/true);
-    return true;
-  }
-  return false;
-}
+/* bool CodeGenFunction::EmitACCCopyinClause(const ACCExecutableDirective &D) { */
+/*   if (!HaveInsertPoint()) */
+/*     return false; */
+/*   // threadprivate_var1 = master_threadprivate_var1; */
+/*   // operator=(threadprivate_var2, master_threadprivate_var2); */
+/*   // ... */
+/*   // __kmpc_barrier(&loc, global_tid); */
+/*   llvm::DenseSet<const VarDecl *> CopiedVars; */
+/*   llvm::BasicBlock *CopyBegin = nullptr, *CopyEnd = nullptr; */
+/*   for (const auto *C : D.getClausesOfKind<ACCCopyinClause>()) { */
+/*     auto IRef = C->varlist_begin(); */
+/*     auto ISrcRef = C->source_exprs().begin(); */
+/*     auto IDestRef = C->destination_exprs().begin(); */
+/*     for (auto *AssignOp : C->assignment_ops()) { */
+/*       auto *VD = cast<VarDecl>(cast<DeclRefExpr>(*IRef)->getDecl()); */
+/*       QualType Type = VD->getType(); */
+/*       if (CopiedVars.insert(VD->getCanonicalDecl()).second) { */
+/*         // Get the address of the master variable. If we are emitting code with */
+/*         // TLS support, the address is passed from the master as field in the */
+/*         // captured declaration. */
+/*         Address MasterAddr = Address::invalid(); */
+/*         if (getLangOpts().OpenACCUseTLS && */
+/*             getContext().getTargetInfo().isTLSSupported()) { */
+/*           assert(CapturedStmtInfo->lookup(VD) && */
+/*                  "Copyin threadprivates should have been captured!"); */
+/*           DeclRefExpr DRE(const_cast<VarDecl *>(VD), true, (*IRef)->getType(), */
+/*                           VK_LValue, (*IRef)->getExprLoc()); */
+/*           MasterAddr = EmitLValue(&DRE).getAddress(); */
+/*           LocalDeclMap.erase(VD); */
+/*         } else { */
+/*           MasterAddr = */
+/*             Address(VD->isStaticLocal() ? CGM.getStaticLocalDeclAddress(VD) */
+/*                                         : CGM.GetAddrOfGlobal(VD), */
+/*                     getContext().getDeclAlign(VD)); */
+/*         } */
+/*         // Get the address of the threadprivate variable. */
+/*         Address PrivateAddr = EmitLValue(*IRef).getAddress(); */
+/*         if (CopiedVars.size() == 1) { */
+/*           // At first check if current thread is a master thread. If it is, no */
+/*           // need to copy data. */
+/*           CopyBegin = createBasicBlock("copyin.not.master"); */
+/*           CopyEnd = createBasicBlock("copyin.not.master.end"); */
+/*           Builder.CreateCondBr( */
+/*               Builder.CreateICmpNE( */
+/*                   Builder.CreatePtrToInt(MasterAddr.getPointer(), CGM.IntPtrTy), */
+/*                   Builder.CreatePtrToInt(PrivateAddr.getPointer(), CGM.IntPtrTy)), */
+/*               CopyBegin, CopyEnd); */
+/*           EmitBlock(CopyBegin); */
+/*         } */
+/*         auto *SrcVD = cast<VarDecl>(cast<DeclRefExpr>(*ISrcRef)->getDecl()); */
+/*         auto *DestVD = cast<VarDecl>(cast<DeclRefExpr>(*IDestRef)->getDecl()); */
+/*         EmitACCCopy(Type, PrivateAddr, MasterAddr, DestVD, SrcVD, AssignOp); */
+/*       } */
+/*       ++IRef; */
+/*       ++ISrcRef; */
+/*       ++IDestRef; */
+/*     } */
+/*   } */
+/*   if (CopyEnd) { */
+/*     // Exit out of copying procedure for non-master thread. */
+/*     EmitBlock(CopyEnd, IsFinished=true); 
+/*     return true; */
+/*   } */
+/*   return false; */
+/* } */
 
 bool CodeGenFunction::EmitACCLastprivateClauseInit(
     const ACCExecutableDirective &D, ACCPrivateScope &PrivateScope) {
@@ -1265,16 +1265,16 @@ void CodeGenFunction::EmitACCParallelDirective(const ACCParallelDirective &S) {
   // Emit parallel region as a standalone region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
-    bool Copyins = CGF.EmitACCCopyinClause(S);
-    (void)CGF.EmitACCFirstprivateClause(S, PrivateScope);
-    if (Copyins) {
-      // Emit implicit barrier to synchronize threads and avoid data races on
-      // propagation master's thread values of threadprivate variables to local
-      // instances of that variables of all other implicit threads.
-      CGF.CGM.getOpenACCRuntime().emitBarrierCall(
-          CGF, S.getLocStart(), ACCD_unknown, /*EmitChecks=*/false,
-          /*ForceSimpleCall=*/true);
-    }
+   // bool Copyins = CGF.EmitACCCopyinClause(S);
+   // (void)CGF.EmitACCFirstprivateClause(S, PrivateScope);
+   // if (Copyins) {
+   //   // Emit implicit barrier to synchronize threads and avoid data races on
+   //   // propagation master's thread values of threadprivate variables to local
+   //   // instances of that variables of all other implicit threads.
+   //   CGF.CGM.getOpenACCRuntime().emitBarrierCall(
+   //       CGF, S.getLocStart(), ACCD_unknown, /*EmitChecks=*/false,
+   //       /*ForceSimpleCall=*/true);
+   // }
     CGF.EmitACCPrivateClause(S, PrivateScope);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
@@ -2121,7 +2121,7 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
 
   emitCommonACCParallelDirective(
       CGF, S,
-      isOpenACCSimdDirective(S.getDirectiveKind()) ? ACCD_for_simd : ACCD_loop,
+      isOpenACCSimdDirective(S.getDirectiveKind()) ? ACCD_loop_simd : ACCD_loop,
       CGInlinedWorksharingLoop,
       emitDistributeParallelForDistributeInnerBoundParams);
 }
@@ -2349,7 +2349,7 @@ bool CodeGenFunction::EmitACCWorksharingLoop(
       }
       EmitACCReductionClauseFinal(
           S, /*ReductionKind=*/isOpenACCSimdDirective(S.getDirectiveKind())
-                 ? /*Parallel and Simd*/ ACCD_parallel_for_simd
+                 ? /*Parallel and Simd*/ ACCD_parallel_loop_simd
                  : /*Parallel only*/ ACCD_parallel);
       // Emit post-update of the reduction variables if IsLastIter != 0.
       emitPostUpdateForReductionClause(
@@ -3362,7 +3362,7 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
       OpenACCDirectiveKind ReductionKind = ACCD_unknown;
       if (isOpenACCParallelDirective(S.getDirectiveKind()) &&
           isOpenACCSimdDirective(S.getDirectiveKind())) {
-        ReductionKind = ACCD_parallel_for_simd;
+        ReductionKind = ACCD_parallel_loop_simd;
       } else if (isOpenACCParallelDirective(S.getDirectiveKind())) {
         ReductionKind = ACCD_parallel_loop;
       } else if (isOpenACCSimdDirective(S.getDirectiveKind())) {
@@ -4227,7 +4227,7 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelLoopDirective(
                                                     CodeGenDistribute);
     CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_parallel_for, CodeGen);
+  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_parallel_loop, CodeGen);
   emitPostUpdateForReductionClause(*this, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
@@ -4249,7 +4249,7 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelLoopSimdDirective(
         CGF, ACCD_distribute, CodeGenDistribute, /*HasCancel=*/false);
     CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_parallel_for, CodeGen);
+  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_parallel_loop, CodeGen);
   emitPostUpdateForReductionClause(*this, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
@@ -4273,7 +4273,7 @@ static void emitTargetTeamsDistributeParallelForRegion(
     CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
   };
 
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_for,
+  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_loop,
                               CodeGenTeams);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
@@ -4323,7 +4323,7 @@ static void emitTargetTeamsDistributeParallelForSimdRegion(
     CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
   };
 
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_for_simd,
+  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_loop_simd,
                               CodeGenTeams);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
@@ -4379,10 +4379,10 @@ CodeGenFunction::getACCCancelDestination(OpenACCDirectiveKind Kind) {
     return ReturnBlock;
   assert(Kind == ACCD_loop || Kind == ACCD_section || Kind == ACCD_sections ||
          Kind == ACCD_parallel_sections || Kind == ACCD_parallel_loop ||
-         Kind == ACCD_distribute_parallel_for ||
-         Kind == ACCD_target_parallel_for ||
-         Kind == ACCD_teams_distribute_parallel_for ||
-         Kind == ACCD_target_teams_distribute_parallel_for);
+         Kind == ACCD_distribute_parallel_loop ||
+         Kind == ACCD_target_parallel_loop ||
+         Kind == ACCD_teams_distribute_parallel_loop ||
+         Kind == ACCD_target_teams_distribute_parallel_loop);
   return ACCCancelStack.getExitBlock();
 }
 
@@ -4631,7 +4631,7 @@ static void emitTargetParallelForRegion(CodeGenFunction &CGF,
   // directives: 'parallel' with 'for' directive.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CodeGenFunction::ACCCancelStackRAII CancelRegion(
-        CGF, ACCD_target_parallel_for, S.hasCancel());
+        CGF, ACCD_target_parallel_loop, S.hasCancel());
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };

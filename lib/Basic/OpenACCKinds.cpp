@@ -141,6 +141,8 @@ unsigned clang::getOpenACCSimpleClauseType(OpenACCClauseKind Kind,
   case ACCC_task_reduction:
   case ACCC_in_reduction:
   case ACCC_aligned:
+  case ACCC_copy:
+  case ACCC_copyout:
   case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_ordered:

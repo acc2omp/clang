@@ -921,13 +921,13 @@ void ACCClausePrinter::VisitACCAlignedClause(ACCAlignedClause *Node) {
   }
 }
 
-void ACCClausePrinter::VisitACCCopyinClause(ACCCopyinClause *Node) {
-  if (!Node->varlist_empty()) {
-    OS << "copyin";
-    VisitACCClauseList(Node, '(');
-    OS << ")";
-  }
-}
+/* void ACCClausePrinter::VisitACCCopyinClause(ACCCopyinClause *Node) { */
+/*   if (!Node->varlist_empty()) { */
+/*     OS << "copyin"; */
+/*     VisitACCClauseList(Node, '('); */
+/*     OS << ")"; */
+/*   } */
+/* } */
 
 void ACCClausePrinter::VisitACCCopyprivateClause(ACCCopyprivateClause *Node) {
   if (!Node->varlist_empty()) {
@@ -958,6 +958,56 @@ void ACCClausePrinter::VisitACCDependClause(ACCDependClause *Node) {
 void ACCClausePrinter::VisitACCMapClause(ACCMapClause *Node) {
   if (!Node->varlist_empty()) {
     OS << "map(";
+    if (Node->getMapType() != ACCC_MAP_unknown) {
+      if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
+        OS << getOpenACCSimpleClauseTypeName(ACCC_map, 
+                                            Node->getMapTypeModifier());
+        OS << ',';
+      }
+      OS << getOpenACCSimpleClauseTypeName(ACCC_map, Node->getMapType());
+      OS << ':';
+    }
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+
+//TODO acc2mp modify infra for copy
+void ACCClausePrinter::VisitACCCopyClause(ACCCopyClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "copy(";
+    if (Node->getMapType() != ACCC_MAP_unknown) {
+      if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
+        OS << getOpenACCSimpleClauseTypeName(ACCC_map, 
+                                            Node->getMapTypeModifier());
+        OS << ',';
+      }
+      OS << getOpenACCSimpleClauseTypeName(ACCC_map, Node->getMapType());
+      OS << ':';
+    }
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+void ACCClausePrinter::VisitACCCopyinClause(ACCCopyinClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "copyin(";
+    if (Node->getMapType() != ACCC_MAP_unknown) {
+      if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
+        OS << getOpenACCSimpleClauseTypeName(ACCC_map, 
+                                            Node->getMapTypeModifier());
+        OS << ',';
+      }
+      OS << getOpenACCSimpleClauseTypeName(ACCC_map, Node->getMapType());
+      OS << ':';
+    }
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+void ACCClausePrinter::VisitACCCopyoutClause(ACCCopyoutClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "copyout(";
     if (Node->getMapType() != ACCC_MAP_unknown) {
       if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
         OS << getOpenACCSimpleClauseTypeName(ACCC_map, 

@@ -1744,17 +1744,17 @@ public:
                                               LParenLoc, ColonLoc, EndLoc);
   }
 
-  /// \brief Build a new OpenACC 'copyin' clause.
-  ///
-  /// By default, performs semantic analysis to build the new OpenACC clause.
-  /// Subclasses may override this routine to provide different behavior.
-  ACCClause *RebuildACCCopyinClause(ArrayRef<Expr *> VarList,
-                                    SourceLocation StartLoc,
-                                    SourceLocation LParenLoc,
-                                    SourceLocation EndLoc) {
-    return getSema().ActOnOpenACCCopyinClause(VarList, StartLoc, LParenLoc,
-                                             EndLoc);
-  }
+  /* /// \brief Build a new OpenACC 'copyin' clause. */
+  /* /// */
+  /* /// By default, performs semantic analysis to build the new OpenACC clause. */
+  /* /// Subclasses may override this routine to provide different behavior. */
+  /* ACCClause *RebuildACCCopyinClause(ArrayRef<Expr *> VarList, */
+  /*                                   SourceLocation StartLoc, */
+  /*                                   SourceLocation LParenLoc, */
+  /*                                   SourceLocation EndLoc) { */
+  /*   return getSema().ActOnOpenACCCopyinClause(VarList, StartLoc, LParenLoc, */
+  /*                                            EndLoc); */
+  /* } */
 
   /// \brief Build a new OpenACC 'copyprivate' clause.
   ///
@@ -1815,6 +1815,49 @@ public:
                       ArrayRef<Expr *> VarList, SourceLocation StartLoc,
                       SourceLocation LParenLoc, SourceLocation EndLoc) {
     return getSema().ActOnOpenACCMapClause(MapTypeModifier, MapType,
+                                          IsMapTypeImplicit, MapLoc, ColonLoc,
+                                          VarList, StartLoc, LParenLoc, EndLoc);
+  }
+  // TODO acc2mp modify befaviour for copy copyin copyout
+  /// \brief Build a new OpenACC 'copy' clause.
+  ///
+  /// By default, performs semantic analysis to build the new OpenACC clause.
+  /// Subclasses may override this routine to provide different behavior.
+  ACCClause *
+  RebuildACCCopyClause(OpenACCMapClauseKind MapTypeModifier,
+                      OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                      SourceLocation MapLoc, SourceLocation ColonLoc,
+                      ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                      SourceLocation LParenLoc, SourceLocation EndLoc) {
+    return getSema().ActOnOpenACCCopyClause(MapTypeModifier, MapType,
+                                          IsMapTypeImplicit, MapLoc, ColonLoc,
+                                          VarList, StartLoc, LParenLoc, EndLoc);
+  }
+  /// \brief Build a new OpenACC 'copyin' clause.
+  ///
+  /// By default, performs semantic analysis to build the new OpenACC clause.
+  /// Subclasses may override this routine to provide different behavior.
+  ACCClause *
+  RebuildACCCopyinClause(OpenACCMapClauseKind MapTypeModifier,
+                      OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                      SourceLocation MapLoc, SourceLocation ColonLoc,
+                      ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                      SourceLocation LParenLoc, SourceLocation EndLoc) {
+    return getSema().ActOnOpenACCCopyinClause(MapTypeModifier, MapType,
+                                          IsMapTypeImplicit, MapLoc, ColonLoc,
+                                          VarList, StartLoc, LParenLoc, EndLoc);
+  }
+  /// \brief Build a new OpenACC 'copyout' clause.
+  ///
+  /// By default, performs semantic analysis to build the new OpenACC clause.
+  /// Subclasses may override this routine to provide different behavior.
+  ACCClause *
+  RebuildACCCopyoutClause(OpenACCMapClauseKind MapTypeModifier,
+                      OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                      SourceLocation MapLoc, SourceLocation ColonLoc,
+                      ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                      SourceLocation LParenLoc, SourceLocation EndLoc) {
+    return getSema().ActOnOpenACCCopyoutClause(MapTypeModifier, MapType,
                                           IsMapTypeImplicit, MapLoc, ColonLoc,
                                           VarList, StartLoc, LParenLoc, EndLoc);
   }
@@ -8220,7 +8263,7 @@ template <typename Derived>
 StmtResult
 TreeTransform<Derived>::TransformACCLoopSimdDirective(ACCLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_for_simd, DirName, nullptr,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_loop_simd, DirName, nullptr,
                                              D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8296,7 +8339,7 @@ template <typename Derived>
 StmtResult TreeTransform<Derived>::TransformACCParallelLoopSimdDirective(
     ACCParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_parallel_for_simd, DirName,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_parallel_loop_simd, DirName,
                                              nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8461,7 +8504,7 @@ template <typename Derived>
 StmtResult TreeTransform<Derived>::TransformACCTargetParallelLoopDirective(
     ACCTargetParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_parallel_for, DirName,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_parallel_loop, DirName,
                                              nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8550,7 +8593,7 @@ StmtResult TreeTransform<Derived>::TransformACCDistributeParallelLoopDirective(
     ACCDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_distribute_parallel_for, DirName, nullptr, D->getLocStart());
+      ACCD_distribute_parallel_loop, DirName, nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
   return Res;
@@ -8562,7 +8605,7 @@ TreeTransform<Derived>::TransformACCDistributeParallelLoopSimdDirective(
     ACCDistributeParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_distribute_parallel_for_simd, DirName, nullptr, D->getLocStart());
+      ACCD_distribute_parallel_loop_simd, DirName, nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
   return Res;
@@ -8583,7 +8626,7 @@ template <typename Derived>
 StmtResult TreeTransform<Derived>::TransformACCTargetParallelLoopSimdDirective(
     ACCTargetParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_parallel_for_simd,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_parallel_loop_simd,
                                              DirName, nullptr,
                                              D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
@@ -8629,7 +8672,7 @@ StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelLoopSimdDi
     ACCTeamsDistributeParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_teams_distribute_parallel_for_simd, DirName, nullptr, D->getLocStart());
+      ACCD_teams_distribute_parallel_loop_simd, DirName, nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
   return Res;
@@ -8639,7 +8682,7 @@ template <typename Derived>
 StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelLoopDirective(
     ACCTeamsDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_teams_distribute_parallel_for,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_teams_distribute_parallel_loop,
       DirName, nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8674,7 +8717,7 @@ TreeTransform<Derived>::TransformACCTargetTeamsDistributeParallelLoopDirective(
     ACCTargetTeamsDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_target_teams_distribute_parallel_for, DirName, nullptr,
+      ACCD_target_teams_distribute_parallel_loop, DirName, nullptr,
       D->getLocStart());
   auto Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8687,7 +8730,7 @@ StmtResult TreeTransform<Derived>::
         ACCTargetTeamsDistributeParallelLoopSimdDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_target_teams_distribute_parallel_for_simd, DirName, nullptr,
+      ACCD_target_teams_distribute_parallel_loop_simd, DirName, nullptr,
       D->getLocStart());
   auto Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -9122,21 +9165,6 @@ TreeTransform<Derived>::TransformACCAlignedClause(ACCAlignedClause *C) {
 
 template <typename Derived>
 ACCClause *
-TreeTransform<Derived>::TransformACCCopyinClause(ACCCopyinClause *C) {
-  llvm::SmallVector<Expr *, 16> Vars;
-  Vars.reserve(C->varlist_size());
-  for (auto *VE : C->varlists()) {
-    ExprResult EVar = getDerived().TransformExpr(cast<Expr>(VE));
-    if (EVar.isInvalid())
-      return nullptr;
-    Vars.push_back(EVar.get());
-  }
-  return getDerived().RebuildACCCopyinClause(Vars, C->getLocStart(),
-                                             C->getLParenLoc(), C->getLocEnd());
-}
-
-template <typename Derived>
-ACCClause *
 TreeTransform<Derived>::TransformACCCopyprivateClause(ACCCopyprivateClause *C) {
   llvm::SmallVector<Expr *, 16> Vars;
   Vars.reserve(C->varlist_size());
@@ -9201,6 +9229,52 @@ ACCClause *TreeTransform<Derived>::TransformACCMapClause(ACCMapClause *C) {
     Vars.push_back(EVar.get());
   }
   return getDerived().RebuildACCMapClause(
+      C->getMapTypeModifier(), C->getMapType(), C->isImplicitMapType(),
+      C->getMapLoc(), C->getColonLoc(), Vars, C->getLocStart(),
+      C->getLParenLoc(), C->getLocEnd());
+}
+//TODO acc2mp Modify this for copy, copyin, copyout
+template <typename Derived>
+ACCClause *TreeTransform<Derived>::TransformACCCopyClause(ACCCopyClause *C) {
+  llvm::SmallVector<Expr *, 16> Vars;
+  Vars.reserve(C->varlist_size());
+  for (auto *VE : C->varlists()) {
+    ExprResult EVar = getDerived().TransformExpr(cast<Expr>(VE));
+    if (EVar.isInvalid())
+      return nullptr;
+    Vars.push_back(EVar.get());
+  }
+  return getDerived().RebuildACCCopyClause(
+      C->getMapTypeModifier(), C->getMapType(), C->isImplicitMapType(),
+      C->getMapLoc(), C->getColonLoc(), Vars, C->getLocStart(),
+      C->getLParenLoc(), C->getLocEnd());
+}
+template <typename Derived>
+ACCClause *TreeTransform<Derived>::TransformACCCopyinClause(ACCCopyinClause *C) {
+  llvm::SmallVector<Expr *, 16> Vars;
+  Vars.reserve(C->varlist_size());
+  for (auto *VE : C->varlists()) {
+    ExprResult EVar = getDerived().TransformExpr(cast<Expr>(VE));
+    if (EVar.isInvalid())
+      return nullptr;
+    Vars.push_back(EVar.get());
+  }
+  return getDerived().RebuildACCCopyinClause(
+      C->getMapTypeModifier(), C->getMapType(), C->isImplicitMapType(),
+      C->getMapLoc(), C->getColonLoc(), Vars, C->getLocStart(),
+      C->getLParenLoc(), C->getLocEnd());
+}
+template <typename Derived>
+ACCClause *TreeTransform<Derived>::TransformACCCopyoutClause(ACCCopyoutClause *C) {
+  llvm::SmallVector<Expr *, 16> Vars;
+  Vars.reserve(C->varlist_size());
+  for (auto *VE : C->varlists()) {
+    ExprResult EVar = getDerived().TransformExpr(cast<Expr>(VE));
+    if (EVar.isInvalid())
+      return nullptr;
+    Vars.push_back(EVar.get());
+  }
+  return getDerived().RebuildACCCopyoutClause(
       C->getMapTypeModifier(), C->getMapType(), C->isImplicitMapType(),
       C->getMapLoc(), C->getColonLoc(), Vars, C->getLocStart(),
       C->getLParenLoc(), C->getLocEnd());

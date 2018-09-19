@@ -3194,20 +3194,20 @@ bool RecursiveASTVisitor<Derived>::VisitACCAlignedClause(ACCAlignedClause *C) {
   return true;
 }
 
-template <typename Derived>
-bool RecursiveASTVisitor<Derived>::VisitACCCopyinClause(ACCCopyinClause *C) {
-  TRY_TO(VisitACCClauseList(C));
-  for (auto *E : C->source_exprs()) {
-    TRY_TO(TraverseStmt(E));
-  }
-  for (auto *E : C->destination_exprs()) {
-    TRY_TO(TraverseStmt(E));
-  }
-  for (auto *E : C->assignment_ops()) {
-    TRY_TO(TraverseStmt(E));
-  }
-  return true;
-}
+/* template <typename Derived> */
+/* bool RecursiveASTVisitor<Derived>::VisitACCCopyinClause(ACCCopyinClause *C) { */
+/*   TRY_TO(VisitACCClauseList(C)); */
+/*   for (auto *E : C->source_exprs()) { */
+/*     TRY_TO(TraverseStmt(E)); */
+/*   } */
+/*   for (auto *E : C->destination_exprs()) { */
+/*     TRY_TO(TraverseStmt(E)); */
+/*   } */
+/*   for (auto *E : C->assignment_ops()) { */
+/*     TRY_TO(TraverseStmt(E)); */
+/*   } */
+/*   return true; */
+/* } */
 
 template <typename Derived>
 bool RecursiveASTVisitor<Derived>::VisitACCCopyprivateClause(
@@ -3314,6 +3314,23 @@ bool RecursiveASTVisitor<Derived>::VisitACCDeviceClause(ACCDeviceClause *C) {
 
 template <typename Derived>
 bool RecursiveASTVisitor<Derived>::VisitACCMapClause(ACCMapClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+
+// TODO acc2mp Modify this to actually be "copy, copyin, copyout" syntax. For now it is OpenMP map's
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCCopyClause(ACCCopyClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCCopyinClause(ACCCopyinClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCCopyoutClause(ACCCopyoutClause *C) {
   TRY_TO(VisitACCClauseList(C));
   return true;
 }

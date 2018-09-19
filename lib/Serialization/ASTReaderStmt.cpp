@@ -1876,9 +1876,6 @@ ACCClause *ACCClauseReader::readClause() {
   case ACCC_aligned:
     C = ACCAlignedClause::CreateEmpty(Context, Reader->Record.readInt());
     break;
-  case ACCC_copyin:
-    C = ACCCopyinClause::CreateEmpty(Context, Reader->Record.readInt());
-    break;
   case ACCC_copyprivate:
     C = ACCCopyprivateClause::CreateEmpty(Context, Reader->Record.readInt());
     break;
@@ -1897,6 +1894,34 @@ ACCClause *ACCClauseReader::readClause() {
     unsigned NumLists = Reader->Record.readInt();
     unsigned NumComponents = Reader->Record.readInt();
     C = ACCMapClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                  NumComponents);
+    break;
+  }
+  //TODO acc2mp Modify copy, copyin copyout
+  case ACCC_copy: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCCopyClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                  NumComponents);
+    break;
+  }
+  case ACCC_copyin: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCCopyinClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                  NumComponents);
+    break;
+  }
+  case ACCC_copyout: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCCopyoutClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
                                   NumComponents);
     break;
   }
@@ -2290,28 +2315,6 @@ void ACCClauseReader::VisitACCAlignedClause(ACCAlignedClause *C) {
   C->setAlignment(Reader->Record.readSubExpr());
 }
 
-void ACCClauseReader::VisitACCCopyinClause(ACCCopyinClause *C) {
-  C->setLParenLoc(Reader->ReadSourceLocation());
-  unsigned NumVars = C->varlist_size();
-  SmallVector<Expr *, 16> Exprs;
-  Exprs.reserve(NumVars);
-  for (unsigned i = 0; i != NumVars; ++i)
-    Exprs.push_back(Reader->Record.readSubExpr());
-  C->setVarRefs(Exprs);
-  Exprs.clear();
-  for (unsigned i = 0; i != NumVars; ++i)
-    Exprs.push_back(Reader->Record.readSubExpr());
-  C->setSourceExprs(Exprs);
-  Exprs.clear();
-  for (unsigned i = 0; i != NumVars; ++i)
-    Exprs.push_back(Reader->Record.readSubExpr());
-  C->setDestinationExprs(Exprs);
-  Exprs.clear();
-  for (unsigned i = 0; i != NumVars; ++i)
-    Exprs.push_back(Reader->Record.readSubExpr());
-  C->setAssignmentOps(Exprs);
-}
-
 void ACCClauseReader::VisitACCCopyprivateClause(ACCCopyprivateClause *C) {
   C->setLParenLoc(Reader->ReadSourceLocation());
   unsigned NumVars = C->varlist_size();
@@ -2366,6 +2369,148 @@ void ACCClauseReader::VisitACCDeviceClause(ACCDeviceClause *C) {
 }
 
 void ACCClauseReader::VisitACCMapClause(ACCMapClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setMapTypeModifier(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapType(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+//TODO acc2mp Modify for copy, copyin, copyout
+void ACCClauseReader::VisitACCCopyClause(ACCCopyClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setMapTypeModifier(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapType(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+void ACCClauseReader::VisitACCCopyinClause(ACCCopyinClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setMapTypeModifier(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapType(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+void ACCClauseReader::VisitACCCopyoutClause(ACCCopyoutClause *C) {
   C->setLParenLoc(Reader->ReadSourceLocation());
   C->setMapTypeModifier(
      static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));

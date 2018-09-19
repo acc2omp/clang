@@ -633,21 +633,21 @@ void ACCClauseProfiler::VisitACCAlignedClause(const ACCAlignedClause *C) {
   if (C->getAlignment())
     Profiler->VisitStmt(C->getAlignment());
 }
-void ACCClauseProfiler::VisitACCCopyinClause(const ACCCopyinClause *C) {
-  VisitACCClauseList(C);
-  for (auto *E : C->source_exprs()) {
-    if (E)
-      Profiler->VisitStmt(E);
-  }
-  for (auto *E : C->destination_exprs()) {
-    if (E)
-      Profiler->VisitStmt(E);
-  }
-  for (auto *E : C->assignment_ops()) {
-    if (E)
-      Profiler->VisitStmt(E);
-  }
-}
+/* void ACCClauseProfiler::VisitACCCopyinClause(const ACCCopyinClause *C) { */
+/*   VisitACCClauseList(C); */
+/*   for (auto *E : C->source_exprs()) { */
+/*     if (E) */
+/*       Profiler->VisitStmt(E); */
+/*   } */
+/*   for (auto *E : C->destination_exprs()) { */
+/*     if (E) */
+/*       Profiler->VisitStmt(E); */
+/*   } */
+/*   for (auto *E : C->assignment_ops()) { */
+/*     if (E) */
+/*       Profiler->VisitStmt(E); */
+/*   } */
+/* } */
 void
 ACCClauseProfiler::VisitACCCopyprivateClause(const ACCCopyprivateClause *C) {
   VisitACCClauseList(C);
@@ -675,6 +675,15 @@ void ACCClauseProfiler::VisitACCDeviceClause(const ACCDeviceClause *C) {
     Profiler->VisitStmt(C->getDevice());
 }
 void ACCClauseProfiler::VisitACCMapClause(const ACCMapClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCCopyClause(const ACCCopyClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCCopyinClause(const ACCCopyinClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCCopyoutClause(const ACCCopyoutClause *C) {
   VisitACCClauseList(C);
 }
 void ACCClauseProfiler::VisitACCNumTeamsClause(const ACCNumTeamsClause *C) {

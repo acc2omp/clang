@@ -9196,11 +9196,11 @@ public:
                                       SourceLocation LParenLoc,
                                       SourceLocation ColonLoc,
                                       SourceLocation EndLoc);
-  /// \brief Called on well-formed 'copyin' clause.
-  ACCClause *ActOnOpenACCCopyinClause(ArrayRef<Expr *> VarList,
-                                     SourceLocation StartLoc,
-                                     SourceLocation LParenLoc,
-                                     SourceLocation EndLoc);
+  /* /// \brief Called on well-formed 'copyin' clause. */
+  /* ACCClause *ActOnOpenACCCopyinClause(ArrayRef<Expr *> VarList, */
+  /*                                    SourceLocation StartLoc, */
+  /*                                    SourceLocation LParenLoc, */
+  /*                                    SourceLocation EndLoc); */
   /// \brief Called on well-formed 'copyprivate' clause.
   ACCClause *ActOnOpenACCCopyprivateClause(ArrayRef<Expr *> VarList,
                                           SourceLocation StartLoc,
@@ -9228,6 +9228,28 @@ public:
                        SourceLocation MapLoc, SourceLocation ColonLoc,
                        ArrayRef<Expr *> VarList, SourceLocation StartLoc,
                        SourceLocation LParenLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'copy' clause.
+  ACCClause *
+  ActOnOpenACCCopyClause(OpenACCMapClauseKind MapTypeModifier,
+                       OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                       SourceLocation MapLoc, SourceLocation ColonLoc,
+                       ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                       SourceLocation LParenLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'copyin' clause.
+  ACCClause *
+  ActOnOpenACCCopyinClause(OpenACCMapClauseKind MapTypeModifier,
+                       OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                       SourceLocation MapLoc, SourceLocation ColonLoc,
+                       ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                       SourceLocation LParenLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'copyout' clause.
+  ACCClause *
+  ActOnOpenACCCopyoutClause(OpenACCMapClauseKind MapTypeModifier,
+                       OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                       SourceLocation MapLoc, SourceLocation ColonLoc,
+                       ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                       SourceLocation LParenLoc, SourceLocation EndLoc);
+
   /// \brief Called on well-formed 'num_teams' clause.
   ACCClause *ActOnOpenACCNumTeamsClause(Expr *NumTeams, SourceLocation StartLoc,
                                        SourceLocation LParenLoc,

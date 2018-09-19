@@ -243,12 +243,12 @@ public:
   /// \brief Check if the specified variable is a loop control variable for
   /// current region.
   /// \return The index of the loop control variable in the list of associated
-  /// for-loops (from outer to inner).
+  /// loop-loops (from outer to inner).
   LCDeclInfo isLoopControlVariable(ValueDecl *D);
   /// \brief Check if the specified variable is a loop control variable for
   /// parent region.
   /// \return The index of the loop control variable in the list of associated
-  /// for-loops (from outer to inner).
+  /// loop-loops (from outer to inner).
   LCDeclInfo isParentLoopControlVariable(ValueDecl *D);
   /// \brief Get the loop control variable for the I-th loop (or nullptr) in
   /// parent directive.
@@ -2101,7 +2101,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   switch (DKind) {
   case ACCD_parallel:
   case ACCD_parallel_loop:
-  case ACCD_parallel_for_simd:
+  case ACCD_parallel_loop_simd:
   case ACCD_parallel_sections:
   case ACCD_teams:
   case ACCD_teams_distribute:
@@ -2120,8 +2120,8 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   }
   case ACCD_target_teams:
   case ACCD_target_parallel:
-  case ACCD_target_parallel_for:
-  case ACCD_target_parallel_for_simd:
+  case ACCD_target_parallel_loop:
+  case ACCD_target_parallel_loop_simd:
   case ACCD_target_teams_distribute:
   case ACCD_target_teams_distribute_simd: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
@@ -2193,7 +2193,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   }
   case ACCD_simd:
   case ACCD_loop:
-  case ACCD_for_simd:
+  case ACCD_loop_simd:
   case ACCD_sections:
   case ACCD_section:
   case ACCD_single:
@@ -2273,8 +2273,8 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
             Context, AlwaysInlineAttr::Keyword_forceinline, SourceRange()));
     break;
   }
-  case ACCD_distribute_parallel_for_simd:
-  case ACCD_distribute_parallel_for: {
+  case ACCD_distribute_parallel_loop_simd:
+  case ACCD_distribute_parallel_loop: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType KmpInt32PtrTy =
         Context.getPointerType(KmpInt32Ty).withConst().withRestrict();
@@ -2289,8 +2289,8 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
                              Params);
     break;
   }
-  case ACCD_target_teams_distribute_parallel_for:
-  case ACCD_target_teams_distribute_parallel_for_simd: {
+  case ACCD_target_teams_distribute_parallel_loop:
+  case ACCD_target_teams_distribute_parallel_loop_simd: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType KmpInt32PtrTy =
         Context.getPointerType(KmpInt32Ty).withConst().withRestrict();
@@ -2345,8 +2345,8 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
     break;
   }
 
-  case ACCD_teams_distribute_parallel_for:
-  case ACCD_teams_distribute_parallel_for_simd: {
+  case ACCD_teams_distribute_parallel_loop:
+  case ACCD_teams_distribute_parallel_loop_simd: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType KmpInt32PtrTy =
         Context.getPointerType(KmpInt32Ty).withConst().withRestrict();
@@ -2721,10 +2721,10 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
               ParentRegion == ACCD_target_parallel)) ||
             (CancelRegion == ACCD_loop &&
              (ParentRegion == ACCD_loop || ParentRegion == ACCD_parallel_loop ||
-              ParentRegion == ACCD_target_parallel_for ||
-              ParentRegion == ACCD_distribute_parallel_for ||
-              ParentRegion == ACCD_teams_distribute_parallel_for ||
-              ParentRegion == ACCD_target_teams_distribute_parallel_for)) ||
+              ParentRegion == ACCD_target_parallel_loop ||
+              ParentRegion == ACCD_distribute_parallel_loop ||
+              ParentRegion == ACCD_teams_distribute_parallel_loop ||
+              ParentRegion == ACCD_target_teams_distribute_parallel_loop)) ||
             (CancelRegion == ACCD_taskgroup && ParentRegion == ACCD_task) ||
             (CancelRegion == ACCD_sections &&
              (ParentRegion == ACCD_section || ParentRegion == ACCD_sections ||
@@ -3024,7 +3024,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Res = ActOnOpenACCLoopDirective(ClausesWithImplicit, AStmt, StartLoc, EndLoc,
                                   VarsWithInheritedDSA);
     break;
-  case ACCD_for_simd:
+  case ACCD_loop_simd:
     Res = ActOnOpenACCLoopSimdDirective(ClausesWithImplicit, AStmt, StartLoc,
                                       EndLoc, VarsWithInheritedDSA);
     break;
@@ -3055,7 +3055,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
                                           EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_parallel_for_simd:
+  case ACCD_parallel_loop_simd:
     Res = ActOnOpenACCParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
@@ -3123,7 +3123,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_target_parallel_for:
+  case ACCD_target_parallel_loop:
     Res = ActOnOpenACCTargetParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
@@ -3177,12 +3177,12 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
                                            EndLoc, AStmt);
     AllowedNameModifiers.push_back(ACCD_target_update);
     break;
-  case ACCD_distribute_parallel_for:
+  case ACCD_distribute_parallel_loop:
     Res = ActOnOpenACCDistributeParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_distribute_parallel_for_simd:
+  case ACCD_distribute_parallel_loop_simd:
     Res = ActOnOpenACCDistributeParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
@@ -3191,7 +3191,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Res = ActOnOpenACCDistributeSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     break;
-  case ACCD_target_parallel_for_simd:
+  case ACCD_target_parallel_loop_simd:
     Res = ActOnOpenACCTargetParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
@@ -3210,12 +3210,12 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Res = ActOnOpenACCTeamsDistributeSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     break;
-  case ACCD_teams_distribute_parallel_for_simd:
+  case ACCD_teams_distribute_parallel_loop_simd:
     Res = ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_teams_distribute_parallel_for:
+  case ACCD_teams_distribute_parallel_loop:
     Res = ActOnOpenACCTeamsDistributeParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
@@ -3230,13 +3230,13 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     break;
-  case ACCD_target_teams_distribute_parallel_for:
+  case ACCD_target_teams_distribute_parallel_loop:
     Res = ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_target_teams_distribute_parallel_for_simd:
+  case ACCD_target_teams_distribute_parallel_loop_simd:
     Res = ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
@@ -5295,7 +5295,7 @@ StmtResult Sema::ActOnOpenACCLoopSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_for_simd, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_loop_simd, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), AStmt, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -5544,7 +5544,7 @@ StmtResult Sema::ActOnOpenACCParallelLoopSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_parallel_for_simd, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_parallel_loop_simd, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), AStmt, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -6520,7 +6520,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelLoopDirective(
   // The point of exit cannot be a branch out of the structured block.
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
-  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_parallel_for);
+  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_parallel_loop);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -6535,7 +6535,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelLoopDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_target_parallel_for, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_target_parallel_loop, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), CS, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -6938,7 +6938,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_distribute_parallel_for);
+           getOpenACCCaptureLevels(ACCD_distribute_parallel_loop);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -6953,7 +6953,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_distribute_parallel_for, getCollapseNumberExpr(Clauses),
+      ACCD_distribute_parallel_loop, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -6983,7 +6983,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_distribute_parallel_for_simd);
+           getOpenACCCaptureLevels(ACCD_distribute_parallel_loop_simd);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -6998,7 +6998,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_distribute_parallel_for_simd, getCollapseNumberExpr(Clauses),
+      ACCD_distribute_parallel_loop_simd, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -7097,7 +7097,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelLoopSimdDirective(
   // The point of exit cannot be a branch out of the structured block.
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
-  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_parallel_for);
+  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_parallel_loop);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7112,7 +7112,7 @@ StmtResult Sema::ActOnOpenACCTargetParallelLoopSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_target_parallel_for_simd, getCollapseNumberExpr(Clauses),
+      ACCD_target_parallel_loop_simd, getCollapseNumberExpr(Clauses),
       getOrderedNumberExpr(Clauses), CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -7321,7 +7321,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
   CS->getCapturedDecl()->setNothrow();
 
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_teams_distribute_parallel_for_simd);
+           getOpenACCCaptureLevels(ACCD_teams_distribute_parallel_loop_simd);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7336,7 +7336,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
-      ACCD_teams_distribute_parallel_for_simd, getCollapseNumberExpr(Clauses),
+      ACCD_teams_distribute_parallel_loop_simd, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
 
@@ -7384,7 +7384,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopDirective(
   CS->getCapturedDecl()->setNothrow();
 
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_teams_distribute_parallel_for);
+           getOpenACCCaptureLevels(ACCD_teams_distribute_parallel_loop);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7399,7 +7399,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_teams_distribute_parallel_for, getCollapseNumberExpr(Clauses),
+      ACCD_teams_distribute_parallel_loop, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
 
@@ -7508,7 +7508,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_target_teams_distribute_parallel_for);
+           getOpenACCCaptureLevels(ACCD_target_teams_distribute_parallel_loop);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7523,7 +7523,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
-      ACCD_target_teams_distribute_parallel_for, getCollapseNumberExpr(Clauses),
+      ACCD_target_teams_distribute_parallel_loop, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -7564,7 +7564,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel = getOpenACCCaptureLevels(
-           ACCD_target_teams_distribute_parallel_for_simd);
+           ACCD_target_teams_distribute_parallel_loop_simd);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7579,7 +7579,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount =
-      CheckOpenACCLoop(ACCD_target_teams_distribute_parallel_for_simd,
+      CheckOpenACCLoop(ACCD_target_teams_distribute_parallel_loop_simd,
                       getCollapseNumberExpr(Clauses),
                       nullptr /*ordered not a clause on distribute*/, CS, *this,
                       *DSAStack, VarsWithImplicitDSA, B);
@@ -7725,7 +7725,6 @@ ACCClause *Sema::ActOnOpenACCSingleExprClause(OpenACCClauseKind Kind, Expr *Expr
   case ACCC_in_reduction:
   case ACCC_linear:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_nowait:
   case ACCC_untied:
@@ -7741,6 +7740,9 @@ ACCClause *Sema::ActOnOpenACCSingleExprClause(OpenACCClauseKind Kind, Expr *Expr
   case ACCC_threads:
   case ACCC_simd:
   case ACCC_map:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
   case ACCC_nogroup:
   case ACCC_dist_schedule:
   case ACCC_defaultmap:
@@ -7768,22 +7770,22 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_if:
     switch (DKind) {
     case ACCD_target_parallel:
-    case ACCD_target_parallel_for:
-    case ACCD_target_parallel_for_simd:
+    case ACCD_target_parallel_loop:
+    case ACCD_target_parallel_loop_simd:
       // If this clause applies to the nested 'parallel' region, capture within
       // the 'target' region, otherwise do not capture.
       if (NameModifier == ACCD_unknown || NameModifier == ACCD_parallel)
         CaptureRegion = ACCD_target;
       break;
-    case ACCD_target_teams_distribute_parallel_for:
-    case ACCD_target_teams_distribute_parallel_for_simd:
+    case ACCD_target_teams_distribute_parallel_loop:
+    case ACCD_target_teams_distribute_parallel_loop_simd:
       // If this clause applies to the nested 'parallel' region, capture within
       // the 'teams' region, otherwise do not capture.
       if (NameModifier == ACCD_unknown || NameModifier == ACCD_parallel)
         CaptureRegion = ACCD_teams;
       break;
-    case ACCD_teams_distribute_parallel_for:
-    case ACCD_teams_distribute_parallel_for_simd:
+    case ACCD_teams_distribute_parallel_loop:
+    case ACCD_teams_distribute_parallel_loop_simd:
       CaptureRegion = ACCD_teams;
       break;
     case ACCD_target_update:
@@ -7795,14 +7797,14 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_for_simd:
+    case ACCD_parallel_loop_simd:
     case ACCD_target:
     case ACCD_target_simd:
     case ACCD_target_teams:
     case ACCD_target_teams_distribute:
     case ACCD_target_teams_distribute_simd:
-    case ACCD_distribute_parallel_for:
-    case ACCD_distribute_parallel_for_simd:
+    case ACCD_distribute_parallel_loop:
+    case ACCD_distribute_parallel_loop_simd:
     case ACCD_task:
     case ACCD_taskloop:
     case ACCD_taskloop_simd:
@@ -7822,7 +7824,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_teams:
     case ACCD_simd:
     case ACCD_loop:
-    case ACCD_for_simd:
+    case ACCD_loop_simd:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -7843,22 +7845,22 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_num_threads:
     switch (DKind) {
     case ACCD_target_parallel:
-    case ACCD_target_parallel_for:
-    case ACCD_target_parallel_for_simd:
+    case ACCD_target_parallel_loop:
+    case ACCD_target_parallel_loop_simd:
       CaptureRegion = ACCD_target;
       break;
-    case ACCD_teams_distribute_parallel_for:
-    case ACCD_teams_distribute_parallel_for_simd:
-    case ACCD_target_teams_distribute_parallel_for:
-    case ACCD_target_teams_distribute_parallel_for_simd:
+    case ACCD_teams_distribute_parallel_loop:
+    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop:
+    case ACCD_target_teams_distribute_parallel_loop_simd:
       CaptureRegion = ACCD_teams;
       break;
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_for_simd:
-    case ACCD_distribute_parallel_for:
-    case ACCD_distribute_parallel_for_simd:
+    case ACCD_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop:
+    case ACCD_distribute_parallel_loop_simd:
       // Do not capture num_threads-clause expressions.
       break;
     case ACCD_target_data:
@@ -7887,7 +7889,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_teams:
     case ACCD_simd:
     case ACCD_loop:
-    case ACCD_for_simd:
+    case ACCD_loop_simd:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -7910,19 +7912,19 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_target_teams:
     case ACCD_target_teams_distribute:
     case ACCD_target_teams_distribute_simd:
-    case ACCD_target_teams_distribute_parallel_for:
-    case ACCD_target_teams_distribute_parallel_for_simd:
+    case ACCD_target_teams_distribute_parallel_loop:
+    case ACCD_target_teams_distribute_parallel_loop_simd:
       CaptureRegion = ACCD_target;
       break;
-    case ACCD_teams_distribute_parallel_for:
-    case ACCD_teams_distribute_parallel_for_simd:
+    case ACCD_teams_distribute_parallel_loop:
+    case ACCD_teams_distribute_parallel_loop_simd:
     case ACCD_teams:
     case ACCD_teams_distribute:
     case ACCD_teams_distribute_simd:
       // Do not capture num_teams-clause expressions.
       break;
-    case ACCD_distribute_parallel_for:
-    case ACCD_distribute_parallel_for_simd:
+    case ACCD_distribute_parallel_loop:
+    case ACCD_distribute_parallel_loop_simd:
     case ACCD_task:
     case ACCD_taskloop:
     case ACCD_taskloop_simd:
@@ -7934,12 +7936,12 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_for_simd:
+    case ACCD_parallel_loop_simd:
     case ACCD_target:
     case ACCD_target_simd:
     case ACCD_target_parallel:
-    case ACCD_target_parallel_for:
-    case ACCD_target_parallel_for_simd:
+    case ACCD_target_parallel_loop:
+    case ACCD_target_parallel_loop_simd:
     case ACCD_threadprivate:
     case ACCD_taskyield:
     case ACCD_barrier:
@@ -7952,7 +7954,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_end_declare_target:
     case ACCD_simd:
     case ACCD_loop:
-    case ACCD_for_simd:
+    case ACCD_loop_simd:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -7973,19 +7975,19 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_target_teams:
     case ACCD_target_teams_distribute:
     case ACCD_target_teams_distribute_simd:
-    case ACCD_target_teams_distribute_parallel_for:
-    case ACCD_target_teams_distribute_parallel_for_simd:
+    case ACCD_target_teams_distribute_parallel_loop:
+    case ACCD_target_teams_distribute_parallel_loop_simd:
       CaptureRegion = ACCD_target;
       break;
-    case ACCD_teams_distribute_parallel_for:
-    case ACCD_teams_distribute_parallel_for_simd:
+    case ACCD_teams_distribute_parallel_loop:
+    case ACCD_teams_distribute_parallel_loop_simd:
     case ACCD_teams:
     case ACCD_teams_distribute:
     case ACCD_teams_distribute_simd:
       // Do not capture thread_limit-clause expressions.
       break;
-    case ACCD_distribute_parallel_for:
-    case ACCD_distribute_parallel_for_simd:
+    case ACCD_distribute_parallel_loop:
+    case ACCD_distribute_parallel_loop_simd:
     case ACCD_task:
     case ACCD_taskloop:
     case ACCD_taskloop_simd:
@@ -7997,12 +7999,12 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_for_simd:
+    case ACCD_parallel_loop_simd:
     case ACCD_target:
     case ACCD_target_simd:
     case ACCD_target_parallel:
-    case ACCD_target_parallel_for:
-    case ACCD_target_parallel_for_simd:
+    case ACCD_target_parallel_loop:
+    case ACCD_target_parallel_loop_simd:
     case ACCD_threadprivate:
     case ACCD_taskyield:
     case ACCD_barrier:
@@ -8015,7 +8017,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_end_declare_target:
     case ACCD_simd:
     case ACCD_loop:
-    case ACCD_for_simd:
+    case ACCD_loop_simd:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -8034,19 +8036,19 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_schedule:
     switch (DKind) {
     case ACCD_parallel_loop:
-    case ACCD_parallel_for_simd:
-    case ACCD_distribute_parallel_for:
-    case ACCD_distribute_parallel_for_simd:
-    case ACCD_teams_distribute_parallel_for:
-    case ACCD_teams_distribute_parallel_for_simd:
-    case ACCD_target_parallel_for:
-    case ACCD_target_parallel_for_simd:
-    case ACCD_target_teams_distribute_parallel_for:
-    case ACCD_target_teams_distribute_parallel_for_simd:
+    case ACCD_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop:
+    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop:
+    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_target_parallel_loop:
+    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop:
+    case ACCD_target_teams_distribute_parallel_loop_simd:
       CaptureRegion = ACCD_parallel;
       break;
     case ACCD_loop:
-    case ACCD_for_simd:
+    case ACCD_loop_simd:
       // Do not capture schedule-clause expressions.
       break;
     case ACCD_task:
@@ -8096,26 +8098,26 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     break;
   case ACCC_dist_schedule:
     switch (DKind) {
-    case ACCD_teams_distribute_parallel_for:
-    case ACCD_teams_distribute_parallel_for_simd:
+    case ACCD_teams_distribute_parallel_loop:
+    case ACCD_teams_distribute_parallel_loop_simd:
     case ACCD_teams_distribute:
     case ACCD_teams_distribute_simd:
-    case ACCD_target_teams_distribute_parallel_for:
-    case ACCD_target_teams_distribute_parallel_for_simd:
+    case ACCD_target_teams_distribute_parallel_loop:
+    case ACCD_target_teams_distribute_parallel_loop_simd:
     case ACCD_target_teams_distribute:
     case ACCD_target_teams_distribute_simd:
       CaptureRegion = ACCD_teams;
       break;
-    case ACCD_distribute_parallel_for:
-    case ACCD_distribute_parallel_for_simd:
+    case ACCD_distribute_parallel_loop:
+    case ACCD_distribute_parallel_loop_simd:
     case ACCD_distribute:
     case ACCD_distribute_simd:
       // Do not capture thread_limit-clause expressions.
       break;
     case ACCD_parallel_loop:
-    case ACCD_parallel_for_simd:
-    case ACCD_target_parallel_for_simd:
-    case ACCD_target_parallel_for:
+    case ACCD_parallel_loop_simd:
+    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_parallel_loop:
     case ACCD_task:
     case ACCD_taskloop:
     case ACCD_taskloop_simd:
@@ -8142,7 +8144,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_end_declare_target:
     case ACCD_simd:
     case ACCD_loop:
-    case ACCD_for_simd:
+    case ACCD_loop_simd:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -8168,22 +8170,22 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_target_parallel:
     case ACCD_target_teams_distribute:
     case ACCD_target_teams_distribute_simd:
-    case ACCD_target_parallel_for:
-    case ACCD_target_parallel_for_simd:
-    case ACCD_target_teams_distribute_parallel_for:
-    case ACCD_target_teams_distribute_parallel_for_simd:
+    case ACCD_target_parallel_loop:
+    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop:
+    case ACCD_target_teams_distribute_parallel_loop_simd:
       CaptureRegion = ACCD_task;
       break;
     case ACCD_target_data:
       // Do not capture device-clause expressions.
       break;
-    case ACCD_teams_distribute_parallel_for:
-    case ACCD_teams_distribute_parallel_for_simd:
+    case ACCD_teams_distribute_parallel_loop:
+    case ACCD_teams_distribute_parallel_loop_simd:
     case ACCD_teams:
     case ACCD_teams_distribute:
     case ACCD_teams_distribute_simd:
-    case ACCD_distribute_parallel_for:
-    case ACCD_distribute_parallel_for_simd:
+    case ACCD_distribute_parallel_loop:
+    case ACCD_distribute_parallel_loop_simd:
     case ACCD_task:
     case ACCD_taskloop:
     case ACCD_taskloop_simd:
@@ -8191,7 +8193,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_for_simd:
+    case ACCD_parallel_loop_simd:
     case ACCD_threadprivate:
     case ACCD_taskyield:
     case ACCD_barrier:
@@ -8204,7 +8206,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_end_declare_target:
     case ACCD_simd:
     case ACCD_loop:
-    case ACCD_for_simd:
+    case ACCD_loop_simd:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -8235,7 +8237,6 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_private:
   case ACCC_shared:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_ordered:
   case ACCC_nowait:
@@ -8252,6 +8253,9 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_threads:
   case ACCC_simd:
   case ACCC_map:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
   case ACCC_priority:
   case ACCC_grainsize:
   case ACCC_nogroup:
@@ -8545,7 +8549,6 @@ ACCClause *Sema::ActOnOpenACCSimpleClause(
   case ACCC_in_reduction:
   case ACCC_linear:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_ordered:
   case ACCC_nowait:
@@ -8563,6 +8566,9 @@ ACCClause *Sema::ActOnOpenACCSimpleClause(
   case ACCC_threads:
   case ACCC_simd:
   case ACCC_map:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -8704,7 +8710,6 @@ ACCClause *Sema::ActOnOpenACCSingleExprWithArgClause(
   case ACCC_in_reduction:
   case ACCC_linear:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_ordered:
   case ACCC_nowait:
@@ -8722,6 +8727,9 @@ ACCClause *Sema::ActOnOpenACCSingleExprWithArgClause(
   case ACCC_threads:
   case ACCC_simd:
   case ACCC_map:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -8906,7 +8914,6 @@ ACCClause *Sema::ActOnOpenACCClause(OpenACCClauseKind Kind,
   case ACCC_in_reduction:
   case ACCC_linear:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_default:
   case ACCC_proc_bind:
@@ -8915,6 +8922,9 @@ ACCClause *Sema::ActOnOpenACCClause(OpenACCClauseKind Kind,
   case ACCC_depend:
   case ACCC_device:
   case ACCC_map:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -9034,9 +9044,6 @@ ACCClause *Sema::ActOnOpenACCVarListClause(
     Res = ActOnOpenACCAlignedClause(VarList, TailExpr, StartLoc, LParenLoc,
                                    ColonLoc, EndLoc);
     break;
-  case ACCC_copyin:
-    Res = ActOnOpenACCCopyinClause(VarList, StartLoc, LParenLoc, EndLoc);
-    break;
   case ACCC_copyprivate:
     Res = ActOnOpenACCCopyprivateClause(VarList, StartLoc, LParenLoc, EndLoc);
     break;
@@ -9049,6 +9056,21 @@ ACCClause *Sema::ActOnOpenACCVarListClause(
     break;
   case ACCC_map:
     Res = ActOnOpenACCMapClause(MapTypeModifier, MapType, IsMapTypeImplicit,
+                               DepLinMapLoc, ColonLoc, VarList, StartLoc,
+                               LParenLoc, EndLoc);
+    break;
+  case ACCC_copy:
+    Res = ActOnOpenACCCopyClause(MapTypeModifier, MapType, IsMapTypeImplicit,
+                               DepLinMapLoc, ColonLoc, VarList, StartLoc,
+                               LParenLoc, EndLoc);
+    break;
+  case ACCC_copyin:
+    Res = ActOnOpenACCCopyinClause(MapTypeModifier, MapType, IsMapTypeImplicit,
+                               DepLinMapLoc, ColonLoc, VarList, StartLoc,
+                               LParenLoc, EndLoc);
+    break;
+  case ACCC_copyout:
+    Res = ActOnOpenACCCopyoutClause(MapTypeModifier, MapType, IsMapTypeImplicit,
                                DepLinMapLoc, ColonLoc, VarList, StartLoc,
                                LParenLoc, EndLoc);
     break;
@@ -9249,11 +9271,11 @@ ACCClause *Sema::ActOnOpenACCPrivateClause(ArrayRef<Expr *> VarList,
     if (CurrDir == ACCD_target || CurrDir == ACCD_target_parallel ||
         CurrDir == ACCD_target_teams ||
         CurrDir == ACCD_target_teams_distribute ||
-        CurrDir == ACCD_target_teams_distribute_parallel_for ||
-        CurrDir == ACCD_target_teams_distribute_parallel_for_simd ||
+        CurrDir == ACCD_target_teams_distribute_parallel_loop ||
+        CurrDir == ACCD_target_teams_distribute_parallel_loop_simd ||
         CurrDir == ACCD_target_teams_distribute_simd ||
-        CurrDir == ACCD_target_parallel_for_simd ||
-        CurrDir == ACCD_target_parallel_for) {
+        CurrDir == ACCD_target_parallel_loop_simd ||
+        CurrDir == ACCD_target_parallel_loop) {
       OpenACCClauseKind ConflictKind;
       if (DSAStack->checkMappableExprComponentListsForDecl(
               VD, /*CurrentRegionOnly=*/true,
@@ -11127,99 +11149,6 @@ ACCClause *Sema::ActOnOpenACCAlignedClause(
                                   EndLoc, Vars, Alignment);
 }
 
-ACCClause *Sema::ActOnOpenACCCopyinClause(ArrayRef<Expr *> VarList,
-                                         SourceLocation StartLoc,
-                                         SourceLocation LParenLoc,
-                                         SourceLocation EndLoc) {
-  SmallVector<Expr *, 8> Vars;
-  SmallVector<Expr *, 8> SrcExprs;
-  SmallVector<Expr *, 8> DstExprs;
-  SmallVector<Expr *, 8> AssignmentOps;
-  for (auto &RefExpr : VarList) {
-    assert(RefExpr && "NULL expr in OpenACC copyin clause.");
-    if (isa<DependentScopeDeclRefExpr>(RefExpr)) {
-      // It will be analyzed later.
-      Vars.push_back(RefExpr);
-      SrcExprs.push_back(nullptr);
-      DstExprs.push_back(nullptr);
-      AssignmentOps.push_back(nullptr);
-      continue;
-    }
-
-    SourceLocation ELoc = RefExpr->getExprLoc();
-    // OpenACC [2.1, C/C++]
-    //  A list item is a variable name.
-    // OpenACC  [2.14.4.1, Restrictions, p.1]
-    //  A list item that appears in a copyin clause must be threadprivate.
-    DeclRefExpr *DE = dyn_cast<DeclRefExpr>(RefExpr);
-    if (!DE || !isa<VarDecl>(DE->getDecl())) {
-      Diag(ELoc, diag::err_acc_expected_var_name_member_expr)
-          << 0 << RefExpr->getSourceRange();
-      continue;
-    }
-
-    Decl *D = DE->getDecl();
-    VarDecl *VD = cast<VarDecl>(D);
-
-    QualType Type = VD->getType();
-    if (Type->isDependentType() || Type->isInstantiationDependentType()) {
-      // It will be analyzed later.
-      Vars.push_back(DE);
-      SrcExprs.push_back(nullptr);
-      DstExprs.push_back(nullptr);
-      AssignmentOps.push_back(nullptr);
-      continue;
-    }
-
-    // OpenACC [2.14.4.1, Restrictions, C/C++, p.1]
-    //  A list item that appears in a copyin clause must be threadprivate.
-    if (!DSAStack->isThreadPrivate(VD)) {
-      Diag(ELoc, diag::err_acc_required_access)
-          << getOpenACCClauseName(ACCC_copyin)
-          << getOpenACCDirectiveName(ACCD_threadprivate);
-      continue;
-    }
-
-    // OpenACC [2.14.4.1, Restrictions, C/C++, p.2]
-    //  A variable of class type (or array thereof) that appears in a
-    //  copyin clause requires an accessible, unambiguous copy assignment
-    //  operator for the class type.
-    auto ElemType = Context.getBaseElementType(Type).getNonReferenceType();
-    auto *SrcVD =
-        buildVarDecl(*this, DE->getLocStart(), ElemType.getUnqualifiedType(),
-                     ".copyin.src", VD->hasAttrs() ? &VD->getAttrs() : nullptr);
-    auto *PseudoSrcExpr = buildDeclRefExpr(
-        *this, SrcVD, ElemType.getUnqualifiedType(), DE->getExprLoc());
-    auto *DstVD =
-        buildVarDecl(*this, DE->getLocStart(), ElemType, ".copyin.dst",
-                     VD->hasAttrs() ? &VD->getAttrs() : nullptr);
-    auto *PseudoDstExpr =
-        buildDeclRefExpr(*this, DstVD, ElemType, DE->getExprLoc());
-    // For arrays generate assignment operation for single element and replace
-    // it by the original array element in CodeGen.
-    auto AssignmentOp = BuildBinOp(/*S=*/nullptr, DE->getExprLoc(), BO_Assign,
-                                   PseudoDstExpr, PseudoSrcExpr);
-    if (AssignmentOp.isInvalid())
-      continue;
-    AssignmentOp = ActOnFinishFullExpr(AssignmentOp.get(), DE->getExprLoc(),
-                                       /*DiscardedValue=*/true);
-    if (AssignmentOp.isInvalid())
-      continue;
-
-    DSAStack->addDSA(VD, DE, ACCC_copyin);
-    Vars.push_back(DE);
-    SrcExprs.push_back(PseudoSrcExpr);
-    DstExprs.push_back(PseudoDstExpr);
-    AssignmentOps.push_back(AssignmentOp.get());
-  }
-
-  if (Vars.empty())
-    return nullptr;
-
-  return ACCCopyinClause::Create(Context, StartLoc, LParenLoc, EndLoc, Vars,
-                                 SrcExprs, DstExprs, AssignmentOps);
-}
-
 ACCClause *Sema::ActOnOpenACCCopyprivateClause(ArrayRef<Expr *> VarList,
                                               SourceLocation StartLoc,
                                               SourceLocation LParenLoc,
@@ -12232,8 +12161,8 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
       // attribute clause on the same construct
       if ((DKind == ACCD_target || DKind == ACCD_target_teams ||
            DKind == ACCD_target_teams_distribute ||
-           DKind == ACCD_target_teams_distribute_parallel_for ||
-           DKind == ACCD_target_teams_distribute_parallel_for_simd ||
+           DKind == ACCD_target_teams_distribute_parallel_loop ||
+           DKind == ACCD_target_teams_distribute_parallel_loop_simd ||
            DKind == ACCD_target_teams_distribute_simd) && VD) {
         auto DVar = DSAS->getTopDSA(VD, false);
         if (isOpenACCPrivate(DVar.CKind)) {
@@ -12279,6 +12208,59 @@ Sema::ActOnOpenACCMapClause(OpenACCMapClauseKind MapTypeModifier,
   // We need to produce a map clause even if we don't have variables so that
   // other diagnostics related with non-existing map clauses are accurate.
   return ACCMapClause::Create(Context, StartLoc, LParenLoc, EndLoc,
+                              MVLI.ProcessedVarList, MVLI.VarBaseDeclarations,
+                              MVLI.VarComponents, MapTypeModifier, MapType,
+                              IsMapTypeImplicit, MapLoc);
+}
+// TODO acc2mp modify for specific behaviour for copy copyin copyout; this is a copy of map
+//
+ACCClause *
+Sema::ActOnOpenACCCopyClause(OpenACCMapClauseKind MapTypeModifier,
+                           OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                           SourceLocation MapLoc, SourceLocation ColonLoc,
+                           ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                           SourceLocation LParenLoc, SourceLocation EndLoc) {
+  MappableVarListInfo MVLI(VarList);
+  checkMappableExpressionList(*this, DSAStack, ACCC_copy, MVLI, StartLoc,
+                              MapType, IsMapTypeImplicit);
+
+  // We need to produce a map clause even if we don't have variables so that
+  // other diagnostics related with non-existing map clauses are accurate.
+  return ACCCopyClause::Create(Context, StartLoc, LParenLoc, EndLoc,
+                              MVLI.ProcessedVarList, MVLI.VarBaseDeclarations,
+                              MVLI.VarComponents, MapTypeModifier, MapType,
+                              IsMapTypeImplicit, MapLoc);
+}
+ACCClause *
+Sema::ActOnOpenACCCopyinClause(OpenACCMapClauseKind MapTypeModifier,
+                           OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                           SourceLocation MapLoc, SourceLocation ColonLoc,
+                           ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                           SourceLocation LParenLoc, SourceLocation EndLoc) {
+  MappableVarListInfo MVLI(VarList);
+  checkMappableExpressionList(*this, DSAStack, ACCC_copyin, MVLI, StartLoc,
+                              MapType, IsMapTypeImplicit);
+
+  // We need to produce a map clause even if we don't have variables so that
+  // other diagnostics related with non-existing map clauses are accurate.
+  return ACCCopyinClause::Create(Context, StartLoc, LParenLoc, EndLoc,
+                              MVLI.ProcessedVarList, MVLI.VarBaseDeclarations,
+                              MVLI.VarComponents, MapTypeModifier, MapType,
+                              IsMapTypeImplicit, MapLoc);
+}
+ACCClause *
+Sema::ActOnOpenACCCopyoutClause(OpenACCMapClauseKind MapTypeModifier,
+                           OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                           SourceLocation MapLoc, SourceLocation ColonLoc,
+                           ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                           SourceLocation LParenLoc, SourceLocation EndLoc) {
+  MappableVarListInfo MVLI(VarList);
+  checkMappableExpressionList(*this, DSAStack, ACCC_copyout, MVLI, StartLoc,
+                              MapType, IsMapTypeImplicit);
+
+  // We need to produce a map clause even if we don't have variables so that
+  // other diagnostics related with non-existing map clauses are accurate.
+  return ACCCopyoutClause::Create(Context, StartLoc, LParenLoc, EndLoc,
                               MVLI.ProcessedVarList, MVLI.VarBaseDeclarations,
                               MVLI.VarComponents, MapTypeModifier, MapType,
                               IsMapTypeImplicit, MapLoc);

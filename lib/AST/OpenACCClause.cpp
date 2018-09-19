@@ -384,46 +384,46 @@ ACCAlignedClause *ACCAlignedClause::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCAlignedClause(NumVars);
 }
 
-void ACCCopyinClause::setSourceExprs(ArrayRef<Expr *> SrcExprs) {
-  assert(SrcExprs.size() == varlist_size() && "Number of source expressions is "
-                                              "not the same as the "
-                                              "preallocated buffer");
-  std::copy(SrcExprs.begin(), SrcExprs.end(), varlist_end());
-}
+/* void ACCCopyinClause::setSourceExprs(ArrayRef<Expr *> SrcExprs) { */
+/*   assert(SrcExprs.size() == varlist_size() && "Number of source expressions is " */
+/*                                               "not the same as the " */
+/*                                               "preallocated buffer"); */
+/*   std::copy(SrcExprs.begin(), SrcExprs.end(), varlist_end()); */
+/* } */
 
-void ACCCopyinClause::setDestinationExprs(ArrayRef<Expr *> DstExprs) {
-  assert(DstExprs.size() == varlist_size() && "Number of destination "
-                                              "expressions is not the same as "
-                                              "the preallocated buffer");
-  std::copy(DstExprs.begin(), DstExprs.end(), getSourceExprs().end());
-}
+/* void ACCCopyinClause::setDestinationExprs(ArrayRef<Expr *> DstExprs) { */
+/*   assert(DstExprs.size() == varlist_size() && "Number of destination " */
+/*                                               "expressions is not the same as " */
+/*                                               "the preallocated buffer"); */
+/*   std::copy(DstExprs.begin(), DstExprs.end(), getSourceExprs().end()); */
+/* } */
 
-void ACCCopyinClause::setAssignmentOps(ArrayRef<Expr *> AssignmentOps) {
-  assert(AssignmentOps.size() == varlist_size() &&
-         "Number of assignment expressions is not the same as the preallocated "
-         "buffer");
-  std::copy(AssignmentOps.begin(), AssignmentOps.end(),
-            getDestinationExprs().end());
-}
+/* void ACCCopyinClause::setAssignmentOps(ArrayRef<Expr *> AssignmentOps) { */
+/*   assert(AssignmentOps.size() == varlist_size() && */
+/*          "Number of assignment expressions is not the same as the preallocated " */
+/*          "buffer"); */
+/*   std::copy(AssignmentOps.begin(), AssignmentOps.end(), */
+/*             getDestinationExprs().end()); */
+/* } */
 
-ACCCopyinClause *ACCCopyinClause::Create(
-    const ASTContext &C, SourceLocation StartLoc, SourceLocation LParenLoc,
-    SourceLocation EndLoc, ArrayRef<Expr *> VL, ArrayRef<Expr *> SrcExprs,
-    ArrayRef<Expr *> DstExprs, ArrayRef<Expr *> AssignmentOps) {
-  void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(4 * VL.size()));
-  ACCCopyinClause *Clause =
-      new (Mem) ACCCopyinClause(StartLoc, LParenLoc, EndLoc, VL.size());
-  Clause->setVarRefs(VL);
-  Clause->setSourceExprs(SrcExprs);
-  Clause->setDestinationExprs(DstExprs);
-  Clause->setAssignmentOps(AssignmentOps);
-  return Clause;
-}
+/* ACCCopyinClause *ACCCopyinClause::Create( */
+/*     const ASTContext &C, SourceLocation StartLoc, SourceLocation LParenLoc, */
+/*     SourceLocation EndLoc, ArrayRef<Expr *> VL, ArrayRef<Expr *> SrcExprs, */
+/*     ArrayRef<Expr *> DstExprs, ArrayRef<Expr *> AssignmentOps) { */
+/*   void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(4 * VL.size())); */
+/*   ACCCopyinClause *Clause = */
+/*       new (Mem) ACCCopyinClause(StartLoc, LParenLoc, EndLoc, VL.size()); */
+/*   Clause->setVarRefs(VL); */
+/*   Clause->setSourceExprs(SrcExprs); */
+/*   Clause->setDestinationExprs(DstExprs); */
+/*   Clause->setAssignmentOps(AssignmentOps); */
+/*   return Clause; */
+/* } */
 
-ACCCopyinClause *ACCCopyinClause::CreateEmpty(const ASTContext &C, unsigned N) {
-  void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(4 * N));
-  return new (Mem) ACCCopyinClause(N);
-}
+/* ACCCopyinClause *ACCCopyinClause::CreateEmpty(const ASTContext &C, unsigned N) { */
+/*   void *Mem = C.Allocate(totalSizeToAlloc<Expr *>(4 * N)); */
+/*   return new (Mem) ACCCopyinClause(N); */
+/* } */
 
 void ACCCopyprivateClause::setSourceExprs(ArrayRef<Expr *> SrcExprs) {
   assert(SrcExprs.size() == varlist_size() && "Number of source expressions is "
@@ -765,6 +765,170 @@ ACCMapClause *ACCMapClause::CreateEmpty(const ASTContext &C, unsigned NumVars,
           NumVars, NumUniqueDeclarations,
           NumUniqueDeclarations + NumComponentLists, NumComponents));
   return new (Mem) ACCMapClause(NumVars, NumUniqueDeclarations,
+                                NumComponentLists, NumComponents);
+}
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Copy
+ACCCopyClause *
+ACCCopyClause::Create(const ASTContext &C, SourceLocation StartLoc,
+                     SourceLocation LParenLoc, SourceLocation EndLoc,
+                     ArrayRef<Expr *> Vars, ArrayRef<ValueDecl *> Declarations,
+                     MappableExprComponentListsRef ComponentLists,
+                     OpenACCMapClauseKind TypeModifier, OpenACCMapClauseKind Type,
+                     bool TypeIsImplicit, SourceLocation TypeLoc) {
+  unsigned NumVars = Vars.size();
+  unsigned NumUniqueDeclarations =
+      getUniqueDeclarationsTotalNumber(Declarations);
+  unsigned NumComponentLists = ComponentLists.size();
+  unsigned NumComponents = getComponentsTotalNumber(ComponentLists);
+
+  // We need to allocate:
+  // NumVars x Expr* - we have an original list expression for each clause list
+  // entry.
+  // NumUniqueDeclarations x ValueDecl* - unique base declarations associated
+  // with each component list.
+  // (NumUniqueDeclarations + NumComponentLists) x unsigned - we specify the
+  // number of lists for each unique declaration and the size of each component
+  // list.
+  // NumComponents x MappableComponent - the total of all the components in all
+  // the lists.
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  ACCCopyClause *Clause = new (Mem) ACCCopyClause(
+      TypeModifier, Type, TypeIsImplicit, TypeLoc, StartLoc, LParenLoc, EndLoc,
+      NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents);
+
+  Clause->setVarRefs(Vars);
+  Clause->setClauseInfo(Declarations, ComponentLists);
+  Clause->setMapTypeModifier(TypeModifier);
+  Clause->setMapType(Type);
+  Clause->setMapLoc(TypeLoc);
+  return Clause;
+}
+
+ACCCopyClause *ACCCopyClause::CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                        unsigned NumUniqueDeclarations,
+                                        unsigned NumComponentLists,
+                                        unsigned NumComponents) {
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  return new (Mem) ACCCopyClause(NumVars, NumUniqueDeclarations,
+                                NumComponentLists, NumComponents);
+}
+
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Copyin
+ACCCopyinClause *
+ACCCopyinClause::Create(const ASTContext &C, SourceLocation StartLoc,
+                     SourceLocation LParenLoc, SourceLocation EndLoc,
+                     ArrayRef<Expr *> Vars, ArrayRef<ValueDecl *> Declarations,
+                     MappableExprComponentListsRef ComponentLists,
+                     OpenACCMapClauseKind TypeModifier, OpenACCMapClauseKind Type,
+                     bool TypeIsImplicit, SourceLocation TypeLoc) {
+  unsigned NumVars = Vars.size();
+  unsigned NumUniqueDeclarations =
+      getUniqueDeclarationsTotalNumber(Declarations);
+  unsigned NumComponentLists = ComponentLists.size();
+  unsigned NumComponents = getComponentsTotalNumber(ComponentLists);
+
+  // We need to allocate:
+  // NumVars x Expr* - we have an original list expression for each clause list
+  // entry.
+  // NumUniqueDeclarations x ValueDecl* - unique base declarations associated
+  // with each component list.
+  // (NumUniqueDeclarations + NumComponentLists) x unsigned - we specify the
+  // number of lists for each unique declaration and the size of each component
+  // list.
+  // NumComponents x MappableComponent - the total of all the components in all
+  // the lists.
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  ACCCopyinClause *Clause = new (Mem) ACCCopyinClause(
+      TypeModifier, Type, TypeIsImplicit, TypeLoc, StartLoc, LParenLoc, EndLoc,
+      NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents);
+
+  Clause->setVarRefs(Vars);
+  Clause->setClauseInfo(Declarations, ComponentLists);
+  Clause->setMapTypeModifier(TypeModifier);
+  Clause->setMapType(Type);
+  Clause->setMapLoc(TypeLoc);
+  return Clause;
+}
+
+ACCCopyinClause *ACCCopyinClause::CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                        unsigned NumUniqueDeclarations,
+                                        unsigned NumComponentLists,
+                                        unsigned NumComponents) {
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  return new (Mem) ACCCopyinClause(NumVars, NumUniqueDeclarations,
+                                NumComponentLists, NumComponents);
+}
+
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Copyout
+ACCCopyoutClause *
+ACCCopyoutClause::Create(const ASTContext &C, SourceLocation StartLoc,
+                     SourceLocation LParenLoc, SourceLocation EndLoc,
+                     ArrayRef<Expr *> Vars, ArrayRef<ValueDecl *> Declarations,
+                     MappableExprComponentListsRef ComponentLists,
+                     OpenACCMapClauseKind TypeModifier, OpenACCMapClauseKind Type,
+                     bool TypeIsImplicit, SourceLocation TypeLoc) {
+  unsigned NumVars = Vars.size();
+  unsigned NumUniqueDeclarations =
+      getUniqueDeclarationsTotalNumber(Declarations);
+  unsigned NumComponentLists = ComponentLists.size();
+  unsigned NumComponents = getComponentsTotalNumber(ComponentLists);
+
+  // We need to allocate:
+  // NumVars x Expr* - we have an original list expression for each clause list
+  // entry.
+  // NumUniqueDeclarations x ValueDecl* - unique base declarations associated
+  // with each component list.
+  // (NumUniqueDeclarations + NumComponentLists) x unsigned - we specify the
+  // number of lists for each unique declaration and the size of each component
+  // list.
+  // NumComponents x MappableComponent - the total of all the components in all
+  // the lists.
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  ACCCopyoutClause *Clause = new (Mem) ACCCopyoutClause(
+      TypeModifier, Type, TypeIsImplicit, TypeLoc, StartLoc, LParenLoc, EndLoc,
+      NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents);
+
+  Clause->setVarRefs(Vars);
+  Clause->setClauseInfo(Declarations, ComponentLists);
+  Clause->setMapTypeModifier(TypeModifier);
+  Clause->setMapType(Type);
+  Clause->setMapLoc(TypeLoc);
+  return Clause;
+}
+
+ACCCopyoutClause *ACCCopyoutClause::CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                        unsigned NumUniqueDeclarations,
+                                        unsigned NumComponentLists,
+                                        unsigned NumComponents) {
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  return new (Mem) ACCCopyoutClause(NumVars, NumUniqueDeclarations,
                                 NumComponentLists, NumComponents);
 }
 

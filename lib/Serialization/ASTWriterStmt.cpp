@@ -2070,19 +2070,6 @@ void ACCClauseWriter::VisitACCAlignedClause(ACCAlignedClause *C) {
   Record.AddStmt(C->getAlignment());
 }
 
-void ACCClauseWriter::VisitACCCopyinClause(ACCCopyinClause *C) {
-  Record.push_back(C->varlist_size());
-  Record.AddSourceLocation(C->getLParenLoc());
-  for (auto *VE : C->varlists())
-    Record.AddStmt(VE);
-  for (auto *E : C->source_exprs())
-    Record.AddStmt(E);
-  for (auto *E : C->destination_exprs())
-    Record.AddStmt(E);
-  for (auto *E : C->assignment_ops())
-    Record.AddStmt(E);
-}
-
 void ACCClauseWriter::VisitACCCopyprivateClause(ACCCopyprivateClause *C) {
   Record.push_back(C->varlist_size());
   Record.AddSourceLocation(C->getLParenLoc());
@@ -2121,6 +2108,76 @@ void ACCClauseWriter::VisitACCDeviceClause(ACCDeviceClause *C) {
 }
 
 void ACCClauseWriter::VisitACCMapClause(ACCMapClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.push_back(C->getMapTypeModifier());
+  Record.push_back(C->getMapType());
+  Record.AddSourceLocation(C->getMapLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+//TODO acc2mp Modify copy copyin copyout
+void ACCClauseWriter::VisitACCCopyClause(ACCCopyClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.push_back(C->getMapTypeModifier());
+  Record.push_back(C->getMapType());
+  Record.AddSourceLocation(C->getMapLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+void ACCClauseWriter::VisitACCCopyinClause(ACCCopyinClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.push_back(C->getMapTypeModifier());
+  Record.push_back(C->getMapType());
+  Record.AddSourceLocation(C->getMapLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+void ACCClauseWriter::VisitACCCopyoutClause(ACCCopyoutClause *C) {
   Record.push_back(C->varlist_size());
   Record.push_back(C->getUniqueDeclarationsNum());
   Record.push_back(C->getTotalComponentListNum());

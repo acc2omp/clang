@@ -3172,7 +3172,7 @@ public:
   ///
   /// \param D OpenACC directive possibly with 'copyin' clause(s).
   /// \returns true if at least one copyin variable is found, false otherwise.
-  bool EmitACCCopyinClause(const ACCExecutableDirective &D);
+  /* bool EmitACCCopyinClause(const ACCExecutableDirective &D); */
   /// \brief Emit initial code for lastprivate variables. If some variable is
   /// not also firstprivate, then the default initialization is used. Otherwise
   /// initialization of this variable is performed by EmitACCFirstprivateClause

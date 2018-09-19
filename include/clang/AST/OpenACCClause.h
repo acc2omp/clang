@@ -2683,170 +2683,6 @@ public:
   }
 };
 
-/// \brief This represents clause 'copyin' in the '#pragma acc ...' directives.
-///
-/// \code
-/// #pragma acc parallel copyin(a,b)
-/// \endcode
-/// In this example directive '#pragma acc parallel' has clause 'copyin'
-/// with the variables 'a' and 'b'.
-class ACCCopyinClause final
-    : public ACCVarListClause<ACCCopyinClause>,
-      private llvm::TrailingObjects<ACCCopyinClause, Expr *> {
-  // Class has 3 additional tail allocated arrays:
-  // 1. List of helper expressions for proper generation of assignment operation
-  // required for copyin clause. This list represents sources.
-  // 2. List of helper expressions for proper generation of assignment operation
-  // required for copyin clause. This list represents destinations.
-  // 3. List of helper expressions that represents assignment operation:
-  // \code
-  // DstExprs = SrcExprs;
-  // \endcode
-  // Required for proper codegen of propagation of master's thread values of
-  // threadprivate variables to local instances of that variables in other
-  // implicit threads.
-
-  friend class ACCClauseReader;
-  friend ACCVarListClause;
-  friend TrailingObjects;
-
-  /// \brief Build clause with number of variables \a N.
-  ///
-  /// \param StartLoc Starting location of the clause.
-  /// \param LParenLoc Location of '('.
-  /// \param EndLoc Ending location of the clause.
-  /// \param N Number of the variables in the clause.
-  ACCCopyinClause(SourceLocation StartLoc, SourceLocation LParenLoc,
-                  SourceLocation EndLoc, unsigned N)
-      : ACCVarListClause<ACCCopyinClause>(ACCC_copyin, StartLoc, LParenLoc,
-                                          EndLoc, N) {}
-
-  /// \brief Build an empty clause.
-  ///
-  /// \param N Number of variables.
-  explicit ACCCopyinClause(unsigned N)
-      : ACCVarListClause<ACCCopyinClause>(ACCC_copyin, SourceLocation(),
-                                          SourceLocation(), SourceLocation(),
-                                          N) {}
-
-  /// \brief Set list of helper expressions, required for proper codegen of the
-  /// clause. These expressions represent source expression in the final
-  /// assignment statement performed by the copyin clause.
-  void setSourceExprs(ArrayRef<Expr *> SrcExprs);
-
-  /// \brief Get the list of helper source expressions.
-  MutableArrayRef<Expr *> getSourceExprs() {
-    return MutableArrayRef<Expr *>(varlist_end(), varlist_size());
-  }
-  ArrayRef<const Expr *> getSourceExprs() const {
-    return llvm::makeArrayRef(varlist_end(), varlist_size());
-  }
-
-  /// \brief Set list of helper expressions, required for proper codegen of the
-  /// clause. These expressions represent destination expression in the final
-  /// assignment statement performed by the copyin clause.
-  void setDestinationExprs(ArrayRef<Expr *> DstExprs);
-
-  /// \brief Get the list of helper destination expressions.
-  MutableArrayRef<Expr *> getDestinationExprs() {
-    return MutableArrayRef<Expr *>(getSourceExprs().end(), varlist_size());
-  }
-  ArrayRef<const Expr *> getDestinationExprs() const {
-    return llvm::makeArrayRef(getSourceExprs().end(), varlist_size());
-  }
-
-  /// \brief Set list of helper assignment expressions, required for proper
-  /// codegen of the clause. These expressions are assignment expressions that
-  /// assign source helper expressions to destination helper expressions
-  /// correspondingly.
-  void setAssignmentOps(ArrayRef<Expr *> AssignmentOps);
-
-  /// \brief Get the list of helper assignment expressions.
-  MutableArrayRef<Expr *> getAssignmentOps() {
-    return MutableArrayRef<Expr *>(getDestinationExprs().end(), varlist_size());
-  }
-  ArrayRef<const Expr *> getAssignmentOps() const {
-    return llvm::makeArrayRef(getDestinationExprs().end(), varlist_size());
-  }
-
-public:
-  /// \brief Creates clause with a list of variables \a VL.
-  ///
-  /// \param C AST context.
-  /// \param StartLoc Starting location of the clause.
-  /// \param LParenLoc Location of '('.
-  /// \param EndLoc Ending location of the clause.
-  /// \param VL List of references to the variables.
-  /// \param SrcExprs List of helper expressions for proper generation of
-  /// assignment operation required for copyin clause. This list represents
-  /// sources.
-  /// \param DstExprs List of helper expressions for proper generation of
-  /// assignment operation required for copyin clause. This list represents
-  /// destinations.
-  /// \param AssignmentOps List of helper expressions that represents assignment
-  /// operation:
-  /// \code
-  /// DstExprs = SrcExprs;
-  /// \endcode
-  /// Required for proper codegen of propagation of master's thread values of
-  /// threadprivate variables to local instances of that variables in other
-  /// implicit threads.
-  static ACCCopyinClause *
-  Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation LParenLoc,
-         SourceLocation EndLoc, ArrayRef<Expr *> VL, ArrayRef<Expr *> SrcExprs,
-         ArrayRef<Expr *> DstExprs, ArrayRef<Expr *> AssignmentOps);
-
-  /// \brief Creates an empty clause with \a N variables.
-  ///
-  /// \param C AST context.
-  /// \param N The number of variables.
-  static ACCCopyinClause *CreateEmpty(const ASTContext &C, unsigned N);
-
-  using helper_expr_iterator = MutableArrayRef<Expr *>::iterator;
-  using helper_expr_const_iterator = ArrayRef<const Expr *>::iterator;
-  using helper_expr_range = llvm::iterator_range<helper_expr_iterator>;
-  using helper_expr_const_range =
-      llvm::iterator_range<helper_expr_const_iterator>;
-
-  helper_expr_const_range source_exprs() const {
-    return helper_expr_const_range(getSourceExprs().begin(),
-                                   getSourceExprs().end());
-  }
-
-  helper_expr_range source_exprs() {
-    return helper_expr_range(getSourceExprs().begin(), getSourceExprs().end());
-  }
-
-  helper_expr_const_range destination_exprs() const {
-    return helper_expr_const_range(getDestinationExprs().begin(),
-                                   getDestinationExprs().end());
-  }
-
-  helper_expr_range destination_exprs() {
-    return helper_expr_range(getDestinationExprs().begin(),
-                             getDestinationExprs().end());
-  }
-
-  helper_expr_const_range assignment_ops() const {
-    return helper_expr_const_range(getAssignmentOps().begin(),
-                                   getAssignmentOps().end());
-  }
-
-  helper_expr_range assignment_ops() {
-    return helper_expr_range(getAssignmentOps().begin(),
-                             getAssignmentOps().end());
-  }
-
-  child_range children() {
-    return child_range(reinterpret_cast<Stmt **>(varlist_begin()),
-                       reinterpret_cast<Stmt **>(varlist_end()));
-  }
-
-  static bool classof(const ACCClause *T) {
-    return T->getClauseKind() == ACCC_copyin;
-  }
-};
-
 /// \brief This represents clause 'copyprivate' in the '#pragma acc ...'
 /// directives.
 ///
@@ -3914,6 +3750,529 @@ public:
   /// clause.
   /// \param NumComponents Total number of expression components in the clause.
   static ACCMapClause *CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                   unsigned NumUniqueDeclarations,
+                                   unsigned NumComponentLists,
+                                   unsigned NumComponents);
+
+  /// \brief Fetches mapping kind for the clause.
+  OpenACCMapClauseKind getMapType() const LLVM_READONLY { return MapType; }
+
+  /// \brief Is this an implicit map type?
+  /// We have to capture 'IsMapTypeImplicit' from the parser for more
+  /// informative error messages.  It helps distinguish map(r) from
+  /// map(tofrom: r), which is important to print more helpful error
+  /// messages for some target directives.
+  bool isImplicitMapType() const LLVM_READONLY { return MapTypeIsImplicit; }
+
+  /// \brief Fetches the map type modifier for the clause.
+  OpenACCMapClauseKind getMapTypeModifier() const LLVM_READONLY {
+    return MapTypeModifier;
+  }
+
+  /// \brief Fetches location of clause mapping kind.
+  SourceLocation getMapLoc() const LLVM_READONLY { return MapLoc; }
+
+  /// \brief Get colon location.
+  SourceLocation getColonLoc() const { return ColonLoc; }
+
+  child_range children() {
+    return child_range(
+        reinterpret_cast<Stmt **>(varlist_begin()),
+        reinterpret_cast<Stmt **>(varlist_end()));
+  }
+
+  static bool classof(const ACCClause *T) {
+    return T->getClauseKind() == ACCC_map;
+  }
+};
+
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Copy
+/// \brief This represents clause 'copy' in the '#pragma acc ...'
+/// directives.
+///
+/// \code
+/// #pragma acc data copy(a,b)
+/// \endcode
+/// In this example directive '#pragma acc data' has clause 'copy'
+/// with the variables 'a' and 'b'.
+class ACCCopyClause final : public ACCMappableExprListClause<ACCCopyClause>,
+                           private llvm::TrailingObjects<
+                               ACCCopyClause, Expr *, ValueDecl *, unsigned,
+                               ACCClauseMappableExprCommon::MappableComponent> {
+  friend class ACCClauseReader;
+  friend ACCMappableExprListClause;
+  friend ACCVarListClause;
+  friend TrailingObjects;
+
+  /// Define the sizes of each trailing object array except the last one. This
+  /// is required for TrailingObjects to work properly.
+  size_t numTrailingObjects(OverloadToken<Expr *>) const {
+    return varlist_size();
+  }
+  size_t numTrailingObjects(OverloadToken<ValueDecl *>) const {
+    return getUniqueDeclarationsNum();
+  }
+  size_t numTrailingObjects(OverloadToken<unsigned>) const {
+    return getUniqueDeclarationsNum() + getTotalComponentListNum();
+  }
+
+  // TODO acc2mp modify infrastructure for copy. Also make copy(:) = map (tofrom:)
+  /// \brief Map type modifier for the 'map' clause.
+  OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
+
+  /// \brief Map type for the 'map' clause.
+  OpenACCMapClauseKind MapType = ACCC_MAP_unknown;
+
+  /// \brief Is this an implicit map type or not.
+  bool MapTypeIsImplicit = false;
+
+  /// \brief Location of the map type.
+  SourceLocation MapLoc;
+
+  /// \brief Colon location.
+  SourceLocation ColonLoc;
+
+  /// \brief Build a clause for \a NumVars listed expressions, \a
+  /// NumUniqueDeclarations declarations, \a NumComponentLists total component
+  /// lists, and \a NumComponents total expression components.
+  ///
+  /// \param MapTypeModifier Map type modifier.
+  /// \param MapType Map type.
+  /// \param MapTypeIsImplicit Map type is inferred implicitly.
+  /// \param MapLoc Location of the map type.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCopyClause(OpenACCMapClauseKind MapTypeModifier,
+                        OpenACCMapClauseKind MapType, bool MapTypeIsImplicit,
+                        SourceLocation MapLoc, SourceLocation StartLoc,
+                        SourceLocation LParenLoc, SourceLocation EndLoc,
+                        unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(ACCC_map, StartLoc, LParenLoc, EndLoc,
+                                  NumVars, NumUniqueDeclarations,
+                                  NumComponentLists, NumComponents),
+        MapTypeModifier(MapTypeModifier), MapType(MapType),
+        MapTypeIsImplicit(MapTypeIsImplicit), MapLoc(MapLoc) {}
+
+  /// \brief Build an empty clause.
+  ///
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCopyClause(unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(
+            ACCC_map, SourceLocation(), SourceLocation(), SourceLocation(),
+            NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents) {}
+
+  /// \brief Set type modifier for the clause.
+  ///
+  /// \param T Type Modifier for the clause.
+  void setMapTypeModifier(OpenACCMapClauseKind T) { MapTypeModifier = T; }
+
+  /// \brief Set type for the clause.
+  ///
+  /// \param T Type for the clause.
+  void setMapType(OpenACCMapClauseKind T) { MapType = T; }
+
+  /// \brief Set type location.
+  ///
+  /// \param TLoc Type location.
+  void setMapLoc(SourceLocation TLoc) { MapLoc = TLoc; }
+
+  /// \brief Set colon location.
+  void setColonLoc(SourceLocation Loc) { ColonLoc = Loc; }
+
+public:
+  /// \brief Creates clause with a list of variables \a VL.
+  ///
+  /// \param C AST context.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param Vars The original expression used in the clause.
+  /// \param Declarations Declarations used in the clause.
+  /// \param ComponentLists Component lists used in the clause.
+  /// \param TypeModifier Map type modifier.
+  /// \param Type Map type.
+  /// \param TypeIsImplicit Map type is inferred implicitly.
+  /// \param TypeLoc Location of the map type.
+  static ACCCopyClause *Create(const ASTContext &C, SourceLocation StartLoc,
+                              SourceLocation LParenLoc, SourceLocation EndLoc,
+                              ArrayRef<Expr *> Vars,
+                              ArrayRef<ValueDecl *> Declarations,
+                              MappableExprComponentListsRef ComponentLists,
+                              OpenACCMapClauseKind TypeModifier,
+                              OpenACCMapClauseKind Type, bool TypeIsImplicit,
+                              SourceLocation TypeLoc);
+
+  /// \brief Creates an empty clause with the place for \a NumVars original
+  /// expressions, \a NumUniqueDeclarations declarations, \NumComponentLists
+  /// lists, and \a NumComponents expression components.
+  ///
+  /// \param C AST context.
+  /// \param NumVars Number of expressions listed in the clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  static ACCCopyClause *CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                   unsigned NumUniqueDeclarations,
+                                   unsigned NumComponentLists,
+                                   unsigned NumComponents);
+
+  /// \brief Fetches mapping kind for the clause.
+  OpenACCMapClauseKind getMapType() const LLVM_READONLY { return MapType; }
+
+  /// \brief Is this an implicit map type?
+  /// We have to capture 'IsMapTypeImplicit' from the parser for more
+  /// informative error messages.  It helps distinguish map(r) from
+  /// map(tofrom: r), which is important to print more helpful error
+  /// messages for some target directives.
+  bool isImplicitMapType() const LLVM_READONLY { return MapTypeIsImplicit; }
+
+  /// \brief Fetches the map type modifier for the clause.
+  OpenACCMapClauseKind getMapTypeModifier() const LLVM_READONLY {
+    return MapTypeModifier;
+  }
+
+  /// \brief Fetches location of clause mapping kind.
+  SourceLocation getMapLoc() const LLVM_READONLY { return MapLoc; }
+
+  /// \brief Get colon location.
+  SourceLocation getColonLoc() const { return ColonLoc; }
+
+  child_range children() {
+    return child_range(
+        reinterpret_cast<Stmt **>(varlist_begin()),
+        reinterpret_cast<Stmt **>(varlist_end()));
+  }
+
+  static bool classof(const ACCClause *T) {
+    return T->getClauseKind() == ACCC_map;
+  }
+};
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Copyin
+/// \brief This represents clause 'copyin' in the '#pragma acc ...'
+/// directives.
+///
+/// \code
+/// #pragma acc data copyin(a,b)
+/// \endcode
+/// In this example directive '#pragma acc data' has clause 'copyin'
+/// with the variables 'a' and 'b'.
+class ACCCopyinClause final : public ACCMappableExprListClause<ACCCopyinClause>,
+                           private llvm::TrailingObjects<
+                               ACCCopyinClause, Expr *, ValueDecl *, unsigned,
+                               ACCClauseMappableExprCommon::MappableComponent> {
+  friend class ACCClauseReader;
+  friend ACCMappableExprListClause;
+  friend ACCVarListClause;
+  friend TrailingObjects;
+
+  /// Define the sizes of each trailing object array except the last one. This
+  /// is required for TrailingObjects to work properly.
+  size_t numTrailingObjects(OverloadToken<Expr *>) const {
+    return varlist_size();
+  }
+  size_t numTrailingObjects(OverloadToken<ValueDecl *>) const {
+    return getUniqueDeclarationsNum();
+  }
+  size_t numTrailingObjects(OverloadToken<unsigned>) const {
+    return getUniqueDeclarationsNum() + getTotalComponentListNum();
+  }
+
+  // TODO acc2mp modify infrastructure for copyin. Also make copyin(:) = map (to:)
+  /// \brief Map type modifier for the 'map' clause.
+  OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
+
+  /// \brief Map type for the 'map' clause.
+  OpenACCMapClauseKind MapType = ACCC_MAP_unknown;
+
+  /// \brief Is this an implicit map type or not.
+  bool MapTypeIsImplicit = false;
+
+  /// \brief Location of the map type.
+  SourceLocation MapLoc;
+
+  /// \brief Colon location.
+  SourceLocation ColonLoc;
+
+  /// \brief Build a clause for \a NumVars listed expressions, \a
+  /// NumUniqueDeclarations declarations, \a NumComponentLists total component
+  /// lists, and \a NumComponents total expression components.
+  ///
+  /// \param MapTypeModifier Map type modifier.
+  /// \param MapType Map type.
+  /// \param MapTypeIsImplicit Map type is inferred implicitly.
+  /// \param MapLoc Location of the map type.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCopyinClause(OpenACCMapClauseKind MapTypeModifier,
+                        OpenACCMapClauseKind MapType, bool MapTypeIsImplicit,
+                        SourceLocation MapLoc, SourceLocation StartLoc,
+                        SourceLocation LParenLoc, SourceLocation EndLoc,
+                        unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(ACCC_map, StartLoc, LParenLoc, EndLoc,
+                                  NumVars, NumUniqueDeclarations,
+                                  NumComponentLists, NumComponents),
+        MapTypeModifier(MapTypeModifier), MapType(MapType),
+        MapTypeIsImplicit(MapTypeIsImplicit), MapLoc(MapLoc) {}
+
+  /// \brief Build an empty clause.
+  ///
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCopyinClause(unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(
+            ACCC_map, SourceLocation(), SourceLocation(), SourceLocation(),
+            NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents) {}
+
+  /// \brief Set type modifier for the clause.
+  ///
+  /// \param T Type Modifier for the clause.
+  void setMapTypeModifier(OpenACCMapClauseKind T) { MapTypeModifier = T; }
+
+  /// \brief Set type for the clause.
+  ///
+  /// \param T Type for the clause.
+  void setMapType(OpenACCMapClauseKind T) { MapType = T; }
+
+  /// \brief Set type location.
+  ///
+  /// \param TLoc Type location.
+  void setMapLoc(SourceLocation TLoc) { MapLoc = TLoc; }
+
+  /// \brief Set colon location.
+  void setColonLoc(SourceLocation Loc) { ColonLoc = Loc; }
+
+public:
+  /// \brief Creates clause with a list of variables \a VL.
+  ///
+  /// \param C AST context.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param Vars The original expression used in the clause.
+  /// \param Declarations Declarations used in the clause.
+  /// \param ComponentLists Component lists used in the clause.
+  /// \param TypeModifier Map type modifier.
+  /// \param Type Map type.
+  /// \param TypeIsImplicit Map type is inferred implicitly.
+  /// \param TypeLoc Location of the map type.
+  static ACCCopyinClause *Create(const ASTContext &C, SourceLocation StartLoc,
+                              SourceLocation LParenLoc, SourceLocation EndLoc,
+                              ArrayRef<Expr *> Vars,
+                              ArrayRef<ValueDecl *> Declarations,
+                              MappableExprComponentListsRef ComponentLists,
+                              OpenACCMapClauseKind TypeModifier,
+                              OpenACCMapClauseKind Type, bool TypeIsImplicit,
+                              SourceLocation TypeLoc);
+
+  /// \brief Creates an empty clause with the place for \a NumVars original
+  /// expressions, \a NumUniqueDeclarations declarations, \NumComponentLists
+  /// lists, and \a NumComponents expression components.
+  ///
+  /// \param C AST context.
+  /// \param NumVars Number of expressions listed in the clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  static ACCCopyinClause *CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                   unsigned NumUniqueDeclarations,
+                                   unsigned NumComponentLists,
+                                   unsigned NumComponents);
+
+  /// \brief Fetches mapping kind for the clause.
+  OpenACCMapClauseKind getMapType() const LLVM_READONLY { return MapType; }
+
+  /// \brief Is this an implicit map type?
+  /// We have to capture 'IsMapTypeImplicit' from the parser for more
+  /// informative error messages.  It helps distinguish map(r) from
+  /// map(tofrom: r), which is important to print more helpful error
+  /// messages for some target directives.
+  bool isImplicitMapType() const LLVM_READONLY { return MapTypeIsImplicit; }
+
+  /// \brief Fetches the map type modifier for the clause.
+  OpenACCMapClauseKind getMapTypeModifier() const LLVM_READONLY {
+    return MapTypeModifier;
+  }
+
+  /// \brief Fetches location of clause mapping kind.
+  SourceLocation getMapLoc() const LLVM_READONLY { return MapLoc; }
+
+  /// \brief Get colon location.
+  SourceLocation getColonLoc() const { return ColonLoc; }
+
+  child_range children() {
+    return child_range(
+        reinterpret_cast<Stmt **>(varlist_begin()),
+        reinterpret_cast<Stmt **>(varlist_end()));
+  }
+
+  static bool classof(const ACCClause *T) {
+    return T->getClauseKind() == ACCC_map;
+  }
+};
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Copyout
+/// \brief This represents clause 'copyout' in the '#pragma acc ...'
+/// directives.
+///
+/// \code
+/// #pragma acc data copyout(a,b)
+/// \endcode
+/// In this example directive '#pragma acc data' has clause 'copyout'
+/// with the variables 'a' and 'b'.
+class ACCCopyoutClause final : public ACCMappableExprListClause<ACCCopyoutClause>,
+                           private llvm::TrailingObjects<
+                               ACCCopyoutClause, Expr *, ValueDecl *, unsigned,
+                               ACCClauseMappableExprCommon::MappableComponent> {
+  friend class ACCClauseReader;
+  friend ACCMappableExprListClause;
+  friend ACCVarListClause;
+  friend TrailingObjects;
+
+  /// Define the sizes of each trailing object array except the last one. This
+  /// is required for TrailingObjects to work properly.
+  size_t numTrailingObjects(OverloadToken<Expr *>) const {
+    return varlist_size();
+  }
+  size_t numTrailingObjects(OverloadToken<ValueDecl *>) const {
+    return getUniqueDeclarationsNum();
+  }
+  size_t numTrailingObjects(OverloadToken<unsigned>) const {
+    return getUniqueDeclarationsNum() + getTotalComponentListNum();
+  }
+
+  // TODO acc2mp modify infrastructure for copyout. Also make copyout(:) = map (from:)
+  /// \brief Map type modifier for the 'map' clause.
+  OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
+
+  /// \brief Map type for the 'map' clause.
+  OpenACCMapClauseKind MapType = ACCC_MAP_unknown;
+
+  /// \brief Is this an implicit map type or not.
+  bool MapTypeIsImplicit = false;
+
+  /// \brief Location of the map type.
+  SourceLocation MapLoc;
+
+  /// \brief Colon location.
+  SourceLocation ColonLoc;
+
+  /// \brief Build a clause for \a NumVars listed expressions, \a
+  /// NumUniqueDeclarations declarations, \a NumComponentLists total component
+  /// lists, and \a NumComponents total expression components.
+  ///
+  /// \param MapTypeModifier Map type modifier.
+  /// \param MapType Map type.
+  /// \param MapTypeIsImplicit Map type is inferred implicitly.
+  /// \param MapLoc Location of the map type.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCopyoutClause(OpenACCMapClauseKind MapTypeModifier,
+                        OpenACCMapClauseKind MapType, bool MapTypeIsImplicit,
+                        SourceLocation MapLoc, SourceLocation StartLoc,
+                        SourceLocation LParenLoc, SourceLocation EndLoc,
+                        unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(ACCC_map, StartLoc, LParenLoc, EndLoc,
+                                  NumVars, NumUniqueDeclarations,
+                                  NumComponentLists, NumComponents),
+        MapTypeModifier(MapTypeModifier), MapType(MapType),
+        MapTypeIsImplicit(MapTypeIsImplicit), MapLoc(MapLoc) {}
+
+  /// \brief Build an empty clause.
+  ///
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCopyoutClause(unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(
+            ACCC_map, SourceLocation(), SourceLocation(), SourceLocation(),
+            NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents) {}
+
+  /// \brief Set type modifier for the clause.
+  ///
+  /// \param T Type Modifier for the clause.
+  void setMapTypeModifier(OpenACCMapClauseKind T) { MapTypeModifier = T; }
+
+  /// \brief Set type for the clause.
+  ///
+  /// \param T Type for the clause.
+  void setMapType(OpenACCMapClauseKind T) { MapType = T; }
+
+  /// \brief Set type location.
+  ///
+  /// \param TLoc Type location.
+  void setMapLoc(SourceLocation TLoc) { MapLoc = TLoc; }
+
+  /// \brief Set colon location.
+  void setColonLoc(SourceLocation Loc) { ColonLoc = Loc; }
+
+public:
+  /// \brief Creates clause with a list of variables \a VL.
+  ///
+  /// \param C AST context.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param Vars The original expression used in the clause.
+  /// \param Declarations Declarations used in the clause.
+  /// \param ComponentLists Component lists used in the clause.
+  /// \param TypeModifier Map type modifier.
+  /// \param Type Map type.
+  /// \param TypeIsImplicit Map type is inferred implicitly.
+  /// \param TypeLoc Location of the map type.
+  static ACCCopyoutClause *Create(const ASTContext &C, SourceLocation StartLoc,
+                              SourceLocation LParenLoc, SourceLocation EndLoc,
+                              ArrayRef<Expr *> Vars,
+                              ArrayRef<ValueDecl *> Declarations,
+                              MappableExprComponentListsRef ComponentLists,
+                              OpenACCMapClauseKind TypeModifier,
+                              OpenACCMapClauseKind Type, bool TypeIsImplicit,
+                              SourceLocation TypeLoc);
+
+  /// \brief Creates an empty clause with the place for \a NumVars original
+  /// expressions, \a NumUniqueDeclarations declarations, \NumComponentLists
+  /// lists, and \a NumComponents expression components.
+  ///
+  /// \param C AST context.
+  /// \param NumVars Number of expressions listed in the clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  static ACCCopyoutClause *CreateEmpty(const ASTContext &C, unsigned NumVars,
                                    unsigned NumUniqueDeclarations,
                                    unsigned NumComponentLists,
                                    unsigned NumComponents);

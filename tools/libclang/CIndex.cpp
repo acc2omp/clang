@@ -2418,18 +2418,18 @@ void ACCClauseEnqueue::VisitACCAlignedClause(const ACCAlignedClause *C) {
   VisitACCClauseList(C);
   Visitor->AddStmt(C->getAlignment());
 }
-void ACCClauseEnqueue::VisitACCCopyinClause(const ACCCopyinClause *C) {
-  VisitACCClauseList(C);
-  for (auto *E : C->source_exprs()) {
-    Visitor->AddStmt(E);
-  }
-  for (auto *E : C->destination_exprs()) {
-    Visitor->AddStmt(E);
-  }
-  for (auto *E : C->assignment_ops()) {
-    Visitor->AddStmt(E);
-  }
-}
+/* void ACCClauseEnqueue::VisitACCCopyinClause(const ACCCopyinClause *C) { */
+/*   VisitACCClauseList(C); */
+/*   for (auto *E : C->source_exprs()) { */
+/*     Visitor->AddStmt(E); */
+/*   } */
+/*   for (auto *E : C->destination_exprs()) { */
+/*     Visitor->AddStmt(E); */
+/*   } */
+/*   for (auto *E : C->assignment_ops()) { */
+/*     Visitor->AddStmt(E); */
+/*   } */
+/* } */
 void
 ACCClauseEnqueue::VisitACCCopyprivateClause(const ACCCopyprivateClause *C) {
   VisitACCClauseList(C);
@@ -2450,6 +2450,16 @@ void ACCClauseEnqueue::VisitACCDependClause(const ACCDependClause *C) {
   VisitACCClauseList(C);
 }
 void ACCClauseEnqueue::VisitACCMapClause(const ACCMapClause *C) {
+  VisitACCClauseList(C);
+}
+// TODO acc2mp Modify copy copyin copyout
+void ACCClauseEnqueue::VisitACCCopyClause(const ACCCopyClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCCopyinClause(const ACCCopyinClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCCopyoutClause(const ACCCopyoutClause *C) {
   VisitACCClauseList(C);
 }
 void ACCClauseEnqueue::VisitACCDistScheduleClause(
