@@ -436,12 +436,12 @@ public:
 /// directive.
 ///
 /// \code
-/// #pragma acc simd safelen(4)
+/// #pragma acc vector safelen(4)
 /// \endcode
-/// In this example directive '#pragma acc simd' has clause 'safelen'
+/// In this example directive '#pragma acc vector' has clause 'safelen'
 /// with single expression '4'.
 /// If the safelen clause is used then no two iterations executed
-/// concurrently with SIMD instructions can have a greater distance
+/// concurrently with vector instructions can have a greater distance
 /// in the logical iteration space than its value. The parameter of
 /// the safelen clause must be a constant positive integer expression.
 class ACCSafelenClause : public ACCClause {
@@ -487,43 +487,43 @@ public:
   }
 };
 
-/// \brief This represents 'simdlen' clause in the '#pragma acc ...'
+/// \brief This represents 'vectorlen' clause in the '#pragma acc ...'
 /// directive.
 ///
 /// \code
-/// #pragma acc simd simdlen(4)
+/// #pragma acc vector vectorlen(4)
 /// \endcode
-/// In this example directive '#pragma acc simd' has clause 'simdlen'
+/// In this example directive '#pragma acc vector' has clause 'vectorlen'
 /// with single expression '4'.
-/// If the 'simdlen' clause is used then it specifies the preferred number of
-/// iterations to be executed concurrently. The parameter of the 'simdlen'
+/// If the 'vectorlen' clause is used then it specifies the preferred number of
+/// iterations to be executed concurrently. The parameter of the 'vectorlen'
 /// clause must be a constant positive integer expression.
-class ACCSimdlenClause : public ACCClause {
+class ACCVectorlenClause : public ACCClause {
   friend class ACCClauseReader;
 
   /// \brief Location of '('.
   SourceLocation LParenLoc;
 
   /// \brief Safe iteration space distance.
-  Stmt *Simdlen = nullptr;
+  Stmt *Vectorlen = nullptr;
 
-  /// \brief Set simdlen.
-  void setSimdlen(Expr *Len) { Simdlen = Len; }
+  /// \brief Set vectorlen.
+  void setVectorlen(Expr *Len) { Vectorlen = Len; }
 
 public:
-  /// \brief Build 'simdlen' clause.
+  /// \brief Build 'vectorlen' clause.
   ///
   /// \param Len Expression associated with this clause.
   /// \param StartLoc Starting location of the clause.
   /// \param EndLoc Ending location of the clause.
-  ACCSimdlenClause(Expr *Len, SourceLocation StartLoc, SourceLocation LParenLoc,
+  ACCVectorlenClause(Expr *Len, SourceLocation StartLoc, SourceLocation LParenLoc,
                    SourceLocation EndLoc)
-      : ACCClause(ACCC_simdlen, StartLoc, EndLoc), LParenLoc(LParenLoc),
-        Simdlen(Len) {}
+      : ACCClause(ACCC_vectorlen, StartLoc, EndLoc), LParenLoc(LParenLoc),
+        Vectorlen(Len) {}
 
   /// \brief Build an empty clause.
-  explicit ACCSimdlenClause()
-      : ACCClause(ACCC_simdlen, SourceLocation(), SourceLocation()) {}
+  explicit ACCVectorlenClause()
+      : ACCClause(ACCC_vectorlen, SourceLocation(), SourceLocation()) {}
 
   /// \brief Sets the location of '('.
   void setLParenLoc(SourceLocation Loc) { LParenLoc = Loc; }
@@ -532,12 +532,12 @@ public:
   SourceLocation getLParenLoc() const { return LParenLoc; }
 
   /// \brief Return safe iteration space distance.
-  Expr *getSimdlen() const { return cast_or_null<Expr>(Simdlen); }
+  Expr *getVectorlen() const { return cast_or_null<Expr>(Vectorlen); }
 
-  child_range children() { return child_range(&Simdlen, &Simdlen + 1); }
+  child_range children() { return child_range(&Vectorlen, &Vectorlen + 1); }
 
   static bool classof(const ACCClause *T) {
-    return T->getClauseKind() == ACCC_simdlen;
+    return T->getClauseKind() == ACCC_vectorlen;
   }
 };
 
@@ -545,9 +545,9 @@ public:
 /// directive.
 ///
 /// \code
-/// #pragma acc simd collapse(3)
+/// #pragma acc vector collapse(3)
 /// \endcode
-/// In this example directive '#pragma acc simd' has clause 'collapse'
+/// In this example directive '#pragma acc vector' has clause 'collapse'
 /// with single expression '3'.
 /// The parameter must be a constant positive integer expression, it specifies
 /// the number of nested loops that should be collapsed into a single iteration
@@ -1417,9 +1417,9 @@ public:
 /// directives.
 ///
 /// \code
-/// #pragma acc simd lastprivate(a,b)
+/// #pragma acc vector lastprivate(a,b)
 /// \endcode
-/// In this example directive '#pragma acc simd' has clause 'lastprivate'
+/// In this example directive '#pragma acc vector' has clause 'lastprivate'
 /// with the variables 'a' and 'b'.
 class ACCLastprivateClause final
     : public ACCVarListClause<ACCLastprivateClause>,
@@ -2361,9 +2361,9 @@ public:
 /// directives.
 ///
 /// \code
-/// #pragma acc simd linear(a,b : 2)
+/// #pragma acc vector linear(a,b : 2)
 /// \endcode
-/// In this example directive '#pragma acc simd' has clause 'linear'
+/// In this example directive '#pragma acc vector' has clause 'linear'
 /// with variables 'a', 'b' and linear step '2'.
 class ACCLinearClause final
     : public ACCVarListClause<ACCLinearClause>,
@@ -2600,9 +2600,9 @@ public:
 /// directives.
 ///
 /// \code
-/// #pragma acc simd aligned(a,b : 8)
+/// #pragma acc vector aligned(a,b : 8)
 /// \endcode
-/// In this example directive '#pragma acc simd' has clause 'aligned'
+/// In this example directive '#pragma acc vector' has clause 'aligned'
 /// with variables 'a', 'b' and alignment '8'.
 class ACCAlignedClause final
     : public ACCVarListClause<ACCAlignedClause>,
@@ -3093,30 +3093,30 @@ public:
   }
 };
 
-/// \brief This represents 'simd' clause in the '#pragma acc ...' directive.
+/// \brief This represents 'vector' clause in the '#pragma acc ...' directive.
 ///
 /// \code
-/// #pragma acc ordered simd
+/// #pragma acc ordered vector
 /// \endcode
-/// In this example directive '#pragma acc ordered' has simple 'simd' clause.
-class ACCSIMDClause : public ACCClause {
+/// In this example directive '#pragma acc ordered' has simple 'vector' clause.
+class ACCVectorClause : public ACCClause {
 public:
-  /// \brief Build 'simd' clause.
+  /// \brief Build 'vector' clause.
   ///
   /// \param StartLoc Starting location of the clause.
   /// \param EndLoc Ending location of the clause.
-  ACCSIMDClause(SourceLocation StartLoc, SourceLocation EndLoc)
-      : ACCClause(ACCC_simd, StartLoc, EndLoc) {}
+  ACCVectorClause(SourceLocation StartLoc, SourceLocation EndLoc)
+      : ACCClause(ACCC_vector, StartLoc, EndLoc) {}
 
   /// \brief Build an empty clause.
-  ACCSIMDClause() : ACCClause(ACCC_simd, SourceLocation(), SourceLocation()) {}
+  ACCVectorClause() : ACCClause(ACCC_vector, SourceLocation(), SourceLocation()) {}
 
   child_range children() {
     return child_range(child_iterator(), child_iterator());
   }
 
   static bool classof(const ACCClause *T) {
-    return T->getClauseKind() == ACCC_simd;
+    return T->getClauseKind() == ACCC_vector;
   }
 };
 
@@ -3787,6 +3787,181 @@ public:
 };
 
 /// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Create
+/// \brief This represents clause 'create' in the '#pragma acc ...'
+/// directives.
+///
+/// \code
+/// #pragma acc data create(a,b)
+/// \endcode
+/// In this example directive '#pragma acc data' has clause 'create'
+/// with the variables 'a' and 'b'.
+class ACCCreateClause final : public ACCMappableExprListClause<ACCCreateClause>,
+                           private llvm::TrailingObjects<
+                               ACCCreateClause, Expr *, ValueDecl *, unsigned,
+                               ACCClauseMappableExprCommon::MappableComponent> {
+  friend class ACCClauseReader;
+  friend ACCMappableExprListClause;
+  friend ACCVarListClause;
+  friend TrailingObjects;
+
+  /// Define the sizes of each trailing object array except the last one. This
+  /// is required for TrailingObjects to work properly.
+  size_t numTrailingObjects(OverloadToken<Expr *>) const {
+    return varlist_size();
+  }
+  size_t numTrailingObjects(OverloadToken<ValueDecl *>) const {
+    return getUniqueDeclarationsNum();
+  }
+  size_t numTrailingObjects(OverloadToken<unsigned>) const {
+    return getUniqueDeclarationsNum() + getTotalComponentListNum();
+  }
+
+  // TODO acc2mp modify infrastructure for copy. Also make copy(:) = map (tofrom:)
+  /// \brief Map type modifier for the 'map' clause.
+  OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
+
+  /// \brief Map type for the 'map' clause.
+  OpenACCMapClauseKind MapType = ACCC_MAP_unknown;
+
+  /// \brief Is this an implicit map type or not.
+  bool MapTypeIsImplicit = false;
+
+  /// \brief Location of the map type.
+  SourceLocation MapLoc;
+
+  /// \brief Colon location.
+  SourceLocation ColonLoc;
+
+  /// \brief Build a clause for \a NumVars listed expressions, \a
+  /// NumUniqueDeclarations declarations, \a NumComponentLists total component
+  /// lists, and \a NumComponents total expression components.
+  ///
+  /// \param MapTypeModifier Map type modifier.
+  /// \param MapType Map type.
+  /// \param MapTypeIsImplicit Map type is inferred implicitly.
+  /// \param MapLoc Location of the map type.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCreateClause(OpenACCMapClauseKind MapTypeModifier,
+                        OpenACCMapClauseKind MapType, bool MapTypeIsImplicit,
+                        SourceLocation MapLoc, SourceLocation StartLoc,
+                        SourceLocation LParenLoc, SourceLocation EndLoc,
+                        unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(ACCC_map, StartLoc, LParenLoc, EndLoc,
+                                  NumVars, NumUniqueDeclarations,
+                                  NumComponentLists, NumComponents),
+        MapTypeModifier(MapTypeModifier), MapType(MapType),
+        MapTypeIsImplicit(MapTypeIsImplicit), MapLoc(MapLoc) {}
+
+  /// \brief Build an empty clause.
+  ///
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCCreateClause(unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(
+            ACCC_map, SourceLocation(), SourceLocation(), SourceLocation(),
+            NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents) {}
+
+  /// \brief Set type modifier for the clause.
+  ///
+  /// \param T Type Modifier for the clause.
+  void setMapTypeModifier(OpenACCMapClauseKind T) { MapTypeModifier = T; }
+
+  /// \brief Set type for the clause.
+  ///
+  /// \param T Type for the clause.
+  void setMapType(OpenACCMapClauseKind T) { MapType = T; }
+
+  /// \brief Set type location.
+  ///
+  /// \param TLoc Type location.
+  void setMapLoc(SourceLocation TLoc) { MapLoc = TLoc; }
+
+  /// \brief Set colon location.
+  void setColonLoc(SourceLocation Loc) { ColonLoc = Loc; }
+
+public:
+  /// \brief Creates clause with a list of variables \a VL.
+  ///
+  /// \param C AST context.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param Vars The original expression used in the clause.
+  /// \param Declarations Declarations used in the clause.
+  /// \param ComponentLists Component lists used in the clause.
+  /// \param TypeModifier Map type modifier.
+  /// \param Type Map type.
+  /// \param TypeIsImplicit Map type is inferred implicitly.
+  /// \param TypeLoc Location of the map type.
+  static ACCCreateClause *Create(const ASTContext &C, SourceLocation StartLoc,
+                              SourceLocation LParenLoc, SourceLocation EndLoc,
+                              ArrayRef<Expr *> Vars,
+                              ArrayRef<ValueDecl *> Declarations,
+                              MappableExprComponentListsRef ComponentLists,
+                              OpenACCMapClauseKind TypeModifier,
+                              OpenACCMapClauseKind Type, bool TypeIsImplicit,
+                              SourceLocation TypeLoc);
+
+  /// \brief Creates an empty clause with the place for \a NumVars original
+  /// expressions, \a NumUniqueDeclarations declarations, \NumComponentLists
+  /// lists, and \a NumComponents expression components.
+  ///
+  /// \param C AST context.
+  /// \param NumVars Number of expressions listed in the clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  static ACCCreateClause *CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                   unsigned NumUniqueDeclarations,
+                                   unsigned NumComponentLists,
+                                   unsigned NumComponents);
+
+  /// \brief Fetches mapping kind for the clause.
+  OpenACCMapClauseKind getMapType() const LLVM_READONLY { return MapType; }
+
+  /// \brief Is this an implicit map type?
+  /// We have to capture 'IsMapTypeImplicit' from the parser for more
+  /// informative error messages.  It helps distinguish map(r) from
+  /// map(tofrom: r), which is important to print more helpful error
+  /// messages for some target directives.
+  bool isImplicitMapType() const LLVM_READONLY { return MapTypeIsImplicit; }
+
+  /// \brief Fetches the map type modifier for the clause.
+  OpenACCMapClauseKind getMapTypeModifier() const LLVM_READONLY {
+    return MapTypeModifier;
+  }
+
+  /// \brief Fetches location of clause mapping kind.
+  SourceLocation getMapLoc() const LLVM_READONLY { return MapLoc; }
+
+  /// \brief Get colon location.
+  SourceLocation getColonLoc() const { return ColonLoc; }
+
+  child_range children() {
+    return child_range(
+        reinterpret_cast<Stmt **>(varlist_begin()),
+        reinterpret_cast<Stmt **>(varlist_end()));
+  }
+
+  static bool classof(const ACCClause *T) {
+    return T->getClauseKind() == ACCC_map;
+  }
+};
+
+/// MYHEADER : Basing the next class on ACCMapClause
 //  Clause Copy
 /// \brief This represents clause 'copy' in the '#pragma acc ...'
 /// directives.
@@ -4273,6 +4448,180 @@ public:
   /// clause.
   /// \param NumComponents Total number of expression components in the clause.
   static ACCCopyoutClause *CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                   unsigned NumUniqueDeclarations,
+                                   unsigned NumComponentLists,
+                                   unsigned NumComponents);
+
+  /// \brief Fetches mapping kind for the clause.
+  OpenACCMapClauseKind getMapType() const LLVM_READONLY { return MapType; }
+
+  /// \brief Is this an implicit map type?
+  /// We have to capture 'IsMapTypeImplicit' from the parser for more
+  /// informative error messages.  It helps distinguish map(r) from
+  /// map(tofrom: r), which is important to print more helpful error
+  /// messages for some target directives.
+  bool isImplicitMapType() const LLVM_READONLY { return MapTypeIsImplicit; }
+
+  /// \brief Fetches the map type modifier for the clause.
+  OpenACCMapClauseKind getMapTypeModifier() const LLVM_READONLY {
+    return MapTypeModifier;
+  }
+
+  /// \brief Fetches location of clause mapping kind.
+  SourceLocation getMapLoc() const LLVM_READONLY { return MapLoc; }
+
+  /// \brief Get colon location.
+  SourceLocation getColonLoc() const { return ColonLoc; }
+
+  child_range children() {
+    return child_range(
+        reinterpret_cast<Stmt **>(varlist_begin()),
+        reinterpret_cast<Stmt **>(varlist_end()));
+  }
+
+  static bool classof(const ACCClause *T) {
+    return T->getClauseKind() == ACCC_map;
+  }
+};
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Delete
+/// \brief This represents clause 'delete' in the '#pragma acc ...'
+/// directives.
+///
+/// \code
+/// #pragma acc data delete(a,b)
+/// \endcode
+/// In this example directive '#pragma acc data' has clause 'delete'
+/// with the variables 'a' and 'b'.
+class ACCDeleteClause final : public ACCMappableExprListClause<ACCCopyClause>,
+                           private llvm::TrailingObjects<
+                               ACCDeleteClause, Expr *, ValueDecl *, unsigned,
+                               ACCClauseMappableExprCommon::MappableComponent> {
+  friend class ACCClauseReader;
+  friend ACCMappableExprListClause;
+  friend ACCVarListClause;
+  friend TrailingObjects;
+
+  /// Define the sizes of each trailing object array except the last one. This
+  /// is required for TrailingObjects to work properly.
+  size_t numTrailingObjects(OverloadToken<Expr *>) const {
+    return varlist_size();
+  }
+  size_t numTrailingObjects(OverloadToken<ValueDecl *>) const {
+    return getUniqueDeclarationsNum();
+  }
+  size_t numTrailingObjects(OverloadToken<unsigned>) const {
+    return getUniqueDeclarationsNum() + getTotalComponentListNum();
+  }
+
+  // TODO acc2mp modify infrastructure for copy. Also make copy(:) = map (tofrom:)
+  /// \brief Map type modifier for the 'map' clause.
+  OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
+
+  /// \brief Map type for the 'map' clause.
+  OpenACCMapClauseKind MapType = ACCC_MAP_unknown;
+
+  /// \brief Is this an implicit map type or not.
+  bool MapTypeIsImplicit = false;
+
+  /// \brief Location of the map type.
+  SourceLocation MapLoc;
+
+  /// \brief Colon location.
+  SourceLocation ColonLoc;
+
+  /// \brief Build a clause for \a NumVars listed expressions, \a
+  /// NumUniqueDeclarations declarations, \a NumComponentLists total component
+  /// lists, and \a NumComponents total expression components.
+  ///
+  /// \param MapTypeModifier Map type modifier.
+  /// \param MapType Map type.
+  /// \param MapTypeIsImplicit Map type is inferred implicitly.
+  /// \param MapLoc Location of the map type.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCDeleteClause(OpenACCMapClauseKind MapTypeModifier,
+                        OpenACCMapClauseKind MapType, bool MapTypeIsImplicit,
+                        SourceLocation MapLoc, SourceLocation StartLoc,
+                        SourceLocation LParenLoc, SourceLocation EndLoc,
+                        unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(ACCC_map, StartLoc, LParenLoc, EndLoc,
+                                  NumVars, NumUniqueDeclarations,
+                                  NumComponentLists, NumComponents),
+        MapTypeModifier(MapTypeModifier), MapType(MapType),
+        MapTypeIsImplicit(MapTypeIsImplicit), MapLoc(MapLoc) {}
+
+  /// \brief Build an empty clause.
+  ///
+  /// \param NumVars Number of expressions listed in this clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of component lists in this clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  explicit ACCDeleteClause(unsigned NumVars, unsigned NumUniqueDeclarations,
+                        unsigned NumComponentLists, unsigned NumComponents)
+      : ACCMappableExprListClause(
+            ACCC_map, SourceLocation(), SourceLocation(), SourceLocation(),
+            NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents) {}
+
+  /// \brief Set type modifier for the clause.
+  ///
+  /// \param T Type Modifier for the clause.
+  void setMapTypeModifier(OpenACCMapClauseKind T) { MapTypeModifier = T; }
+
+  /// \brief Set type for the clause.
+  ///
+  /// \param T Type for the clause.
+  void setMapType(OpenACCMapClauseKind T) { MapType = T; }
+
+  /// \brief Set type location.
+  ///
+  /// \param TLoc Type location.
+  void setMapLoc(SourceLocation TLoc) { MapLoc = TLoc; }
+
+  /// \brief Set colon location.
+  void setColonLoc(SourceLocation Loc) { ColonLoc = Loc; }
+
+public:
+  /// \brief Creates clause with a list of variables \a VL.
+  ///
+  /// \param C AST context.
+  /// \param StartLoc Starting location of the clause.
+  /// \param EndLoc Ending location of the clause.
+  /// \param Vars The original expression used in the clause.
+  /// \param Declarations Declarations used in the clause.
+  /// \param ComponentLists Component lists used in the clause.
+  /// \param TypeModifier Map type modifier.
+  /// \param Type Map type.
+  /// \param TypeIsImplicit Map type is inferred implicitly.
+  /// \param TypeLoc Location of the map type.
+  static ACCDeleteClause *Create(const ASTContext &C, SourceLocation StartLoc,
+                              SourceLocation LParenLoc, SourceLocation EndLoc,
+                              ArrayRef<Expr *> Vars,
+                              ArrayRef<ValueDecl *> Declarations,
+                              MappableExprComponentListsRef ComponentLists,
+                              OpenACCMapClauseKind TypeModifier,
+                              OpenACCMapClauseKind Type, bool TypeIsImplicit,
+                              SourceLocation TypeLoc);
+
+  /// \brief Creates an empty clause with the place for \a NumVars original
+  /// expressions, \a NumUniqueDeclarations declarations, \NumComponentLists
+  /// lists, and \a NumComponents expression components.
+  ///
+  /// \param C AST context.
+  /// \param NumVars Number of expressions listed in the clause.
+  /// \param NumUniqueDeclarations Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponentLists Number of unique base declarations in this
+  /// clause.
+  /// \param NumComponents Total number of expression components in the clause.
+  static ACCDeleteClause *CreateEmpty(const ASTContext &C, unsigned NumVars,
                                    unsigned NumUniqueDeclarations,
                                    unsigned NumComponentLists,
                                    unsigned NumComponents);

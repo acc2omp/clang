@@ -2650,13 +2650,13 @@ RecursiveASTVisitor<Derived>::TraverseACCLoopLikeDirective(ACCLoopLikeDirective 
 DEF_TRAVERSE_STMT(ACCParallelDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCSimdDirective,
+DEF_TRAVERSE_STMT(ACCVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCLoopSimdDirective,
+DEF_TRAVERSE_STMT(ACCLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCSectionsDirective,
@@ -2679,7 +2679,7 @@ DEF_TRAVERSE_STMT(ACCCriticalDirective, {
 DEF_TRAVERSE_STMT(ACCParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCParallelLoopSimdDirective,
+DEF_TRAVERSE_STMT(ACCParallelLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCParallelSectionsDirective,
@@ -2718,13 +2718,13 @@ DEF_TRAVERSE_STMT(ACCAtomicDirective,
 DEF_TRAVERSE_STMT(ACCTargetDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetDataDirective,
+DEF_TRAVERSE_STMT(ACCDataDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetEnterDataDirective,
+DEF_TRAVERSE_STMT(ACCEnterDataDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetExitDataDirective,
+DEF_TRAVERSE_STMT(ACCExitDataDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTargetParallelDirective,
@@ -2742,7 +2742,7 @@ DEF_TRAVERSE_STMT(ACCTargetUpdateDirective,
 DEF_TRAVERSE_STMT(ACCTaskLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTaskLoopSimdDirective,
+DEF_TRAVERSE_STMT(ACCTaskLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCDistributeDirective,
@@ -2751,25 +2751,25 @@ DEF_TRAVERSE_STMT(ACCDistributeDirective,
 DEF_TRAVERSE_STMT(ACCDistributeParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCDistributeParallelLoopSimdDirective,
+DEF_TRAVERSE_STMT(ACCDistributeParallelLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCDistributeSimdDirective,
+DEF_TRAVERSE_STMT(ACCDistributeVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetParallelLoopSimdDirective,
+DEF_TRAVERSE_STMT(ACCTargetParallelLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetSimdDirective,
+DEF_TRAVERSE_STMT(ACCTargetVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTeamsDistributeDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeSimdDirective,
+DEF_TRAVERSE_STMT(ACCTeamsDistributeVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelLoopSimdDirective,
+DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelLoopDirective,
@@ -2784,10 +2784,10 @@ DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeDirective,
 DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelLoopSimdDirective,
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeSimdDirective,
+DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 
@@ -3016,8 +3016,8 @@ bool RecursiveASTVisitor<Derived>::VisitACCSafelenClause(ACCSafelenClause *C) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::VisitACCSimdlenClause(ACCSimdlenClause *C) {
-  TRY_TO(TraverseStmt(C->getSimdlen()));
+bool RecursiveASTVisitor<Derived>::VisitACCVectorlenClause(ACCVectorlenClause *C) {
+  TRY_TO(TraverseStmt(C->getVectorlen()));
   return true;
 }
 
@@ -3099,7 +3099,7 @@ bool RecursiveASTVisitor<Derived>::VisitACCThreadsClause(ACCThreadsClause *) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::VisitACCSIMDClause(ACCSIMDClause *) {
+bool RecursiveASTVisitor<Derived>::VisitACCVectorClause(ACCVectorClause *) {
   return true;
 }
 
@@ -3318,7 +3318,12 @@ bool RecursiveASTVisitor<Derived>::VisitACCMapClause(ACCMapClause *C) {
   return true;
 }
 
-// TODO acc2mp Modify this to actually be "copy, copyin, copyout" syntax. For now it is OpenMP map's
+// TODO acc2mp Modify this to actually be "create, copy, copyin, copyout, delete" syntax. For now it is OpenMP map's
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCCreateClause(ACCCreateClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
 template <typename Derived>
 bool RecursiveASTVisitor<Derived>::VisitACCCopyClause(ACCCopyClause *C) {
   TRY_TO(VisitACCClauseList(C));
@@ -3331,6 +3336,11 @@ bool RecursiveASTVisitor<Derived>::VisitACCCopyinClause(ACCCopyinClause *C) {
 }
 template <typename Derived>
 bool RecursiveASTVisitor<Derived>::VisitACCCopyoutClause(ACCCopyoutClause *C) {
+  TRY_TO(VisitACCClauseList(C));
+  return true;
+}
+template <typename Derived>
+bool RecursiveASTVisitor<Derived>::VisitACCDeleteClause(ACCDeleteClause *C) {
   TRY_TO(VisitACCClauseList(C));
   return true;
 }

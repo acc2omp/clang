@@ -510,7 +510,7 @@ enum OpenACCSchedType {
   ACC_sch_guided_chunked = 36,
   ACC_sch_runtime = 37,
   ACC_sch_auto = 38,
-  /// static with chunk adjustment (e.g., simd)
+  /// static with chunk adjustment (e.g., vector)
   ACC_sch_static_balanced_chunked = 45,
   /// \brief Lower bound for 'ordered' versions.
   ACC_ord_lower = 64,
@@ -3044,7 +3044,7 @@ static int addMonoNonMonoModifier(OpenACCSchedType Schedule,
   case ACCC_SCHEDULE_MODIFIER_nonmonotonic:
     Modifier = ACC_sch_modifier_nonmonotonic;
     break;
-  case ACCC_SCHEDULE_MODIFIER_simd:
+  case ACCC_SCHEDULE_MODIFIER_vector:
     if (Schedule == ACC_sch_static_chunked)
       Schedule = ACC_sch_static_balanced_chunked;
     break;
@@ -3059,7 +3059,7 @@ static int addMonoNonMonoModifier(OpenACCSchedType Schedule,
   case ACCC_SCHEDULE_MODIFIER_nonmonotonic:
     Modifier = ACC_sch_modifier_nonmonotonic;
     break;
-  case ACCC_SCHEDULE_MODIFIER_simd:
+  case ACCC_SCHEDULE_MODIFIER_vector:
     if (Schedule == ACC_sch_static_chunked)
       Schedule = ACC_sch_static_balanced_chunked;
     break;
@@ -4193,7 +4193,7 @@ static void emitPrivatesInit(CodeGenFunction &CGF,
   CodeGenFunction::CGCapturedStmtInfo CapturesInfo(CS);
   LValue SrcBase;
   bool IsTargetTask =
-      isOpenACCTargetDataManagementDirective(D.getDirectiveKind()) ||
+      isOpenACCDataManagementDirective(D.getDirectiveKind()) ||
       isOpenACCTargetExecutionDirective(D.getDirectiveKind());
   // For target-based directives skip 3 firstprivate arrays BasePointersArray,
   // PointersArray and SizesArray. The original variables for these arrays are
@@ -4438,7 +4438,7 @@ CGOpenACCRuntime::emitTaskInit(CodeGenFunction &CGF, SourceLocation Loc,
   } else {
     assert((D.getDirectiveKind() == ACCD_task ||
             isOpenACCTargetExecutionDirective(D.getDirectiveKind()) ||
-            isOpenACCTargetDataManagementDirective(D.getDirectiveKind())) &&
+            isOpenACCDataManagementDirective(D.getDirectiveKind())) &&
            "Expected taskloop, task or target directive");
     if (SavedKmpTaskTQTy.isNull()) {
       SavedKmpTaskTQTy = C.getRecordType(createKmpTaskTRecordDecl(
@@ -6237,6 +6237,7 @@ private:
                           OpenACCMapClauseKind MapTypeModifier, bool AddPtrFlag,
                           bool AddIsTargetParamFlag) const {
     uint64_t Bits = 0u;
+
     switch (MapType) {
     case ACCC_MAP_alloc:
     case ACCC_MAP_release:
@@ -7053,7 +7054,7 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
   };
   emitInlinedDirective(CGF, ACCD_unknown, ArgsCodegen);
 
-  CodeGenFunction::ACCTargetDataInfo InputInfo;
+  CodeGenFunction::ACCDataInfo InputInfo;
   llvm::Value *MapTypesArray = nullptr;
   // Fill up the pointer arrays and transfer execution to the device.
   auto &&ThenGen = [this, Device, OutlinedFn, OutlinedFnID, &D, &InputInfo,
@@ -7265,7 +7266,7 @@ void CGOpenACCRuntime::emitTargetCall(CodeGenFunction &CGF,
   auto &&TargetElseGen = [this, &ElseGen, &D, RequiresOuterTask](
                              CodeGenFunction &CGF, ACCPrePostActionTy &) {
     if (RequiresOuterTask) {
-      CodeGenFunction::ACCTargetDataInfo InputInfo;
+      CodeGenFunction::ACCDataInfo InputInfo;
       CGF.EmitACCTargetTaskBasedDirective(D, ElseGen, InputInfo);
     } else {
       emitInlinedDirective(CGF, D.getDirectiveKind(), ElseGen);
@@ -7331,32 +7332,32 @@ void CGOpenACCRuntime::scanForTargetRegionsFunctions(const Stmt *S,
       CodeGenFunction::EmitACCTargetTeamsDistributeDeviceFunction(
           CGM, ParentName, cast<ACCTargetTeamsDistributeDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeSimdDirectiveClass:
-      CodeGenFunction::EmitACCTargetTeamsDistributeSimdDeviceFunction(
-          CGM, ParentName, cast<ACCTargetTeamsDistributeSimdDirective>(*S));
+    case Stmt::ACCTargetTeamsDistributeVectorDirectiveClass:
+      CodeGenFunction::EmitACCTargetTeamsDistributeVectorDeviceFunction(
+          CGM, ParentName, cast<ACCTargetTeamsDistributeVectorDirective>(*S));
       break;
     case Stmt::ACCTargetParallelLoopDirectiveClass:
       CodeGenFunction::EmitACCTargetParallelForDeviceFunction(
           CGM, ParentName, cast<ACCTargetParallelLoopDirective>(*S));
       break;
-    case Stmt::ACCTargetParallelLoopSimdDirectiveClass:
-      CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
-          CGM, ParentName, cast<ACCTargetParallelLoopSimdDirective>(*S));
+    case Stmt::ACCTargetParallelLoopVectorDirectiveClass:
+      CodeGenFunction::EmitACCTargetParallelForVectorDeviceFunction(
+          CGM, ParentName, cast<ACCTargetParallelLoopVectorDirective>(*S));
       break;
-    case Stmt::ACCTargetSimdDirectiveClass:
-      CodeGenFunction::EmitACCTargetSimdDeviceFunction(
-          CGM, ParentName, cast<ACCTargetSimdDirective>(*S));
+    case Stmt::ACCTargetVectorDirectiveClass:
+      CodeGenFunction::EmitACCTargetVectorDeviceFunction(
+          CGM, ParentName, cast<ACCTargetVectorDirective>(*S));
       break;
     case Stmt::ACCTargetTeamsDistributeParallelLoopDirectiveClass:
       CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
           CGM, ParentName,
           cast<ACCTargetTeamsDistributeParallelLoopDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeParallelLoopSimdDirectiveClass:
+    case Stmt::ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass:
       CodeGenFunction::
-          EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
+          EmitACCTargetTeamsDistributeParallelForVectorDeviceFunction(
               CGM, ParentName,
-              cast<ACCTargetTeamsDistributeParallelLoopSimdDirective>(*S));
+              cast<ACCTargetTeamsDistributeParallelLoopVectorDirective>(*S));
       break;
     default:
       llvm_unreachable("Unknown target directive for OpenACC device codegen.");
@@ -7630,12 +7631,12 @@ void CGOpenACCRuntime::emitTargetDataStandAloneCall(
   if (!CGF.HaveInsertPoint())
     return;
 
-  assert((isa<ACCTargetEnterDataDirective>(D) ||
-          isa<ACCTargetExitDataDirective>(D) ||
+  assert((isa<ACCEnterDataDirective>(D) ||
+          isa<ACCExitDataDirective>(D) ||
           isa<ACCTargetUpdateDirective>(D)) &&
          "Expecting either target enter, exit data, or update directives.");
 
-  CodeGenFunction::ACCTargetDataInfo InputInfo;
+  CodeGenFunction::ACCDataInfo InputInfo;
   llvm::Value *MapTypesArray = nullptr;
   // Generate the code for the opening of the data environment.
   auto &&ThenGen = [this, &D, Device, &InputInfo,
@@ -7668,11 +7669,11 @@ void CGOpenACCRuntime::emitTargetDataStandAloneCall(
     default:
       llvm_unreachable("Unexpected standalone target data directive.");
       break;
-    case ACCD_target_enter_data:
+    case ACCD_enter_data:
       RTLFn = HasNowait ? ACCRTL__tgt_target_data_begin_nowait
                         : ACCRTL__tgt_target_data_begin;
       break;
-    case ACCD_target_exit_data:
+    case ACCD_exit_data:
       RTLFn = HasNowait ? ACCRTL__tgt_target_data_end_nowait
                         : ACCRTL__tgt_target_data_end;
       break;
@@ -7726,7 +7727,7 @@ void CGOpenACCRuntime::emitTargetDataStandAloneCall(
 }
 
 namespace {
-  /// Kind of parameter in a function with 'declare simd' directive.
+  /// Kind of parameter in a function with 'declare vector' directive.
   enum ParamKindTy { LinearWithVarStride, Linear, Uniform, Vector };
   /// Attribute set of the parameter.
   struct ParamAttrTy {
@@ -7738,8 +7739,8 @@ namespace {
 
 static unsigned evaluateCDTSize(const FunctionDecl *FD,
                                 ArrayRef<ParamAttrTy> ParamAttrs) {
-  // Every vector variant of a SIMD-enabled function has a vector length (VLEN).
-  // If OpenACC clause "simdlen" is used, the VLEN is the value of the argument
+  // Every vector variant of a Vector-enabled function has a vector length (VLEN).
+  // If OpenACC clause "vectorlen" is used, the VLEN is the value of the argument
   // of that clause. The VLEN value must be power of 2.
   // In other case the notion of the function`s "characteristic data type" (CDT)
   // is used to compute the vector length.
@@ -7789,10 +7790,10 @@ static unsigned evaluateCDTSize(const FunctionDecl *FD,
 }
 
 static void
-emitX86DeclareSimdFunction(const FunctionDecl *FD, llvm::Function *Fn,
+emitX86DeclareVectorFunction(const FunctionDecl *FD, llvm::Function *Fn,
                            const llvm::APSInt &VLENVal,
                            ArrayRef<ParamAttrTy> ParamAttrs,
-                           ACCDeclareSimdDeclAttr::BranchStateTy State) {
+                           ACCDeclareVectorDeclAttr::BranchStateTy State) {
   struct ISADataTy {
     char ISA;
     unsigned VecRegSize;
@@ -7813,14 +7814,14 @@ emitX86DeclareSimdFunction(const FunctionDecl *FD, llvm::Function *Fn,
   };
   llvm::SmallVector<char, 2> Masked;
   switch (State) {
-  case ACCDeclareSimdDeclAttr::BS_Undefined:
+  case ACCDeclareVectorDeclAttr::BS_Undefined:
     Masked.push_back('N');
     Masked.push_back('M');
     break;
-  case ACCDeclareSimdDeclAttr::BS_Notinbranch:
+  case ACCDeclareVectorDeclAttr::BS_Notinbranch:
     Masked.push_back('N');
     break;
-  case ACCDeclareSimdDeclAttr::BS_Inbranch:
+  case ACCDeclareVectorDeclAttr::BS_Inbranch:
     Masked.push_back('M');
     break;
   }
@@ -7860,7 +7861,7 @@ emitX86DeclareSimdFunction(const FunctionDecl *FD, llvm::Function *Fn,
   }
 }
 
-void CGOpenACCRuntime::emitDeclareSimdFunction(const FunctionDecl *FD,
+void CGOpenACCRuntime::emitDeclareVectorFunction(const FunctionDecl *FD,
                                               llvm::Function *Fn) {
   ASTContext &C = CGM.getContext();
   FD = FD->getCanonicalDecl();
@@ -7873,7 +7874,7 @@ void CGOpenACCRuntime::emitDeclareSimdFunction(const FunctionDecl *FD,
     ParamPositions.insert({P->getCanonicalDecl(), ParamPos});
     ++ParamPos;
   }
-  for (auto *Attr : FD->specific_attrs<ACCDeclareSimdDeclAttr>()) {
+  for (auto *Attr : FD->specific_attrs<ACCDeclareVectorDeclAttr>()) {
     llvm::SmallVector<ParamAttrTy, 8> ParamAttrs(ParamPositions.size());
     // Mark uniform parameters.
     for (auto *E : Attr->uniforms()) {
@@ -7906,7 +7907,7 @@ void CGOpenACCRuntime::emitDeclareSimdFunction(const FunctionDecl *FD,
       ParamAttrs[Pos].Alignment =
           (*NI) ? (*NI)->EvaluateKnownConstInt(C)
                 : llvm::APSInt::getUnsigned(
-                      C.toCharUnitsFromBits(C.getOpenACCDefaultSimdAlign(ParmTy))
+                      C.toCharUnitsFromBits(C.getOpenACCDefaultVectorAlign(ParmTy))
                           .getQuantity());
       ++NI;
     }
@@ -7941,12 +7942,12 @@ void CGOpenACCRuntime::emitDeclareSimdFunction(const FunctionDecl *FD,
       ++MI;
     }
     llvm::APSInt VLENVal;
-    if (const Expr *VLEN = Attr->getSimdlen())
+    if (const Expr *VLEN = Attr->getVectorlen())
       VLENVal = VLEN->EvaluateKnownConstInt(C);
-    ACCDeclareSimdDeclAttr::BranchStateTy State = Attr->getBranchState();
+    ACCDeclareVectorDeclAttr::BranchStateTy State = Attr->getBranchState();
     if (CGM.getTriple().getArch() == llvm::Triple::x86 ||
         CGM.getTriple().getArch() == llvm::Triple::x86_64)
-      emitX86DeclareSimdFunction(FD, Fn, VLENVal, ParamAttrs, State);
+      emitX86DeclareVectorFunction(FD, Fn, VLENVal, ParamAttrs, State);
   }
 }
 
@@ -8084,174 +8085,174 @@ Address CGOpenACCRuntime::getParameterAddress(CodeGenFunction &CGF,
   return CGF.GetAddrOfLocalVar(NativeParam);
 }
 
-llvm::Value *CGOpenACCSIMDRuntime::emitParallelOutlinedFunction(
+llvm::Value *CGOpenACCVectorRuntime::emitParallelOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
     OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-llvm::Value *CGOpenACCSIMDRuntime::emitTeamsOutlinedFunction(
+llvm::Value *CGOpenACCVectorRuntime::emitTeamsOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
     OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-llvm::Value *CGOpenACCSIMDRuntime::emitTaskOutlinedFunction(
+llvm::Value *CGOpenACCVectorRuntime::emitTaskOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
     const VarDecl *PartIDVar, const VarDecl *TaskTVar,
     OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen,
     bool Tied, unsigned &NumberOfParts) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitParallelCall(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitParallelCall(CodeGenFunction &CGF,
                                            SourceLocation Loc,
                                            llvm::Value *OutlinedFn,
                                            ArrayRef<llvm::Value *> CapturedVars,
                                            const Expr *IfCond) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitCriticalRegion(
+void CGOpenACCVectorRuntime::emitCriticalRegion(
     CodeGenFunction &CGF, StringRef CriticalName,
     const ACCRegionCodeGenTy &CriticalOpGen, SourceLocation Loc,
     const Expr *Hint) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitMasterRegion(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitMasterRegion(CodeGenFunction &CGF,
                                            const ACCRegionCodeGenTy &MasterOpGen,
                                            SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTaskyieldCall(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitTaskyieldCall(CodeGenFunction &CGF,
                                             SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTaskgroupRegion(
+void CGOpenACCVectorRuntime::emitTaskgroupRegion(
     CodeGenFunction &CGF, const ACCRegionCodeGenTy &TaskgroupOpGen,
     SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitSingleRegion(
+void CGOpenACCVectorRuntime::emitSingleRegion(
     CodeGenFunction &CGF, const ACCRegionCodeGenTy &SingleOpGen,
     SourceLocation Loc, ArrayRef<const Expr *> CopyprivateVars,
     ArrayRef<const Expr *> DestExprs, ArrayRef<const Expr *> SrcExprs,
     ArrayRef<const Expr *> AssignmentOps) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitOrderedRegion(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitOrderedRegion(CodeGenFunction &CGF,
                                             const ACCRegionCodeGenTy &OrderedOpGen,
                                             SourceLocation Loc,
                                             bool IsThreads) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitBarrierCall(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitBarrierCall(CodeGenFunction &CGF,
                                           SourceLocation Loc,
                                           OpenACCDirectiveKind Kind,
                                           bool EmitChecks,
                                           bool ForceSimpleCall) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitForDispatchInit(
+void CGOpenACCVectorRuntime::emitForDispatchInit(
     CodeGenFunction &CGF, SourceLocation Loc,
     const OpenACCScheduleTy &ScheduleKind, unsigned IVSize, bool IVSigned,
     bool Ordered, const DispatchRTInput &DispatchValues) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitForStaticInit(
+void CGOpenACCVectorRuntime::emitForStaticInit(
     CodeGenFunction &CGF, SourceLocation Loc, OpenACCDirectiveKind DKind,
     const OpenACCScheduleTy &ScheduleKind, const StaticRTInput &Values) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitDistributeStaticInit(
+void CGOpenACCVectorRuntime::emitDistributeStaticInit(
     CodeGenFunction &CGF, SourceLocation Loc,
     OpenACCDistScheduleClauseKind SchedKind, const StaticRTInput &Values) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitForOrderedIterationEnd(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitForOrderedIterationEnd(CodeGenFunction &CGF,
                                                      SourceLocation Loc,
                                                      unsigned IVSize,
                                                      bool IVSigned) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitForStaticFinish(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitForStaticFinish(CodeGenFunction &CGF,
                                               SourceLocation Loc,
                                               OpenACCDirectiveKind DKind) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-llvm::Value *CGOpenACCSIMDRuntime::emitForNext(CodeGenFunction &CGF,
+llvm::Value *CGOpenACCVectorRuntime::emitForNext(CodeGenFunction &CGF,
                                               SourceLocation Loc,
                                               unsigned IVSize, bool IVSigned,
                                               Address IL, Address LB,
                                               Address UB, Address ST) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitNumThreadsClause(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitNumThreadsClause(CodeGenFunction &CGF,
                                                llvm::Value *NumThreads,
                                                SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitProcBindClause(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitProcBindClause(CodeGenFunction &CGF,
                                              OpenACCProcBindClauseKind ProcBind,
                                              SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-Address CGOpenACCSIMDRuntime::getAddrOfThreadPrivate(CodeGenFunction &CGF,
+Address CGOpenACCVectorRuntime::getAddrOfThreadPrivate(CodeGenFunction &CGF,
                                                     const VarDecl *VD,
                                                     Address VDAddr,
                                                     SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-llvm::Function *CGOpenACCSIMDRuntime::emitThreadPrivateVarDefinition(
+llvm::Function *CGOpenACCVectorRuntime::emitThreadPrivateVarDefinition(
     const VarDecl *VD, Address VDAddr, SourceLocation Loc, bool PerformInit,
     CodeGenFunction *CGF) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-Address CGOpenACCSIMDRuntime::getAddrOfArtificialThreadPrivate(
+Address CGOpenACCVectorRuntime::getAddrOfArtificialThreadPrivate(
     CodeGenFunction &CGF, QualType VarType, StringRef Name) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitFlush(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitFlush(CodeGenFunction &CGF,
                                     ArrayRef<const Expr *> Vars,
                                     SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
+void CGOpenACCVectorRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
                                        const ACCExecutableDirective &D,
                                        llvm::Value *TaskFunction,
                                        QualType SharedsTy, Address Shareds,
                                        const Expr *IfCond,
                                        const ACCTaskDataTy &Data) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTaskLoopCall(
+void CGOpenACCVectorRuntime::emitTaskLoopCall(
     CodeGenFunction &CGF, SourceLocation Loc, const ACCLoopLikeDirective &D,
     llvm::Value *TaskFunction, QualType SharedsTy, Address Shareds,
     const Expr *IfCond, const ACCTaskDataTy &Data) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitReduction(
+void CGOpenACCVectorRuntime::emitReduction(
     CodeGenFunction &CGF, SourceLocation Loc, ArrayRef<const Expr *> Privates,
     ArrayRef<const Expr *> LHSExprs, ArrayRef<const Expr *> RHSExprs,
     ArrayRef<const Expr *> ReductionOps, ReductionOptionsTy Options) {
@@ -8260,121 +8261,121 @@ void CGOpenACCSIMDRuntime::emitReduction(
                                  ReductionOps, Options);
 }
 
-llvm::Value *CGOpenACCSIMDRuntime::emitTaskReductionInit(
+llvm::Value *CGOpenACCVectorRuntime::emitTaskReductionInit(
     CodeGenFunction &CGF, SourceLocation Loc, ArrayRef<const Expr *> LHSExprs,
     ArrayRef<const Expr *> RHSExprs, const ACCTaskDataTy &Data) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTaskReductionFixups(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitTaskReductionFixups(CodeGenFunction &CGF,
                                                   SourceLocation Loc,
                                                   ACCReductionCodeGen &RCG,
                                                   unsigned N) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-Address CGOpenACCSIMDRuntime::getTaskReductionItem(CodeGenFunction &CGF,
+Address CGOpenACCVectorRuntime::getTaskReductionItem(CodeGenFunction &CGF,
                                                   SourceLocation Loc,
                                                   llvm::Value *ReductionsPtr,
                                                   LValue SharedLVal) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTaskwaitCall(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitTaskwaitCall(CodeGenFunction &CGF,
                                            SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitCancellationPointCall(
+void CGOpenACCVectorRuntime::emitCancellationPointCall(
     CodeGenFunction &CGF, SourceLocation Loc,
     OpenACCDirectiveKind CancelRegion) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitCancelCall(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitCancelCall(CodeGenFunction &CGF,
                                          SourceLocation Loc, const Expr *IfCond,
                                          OpenACCDirectiveKind CancelRegion) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTargetOutlinedFunction(
+void CGOpenACCVectorRuntime::emitTargetOutlinedFunction(
     const ACCExecutableDirective &D, StringRef ParentName,
     llvm::Function *&OutlinedFn, llvm::Constant *&OutlinedFnID,
     bool IsOffloadEntry, const ACCRegionCodeGenTy &CodeGen) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTargetCall(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitTargetCall(CodeGenFunction &CGF,
                                          const ACCExecutableDirective &D,
                                          llvm::Value *OutlinedFn,
                                          llvm::Value *OutlinedFnID,
                                          const Expr *IfCond, const Expr *Device) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-bool CGOpenACCSIMDRuntime::emitTargetFunctions(GlobalDecl GD) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+bool CGOpenACCVectorRuntime::emitTargetFunctions(GlobalDecl GD) {
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-bool CGOpenACCSIMDRuntime::emitTargetGlobalVariable(GlobalDecl GD) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+bool CGOpenACCVectorRuntime::emitTargetGlobalVariable(GlobalDecl GD) {
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-bool CGOpenACCSIMDRuntime::emitTargetGlobal(GlobalDecl GD) {
+bool CGOpenACCVectorRuntime::emitTargetGlobal(GlobalDecl GD) {
   return false;
 }
 
-llvm::Function *CGOpenACCSIMDRuntime::emitRegistrationFunction() {
+llvm::Function *CGOpenACCVectorRuntime::emitRegistrationFunction() {
   return nullptr;
 }
 
-void CGOpenACCSIMDRuntime::emitTeamsCall(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitTeamsCall(CodeGenFunction &CGF,
                                         const ACCExecutableDirective &D,
                                         SourceLocation Loc,
                                         llvm::Value *OutlinedFn,
                                         ArrayRef<llvm::Value *> CapturedVars) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitNumTeamsClause(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitNumTeamsClause(CodeGenFunction &CGF,
                                              const Expr *NumTeams,
                                              const Expr *ThreadLimit,
                                              SourceLocation Loc) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTargetDataCalls(
+void CGOpenACCVectorRuntime::emitTargetDataCalls(
     CodeGenFunction &CGF, const ACCExecutableDirective &D, const Expr *IfCond,
     const Expr *Device, const ACCRegionCodeGenTy &CodeGen, TargetDataInfo &Info) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitTargetDataStandAloneCall(
+void CGOpenACCVectorRuntime::emitTargetDataStandAloneCall(
     CodeGenFunction &CGF, const ACCExecutableDirective &D, const Expr *IfCond,
     const Expr *Device) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitDoacrossInit(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitDoacrossInit(CodeGenFunction &CGF,
                                            const ACCLoopLikeDirective &D) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
-void CGOpenACCSIMDRuntime::emitDoacrossOrdered(CodeGenFunction &CGF,
+void CGOpenACCVectorRuntime::emitDoacrossOrdered(CodeGenFunction &CGF,
                                               const ACCDependClause *C) {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
 const VarDecl *
-CGOpenACCSIMDRuntime::translateParameter(const FieldDecl *FD,
+CGOpenACCVectorRuntime::translateParameter(const FieldDecl *FD,
                                         const VarDecl *NativeParam) const {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 
 Address
-CGOpenACCSIMDRuntime::getParameterAddress(CodeGenFunction &CGF,
+CGOpenACCVectorRuntime::getParameterAddress(CodeGenFunction &CGF,
                                          const VarDecl *NativeParam,
                                          const VarDecl *TargetParam) const {
-  llvm_unreachable("Not supported in SIMD-only mode");
+  llvm_unreachable("Not supported in Vector-only mode");
 }
 

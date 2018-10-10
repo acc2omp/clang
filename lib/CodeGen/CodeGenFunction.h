@@ -3049,7 +3049,7 @@ public:
   llvm::Value *EmitSEHExceptionInfo();
   llvm::Value *EmitSEHAbnormalTermination();
 
-  /// Emit simple code for OpenACC directives in Simd-only mode.
+  /// Emit simple code for OpenACC directives in Vector-only mode.
   void EmitSimpleACCExecutableDirective(const ACCExecutableDirective &D);
   /// Emit simple code for OpenMP directives in Simd-only mode.
   void EmitSimpleOMPExecutableDirective(const OMPExecutableDirective &D);
@@ -3187,7 +3187,7 @@ public:
   bool EmitACCLastprivateClauseInit(const ACCExecutableDirective &D,
                                     ACCPrivateScope &PrivateScope);
   /// \brief Emit final copying of lastprivate values to original variables at
-  /// the end of the worksharing or simd directive.
+  /// the end of the worksharing or vector directive.
   ///
   /// \param D Directive that has at least one 'lastprivate' directives.
   /// \param IsLastIterCond Boolean condition that must be set to 'i1 true' if
@@ -3240,32 +3240,32 @@ public:
                                  const OpenACCDirectiveKind CapturedRegion,
                                  const ACCRegionCodeGenTy &BodyGen,
                                  const ACCTaskGenTy &TaskGen, ACCTaskDataTy &Data);
-  struct ACCTargetDataInfo {
+  struct ACCDataInfo {
     Address BasePointersArray = Address::invalid();
     Address PointersArray = Address::invalid();
     Address SizesArray = Address::invalid();
     unsigned NumberOfTargetItems = 0;
-    explicit ACCTargetDataInfo() = default;
-    ACCTargetDataInfo(Address BasePointersArray, Address PointersArray,
+    explicit ACCDataInfo() = default;
+    ACCDataInfo(Address BasePointersArray, Address PointersArray,
                       Address SizesArray, unsigned NumberOfTargetItems)
         : BasePointersArray(BasePointersArray), PointersArray(PointersArray),
           SizesArray(SizesArray), NumberOfTargetItems(NumberOfTargetItems) {}
   };
   void EmitACCTargetTaskBasedDirective(const ACCExecutableDirective &S,
                                        const ACCRegionCodeGenTy &BodyGen,
-                                       ACCTargetDataInfo &InputInfo);
+                                       ACCDataInfo &InputInfo);
 
   void EmitACCParallelDirective(const ACCParallelDirective &S);
-  void EmitACCSimdDirective(const ACCSimdDirective &S);
+  void EmitACCVectorDirective(const ACCVectorDirective &S);
   void EmitACCLoopDirective(const ACCLoopDirective &S);
-  void EmitACCLoopSimdDirective(const ACCLoopSimdDirective &S);
+  void EmitACCLoopVectorDirective(const ACCLoopVectorDirective &S);
   void EmitACCSectionsDirective(const ACCSectionsDirective &S);
   void EmitACCSectionDirective(const ACCSectionDirective &S);
   void EmitACCSingleDirective(const ACCSingleDirective &S);
   void EmitACCMasterDirective(const ACCMasterDirective &S);
   void EmitACCCriticalDirective(const ACCCriticalDirective &S);
   void EmitACCParallelLoopDirective(const ACCParallelLoopDirective &S);
-  void EmitACCParallelLoopSimdDirective(const ACCParallelLoopSimdDirective &S);
+  void EmitACCParallelLoopVectorDirective(const ACCParallelLoopVectorDirective &S);
   void EmitACCParallelSectionsDirective(const ACCParallelSectionsDirective &S);
   void EmitACCTaskDirective(const ACCTaskDirective &S);
   void EmitACCTaskyieldDirective(const ACCTaskyieldDirective &S);
@@ -3276,9 +3276,9 @@ public:
   void EmitACCOrderedDirective(const ACCOrderedDirective &S);
   void EmitACCAtomicDirective(const ACCAtomicDirective &S);
   void EmitACCTargetDirective(const ACCTargetDirective &S);
-  void EmitACCTargetDataDirective(const ACCTargetDataDirective &S);
-  void EmitACCTargetEnterDataDirective(const ACCTargetEnterDataDirective &S);
-  void EmitACCTargetExitDataDirective(const ACCTargetExitDataDirective &S);
+  void EmitACCDataDirective(const ACCDataDirective &S);
+  void EmitACCEnterDataDirective(const ACCEnterDataDirective &S);
+  void EmitACCExitDataDirective(const ACCExitDataDirective &S);
   void EmitACCTargetUpdateDirective(const ACCTargetUpdateDirective &S);
   void EmitACCTargetParallelDirective(const ACCTargetParallelDirective &S);
   void
@@ -3289,21 +3289,21 @@ public:
   void EmitACCCancelDirective(const ACCCancelDirective &S);
   void EmitACCTaskLoopBasedDirective(const ACCLoopLikeDirective &S);
   void EmitACCTaskLoopDirective(const ACCTaskLoopDirective &S);
-  void EmitACCTaskLoopSimdDirective(const ACCTaskLoopSimdDirective &S);
+  void EmitACCTaskLoopVectorDirective(const ACCTaskLoopVectorDirective &S);
   void EmitACCDistributeDirective(const ACCDistributeDirective &S);
   void EmitACCDistributeParallelLoopDirective(
       const ACCDistributeParallelLoopDirective &S);
-  void EmitACCDistributeParallelLoopSimdDirective(
-      const ACCDistributeParallelLoopSimdDirective &S);
-  void EmitACCDistributeSimdDirective(const ACCDistributeSimdDirective &S);
-  void EmitACCTargetParallelLoopSimdDirective(
-      const ACCTargetParallelLoopSimdDirective &S);
-  void EmitACCTargetSimdDirective(const ACCTargetSimdDirective &S);
+  void EmitACCDistributeParallelLoopVectorDirective(
+      const ACCDistributeParallelLoopVectorDirective &S);
+  void EmitACCDistributeVectorDirective(const ACCDistributeVectorDirective &S);
+  void EmitACCTargetParallelLoopVectorDirective(
+      const ACCTargetParallelLoopVectorDirective &S);
+  void EmitACCTargetVectorDirective(const ACCTargetVectorDirective &S);
   void EmitACCTeamsDistributeDirective(const ACCTeamsDistributeDirective &S);
   void
-  EmitACCTeamsDistributeSimdDirective(const ACCTeamsDistributeSimdDirective &S);
-  void EmitACCTeamsDistributeParallelLoopSimdDirective(
-      const ACCTeamsDistributeParallelLoopSimdDirective &S);
+  EmitACCTeamsDistributeVectorDirective(const ACCTeamsDistributeVectorDirective &S);
+  void EmitACCTeamsDistributeParallelLoopVectorDirective(
+      const ACCTeamsDistributeParallelLoopVectorDirective &S);
   void EmitACCTeamsDistributeParallelLoopDirective(
       const ACCTeamsDistributeParallelLoopDirective &S);
   void EmitACCTargetTeamsDirective(const ACCTargetTeamsDirective &S);
@@ -3311,10 +3311,10 @@ public:
       const ACCTargetTeamsDistributeDirective &S);
   void EmitACCTargetTeamsDistributeParallelLoopDirective(
       const ACCTargetTeamsDistributeParallelLoopDirective &S);
-  void EmitACCTargetTeamsDistributeParallelLoopSimdDirective(
-      const ACCTargetTeamsDistributeParallelLoopSimdDirective &S);
-  void EmitACCTargetTeamsDistributeSimdDirective(
-      const ACCTargetTeamsDistributeSimdDirective &S);
+  void EmitACCTargetTeamsDistributeParallelLoopVectorDirective(
+      const ACCTargetTeamsDistributeParallelLoopVectorDirective &S);
+  void EmitACCTargetTeamsDistributeVectorDirective(
+      const ACCTargetTeamsDistributeVectorDirective &S);
 
   /// Emit device code for the target directive.
   static void EmitACCTargetDeviceFunction(CodeGenModule &CGM,
@@ -3327,10 +3327,10 @@ public:
   static void EmitACCTargetParallelForDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
       const ACCTargetParallelLoopDirective &S);
-  /// Emit device code for the target parallel for simd directive.
-  static void EmitACCTargetParallelForSimdDeviceFunction(
+  /// Emit device code for the target parallel for vector directive.
+  static void EmitACCTargetParallelForVectorDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetParallelLoopSimdDirective &S);
+      const ACCTargetParallelLoopVectorDirective &S);
   /// Emit device code for the target teams directive.
   static void
   EmitACCTargetTeamsDeviceFunction(CodeGenModule &CGM, StringRef ParentName,
@@ -3339,24 +3339,24 @@ public:
   static void EmitACCTargetTeamsDistributeDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
       const ACCTargetTeamsDistributeDirective &S);
-  /// Emit device code for the target teams distribute simd directive.
-  static void EmitACCTargetTeamsDistributeSimdDeviceFunction(
+  /// Emit device code for the target teams distribute vector directive.
+  static void EmitACCTargetTeamsDistributeVectorDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeSimdDirective &S);
-  /// Emit device code for the target simd directive.
-  static void EmitACCTargetSimdDeviceFunction(CodeGenModule &CGM,
+      const ACCTargetTeamsDistributeVectorDirective &S);
+  /// Emit device code for the target vector directive.
+  static void EmitACCTargetVectorDeviceFunction(CodeGenModule &CGM,
                                               StringRef ParentName,
-                                              const ACCTargetSimdDirective &S);
-  /// Emit device code for the target teams distribute parallel for simd
+                                              const ACCTargetVectorDirective &S);
+  /// Emit device code for the target teams distribute parallel for vector
   /// directive.
-  static void EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
+  static void EmitACCTargetTeamsDistributeParallelForVectorDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeParallelLoopSimdDirective &S);
+      const ACCTargetTeamsDistributeParallelLoopVectorDirective &S);
 
   static void EmitACCTargetTeamsDistributeParallelForDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
       const ACCTargetTeamsDistributeParallelLoopDirective &S);
-  /// \brief Emit inner loop of the worksharing/simd construct.
+  /// \brief Emit inner loop of the worksharing/vector construct.
   ///
   /// \param S Directive, for which the inner loop must be emitted.
   /// \param RequiresCleanup true, if directive has some associated private
@@ -3392,8 +3392,8 @@ public:
                              const ACCCodeGenLoopTy &CodeGenLoop, Expr *IncExpr);
 
   /// Helpers for the OpenACC loop directives.
-  void EmitACCSimdInit(const ACCLoopLikeDirective &D, bool IsMonotonic = false);
-  void EmitACCSimdFinal(
+  void EmitACCVectorInit(const ACCLoopLikeDirective &D, bool IsMonotonic = false);
+  void EmitACCVectorFinal(
       const ACCLoopLikeDirective &D,
       const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen);
 

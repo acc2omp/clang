@@ -2735,17 +2735,17 @@ def ACCCaptureKind : Attr {
   let Documentation = [Undocumented];
 }
 
-def ACCDeclareSimdDecl : Attr {
-  let Spellings = [Pragma<"acc", "declare simd">];
+def ACCDeclareVectorDecl : Attr {
+  let Spellings = [Pragma<"acc", "declare vector">];
   let Subjects = SubjectList<[Function]>;
   let SemaHandler = 0;
   let HasCustomParsing = 1;
-  let Documentation = [ACCDeclareSimdDocs];
+  let Documentation = [ACCDeclareVectorDocs];
   let Args = [
     EnumArgument<"BranchState", "BranchStateTy",
                  [ "", "inbranch", "notinbranch" ],
                  [ "BS_Undefined", "BS_Inbranch", "BS_Notinbranch" ]>,
-    ExprArgument<"Simdlen">, VariadicExprArgument<"Uniforms">,
+    ExprArgument<"Vectorlen">, VariadicExprArgument<"Uniforms">,
     VariadicExprArgument<"Aligneds">, VariadicExprArgument<"Alignments">,
     VariadicExprArgument<"Linears">, VariadicUnsignedArgument<"Modifiers">,
     VariadicExprArgument<"Steps">
@@ -2755,8 +2755,8 @@ def ACCDeclareSimdDecl : Attr {
         const {
       if (getBranchState() != BS_Undefined)
         OS << ' ' << ConvertBranchStateTyToStr(getBranchState());
-      if (auto *E = getSimdlen()) {
-        OS << " simdlen(";
+      if (auto *E = getVectorlen()) {
+        OS << " vectorlen(";
         E->printPretty(OS, nullptr, Policy);
         OS << ")";
       }

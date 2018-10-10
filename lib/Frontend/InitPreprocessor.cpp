@@ -1019,7 +1019,7 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
     break;
   default:
     // Default version is OpenACC 3.1, in Simd only mode - 4.5
-    Builder.defineMacro("_OPENACC", LangOpts.OpenACCSimd ? "201511" : "201107");
+    Builder.defineMacro("_OPENACC", LangOpts.OpenACCVector ? "201511" : "201107");
     break;
   }
 

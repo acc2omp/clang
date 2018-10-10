@@ -3808,11 +3808,11 @@ recurse:
     }
     //TODO acc2mp
     //Figure out if this is necessary
-    //case UETT_OpenACCRequiredSimdAlign:
+    //case UETT_OpenACCRequiredVectorAlign:
     //  DiagnosticsEngine &Diags = Context.getDiags();
     //  unsigned DiagID = Diags.getCustomDiagID(
     //      DiagnosticsEngine::Error,
-    //      "cannot yet mangle __builtin_acc_required_simd_align expression");
+    //      "cannot yet mangle __builtin_acc_required_vector_align expression");
     //  Diags.Report(DiagID);
     //  return;
     case UETT_OpenMPRequiredSimdAlign:

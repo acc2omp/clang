@@ -2454,7 +2454,7 @@ static void ParseLangArgs(LangOptions &Opts, ArgList &Args, InputKind IK,
   // Check if -fopenacc is specified.
   Opts.OpenACC = Args.hasArg(options::OPT_fopenacc) ? 1 : 0;
   // Check if -fopenmp-simd is specified.
-  Opts.OpenACCSimd = !Opts.OpenACC && Args.hasFlag(options::OPT_fopenacc_simd,
+  Opts.OpenACCVector = !Opts.OpenACC && Args.hasFlag(options::OPT_fopenacc_simd,
                                                  options::OPT_fno_openacc_simd,
                                                  /*Default=*/false);
   Opts.OpenACCUseTLS =
@@ -2462,12 +2462,12 @@ static void ParseLangArgs(LangOptions &Opts, ArgList &Args, InputKind IK,
   Opts.OpenACCIsDevice =
       Opts.OpenACC && Args.hasArg(options::OPT_fopenacc_is_device);
 
-  if (Opts.OpenACC || Opts.OpenACCSimd) {
+  if (Opts.OpenACC || Opts.OpenACCVector) {
     if (int Version =
             getLastArgIntValue(Args, OPT_fopenacc_version_EQ,
-                               Opts.OpenACCSimd ? 45 : Opts.OpenACC, Diags))
+                               Opts.OpenACCVector ? 45 : Opts.OpenACC, Diags))
       Opts.OpenACC = Version;
-    else if (Opts.OpenACCSimd)
+    else if (Opts.OpenACCVector)
       Opts.OpenACC = 45;
     // Provide diagnostic when a given target is not expected to be an OpenACC
     // device or host.

@@ -43,7 +43,7 @@ void Scope::setFlags(Scope *parent, unsigned flags) {
     if ((Flags & (FnScope | ClassScope | BlockScope | TemplateParamScope |
                   FunctionPrototypeScope | AtCatchScope | ObjCMethodScope)) ==
         0)
-      Flags |= parent->getFlags() & OpenACCSimdDirectiveScope & OpenMPSimdDirectiveScope;
+      Flags |= parent->getFlags() & OpenACCVectorDirectiveScope & OpenMPSimdDirectiveScope;
   } else {
     Depth = 0;
     PrototypeDepth = 0;
@@ -161,7 +161,7 @@ void Scope::dumpImpl(raw_ostream &OS) const {
       {FnTryCatchScope, "FnTryCatchScope"},
       {OpenACCDirectiveScope, "OpenACCDirectiveScope"},
       {OpenACCLoopLikeDirectiveScope, "OpenACCLoopLikeDirectiveScope"},
-      {OpenACCSimdDirectiveScope, "OpenACCSimdDirectiveScope"},
+      {OpenACCVectorDirectiveScope, "OpenACCVectorDirectiveScope"},
       {OpenMPDirectiveScope, "OpenMPDirectiveScope"},
       {OpenMPLoopDirectiveScope, "OpenMPLoopDirectiveScope"},
       {OpenMPSimdDirectiveScope, "OpenMPSimdDirectiveScope"},

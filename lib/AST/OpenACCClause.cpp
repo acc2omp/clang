@@ -72,12 +72,11 @@ const ACCClauseWithPreInit *ACCClauseWithPreInit::get(const ACCClause *C) {
   case ACCC_proc_bind:
   case ACCC_final:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_private:
   case ACCC_shared:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_ordered:
   case ACCC_nowait:
@@ -92,8 +91,13 @@ const ACCClauseWithPreInit *ACCClauseWithPreInit::get(const ACCClause *C) {
   case ACCC_seq_cst:
   case ACCC_depend:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_map:
+  case ACCC_create:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
+  case ACCC_delete:
   case ACCC_priority:
   case ACCC_grainsize:
   case ACCC_nogroup:
@@ -138,12 +142,11 @@ const ACCClauseWithPostUpdate *ACCClauseWithPostUpdate::get(const ACCClause *C) 
   case ACCC_final:
   case ACCC_num_threads:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_private:
   case ACCC_shared:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_ordered:
   case ACCC_nowait:
@@ -159,8 +162,13 @@ const ACCClauseWithPostUpdate *ACCClauseWithPostUpdate::get(const ACCClause *C) 
   case ACCC_depend:
   case ACCC_device:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_map:
+  case ACCC_create:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
+  case ACCC_delete:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -768,6 +776,61 @@ ACCMapClause *ACCMapClause::CreateEmpty(const ASTContext &C, unsigned NumVars,
                                 NumComponentLists, NumComponents);
 }
 /// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Create
+ACCCreateClause *
+ACCCreateClause::Create(const ASTContext &C, SourceLocation StartLoc,
+                     SourceLocation LParenLoc, SourceLocation EndLoc,
+                     ArrayRef<Expr *> Vars, ArrayRef<ValueDecl *> Declarations,
+                     MappableExprComponentListsRef ComponentLists,
+                     OpenACCMapClauseKind TypeModifier, OpenACCMapClauseKind Type,
+                     bool TypeIsImplicit, SourceLocation TypeLoc) {
+  unsigned NumVars = Vars.size();
+  unsigned NumUniqueDeclarations =
+      getUniqueDeclarationsTotalNumber(Declarations);
+  unsigned NumComponentLists = ComponentLists.size();
+  unsigned NumComponents = getComponentsTotalNumber(ComponentLists);
+
+  // We need to allocate:
+  // NumVars x Expr* - we have an original list expression for each clause list
+  // entry.
+  // NumUniqueDeclarations x ValueDecl* - unique base declarations associated
+  // with each component list.
+  // (NumUniqueDeclarations + NumComponentLists) x unsigned - we specify the
+  // number of lists for each unique declaration and the size of each component
+  // list.
+  // NumComponents x MappableComponent - the total of all the components in all
+  // the lists.
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  ACCCreateClause *Clause = new (Mem) ACCCreateClause(
+      TypeModifier, Type, TypeIsImplicit, TypeLoc, StartLoc, LParenLoc, EndLoc,
+      NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents);
+
+  Clause->setVarRefs(Vars);
+  Clause->setClauseInfo(Declarations, ComponentLists);
+  Clause->setMapTypeModifier(TypeModifier);
+  Clause->setMapType(Type);
+  Clause->setMapLoc(TypeLoc);
+  return Clause;
+}
+
+ACCCreateClause *ACCCreateClause::CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                        unsigned NumUniqueDeclarations,
+                                        unsigned NumComponentLists,
+                                        unsigned NumComponents) {
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  return new (Mem) ACCCreateClause(NumVars, NumUniqueDeclarations,
+                                NumComponentLists, NumComponents);
+}
+
+/// MYHEADER : Basing the next class on ACCMapClause
 //  Clause Copy
 ACCCopyClause *
 ACCCopyClause::Create(const ASTContext &C, SourceLocation StartLoc,
@@ -929,6 +992,60 @@ ACCCopyoutClause *ACCCopyoutClause::CreateEmpty(const ASTContext &C, unsigned Nu
           NumVars, NumUniqueDeclarations,
           NumUniqueDeclarations + NumComponentLists, NumComponents));
   return new (Mem) ACCCopyoutClause(NumVars, NumUniqueDeclarations,
+                                NumComponentLists, NumComponents);
+}
+/// MYHEADER : Basing the next class on ACCMapClause
+//  Clause Delete
+ACCDeleteClause *
+ACCDeleteClause::Create(const ASTContext &C, SourceLocation StartLoc,
+                     SourceLocation LParenLoc, SourceLocation EndLoc,
+                     ArrayRef<Expr *> Vars, ArrayRef<ValueDecl *> Declarations,
+                     MappableExprComponentListsRef ComponentLists,
+                     OpenACCMapClauseKind TypeModifier, OpenACCMapClauseKind Type,
+                     bool TypeIsImplicit, SourceLocation TypeLoc) {
+  unsigned NumVars = Vars.size();
+  unsigned NumUniqueDeclarations =
+      getUniqueDeclarationsTotalNumber(Declarations);
+  unsigned NumComponentLists = ComponentLists.size();
+  unsigned NumComponents = getComponentsTotalNumber(ComponentLists);
+
+  // We need to allocate:
+  // NumVars x Expr* - we have an original list expression for each clause list
+  // entry.
+  // NumUniqueDeclarations x ValueDecl* - unique base declarations associated
+  // with each component list.
+  // (NumUniqueDeclarations + NumComponentLists) x unsigned - we specify the
+  // number of lists for each unique declaration and the size of each component
+  // list.
+  // NumComponents x MappableComponent - the total of all the components in all
+  // the lists.
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  ACCDeleteClause *Clause = new (Mem) ACCDeleteClause(
+      TypeModifier, Type, TypeIsImplicit, TypeLoc, StartLoc, LParenLoc, EndLoc,
+      NumVars, NumUniqueDeclarations, NumComponentLists, NumComponents);
+
+  Clause->setVarRefs(Vars);
+  Clause->setClauseInfo(Declarations, ComponentLists);
+  Clause->setMapTypeModifier(TypeModifier);
+  Clause->setMapType(Type);
+  Clause->setMapLoc(TypeLoc);
+  return Clause;
+}
+
+ACCDeleteClause *ACCDeleteClause::CreateEmpty(const ASTContext &C, unsigned NumVars,
+                                        unsigned NumUniqueDeclarations,
+                                        unsigned NumComponentLists,
+                                        unsigned NumComponents) {
+  void *Mem = C.Allocate(
+      totalSizeToAlloc<Expr *, ValueDecl *, unsigned,
+                       ACCClauseMappableExprCommon::MappableComponent>(
+          NumVars, NumUniqueDeclarations,
+          NumUniqueDeclarations + NumComponentLists, NumComponents));
+  return new (Mem) ACCDeleteClause(NumVars, NumUniqueDeclarations,
                                 NumComponentLists, NumComponents);
 }
 

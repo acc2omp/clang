@@ -642,9 +642,9 @@ void ACCClausePrinter::VisitACCSafelenClause(ACCSafelenClause *Node) {
   OS << ")";
 }
 
-void ACCClausePrinter::VisitACCSimdlenClause(ACCSimdlenClause *Node) {
-  OS << "simdlen(";
-  Node->getSimdlen()->printPretty(OS, nullptr, Policy, 0);
+void ACCClausePrinter::VisitACCVectorlenClause(ACCVectorlenClause *Node) {
+  OS << "vectorlen(";
+  Node->getVectorlen()->printPretty(OS, nullptr, Policy, 0);
   OS << ")";
 }
 
@@ -731,7 +731,7 @@ void ACCClausePrinter::VisitACCThreadsClause(ACCThreadsClause *) {
   OS << "threads";
 }
 
-void ACCClausePrinter::VisitACCSIMDClause(ACCSIMDClause *) { OS << "simd"; }
+void ACCClausePrinter::VisitACCVectorClause(ACCVectorClause *) { OS << "simd"; }
 
 void ACCClausePrinter::VisitACCDeviceClause(ACCDeviceClause *Node) {
   OS << "device(";
@@ -972,17 +972,33 @@ void ACCClausePrinter::VisitACCMapClause(ACCMapClause *Node) {
   }
 }
 
-//TODO acc2mp modify infra for copy
+//TODO acc2mp modify infra for create, copy, copyin, copyout, delete
+void ACCClausePrinter::VisitACCCreateClause(ACCCreateClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "create(";
+    if (Node->getMapType() != ACCC_MAP_unknown) {
+      if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
+        OS << getOpenACCSimpleClauseTypeName(ACCC_create,
+                                            Node->getMapTypeModifier());
+        OS << ',';
+      }
+      OS << getOpenACCSimpleClauseTypeName(ACCC_create, Node->getMapType());
+      OS << ':';
+    }
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
 void ACCClausePrinter::VisitACCCopyClause(ACCCopyClause *Node) {
   if (!Node->varlist_empty()) {
     OS << "copy(";
     if (Node->getMapType() != ACCC_MAP_unknown) {
       if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
-        OS << getOpenACCSimpleClauseTypeName(ACCC_map, 
+        OS << getOpenACCSimpleClauseTypeName(ACCC_copy,
                                             Node->getMapTypeModifier());
         OS << ',';
       }
-      OS << getOpenACCSimpleClauseTypeName(ACCC_map, Node->getMapType());
+      OS << getOpenACCSimpleClauseTypeName(ACCC_copy, Node->getMapType());
       OS << ':';
     }
     VisitACCClauseList(Node, ' ');
@@ -994,11 +1010,11 @@ void ACCClausePrinter::VisitACCCopyinClause(ACCCopyinClause *Node) {
     OS << "copyin(";
     if (Node->getMapType() != ACCC_MAP_unknown) {
       if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
-        OS << getOpenACCSimpleClauseTypeName(ACCC_map, 
+        OS << getOpenACCSimpleClauseTypeName(ACCC_copyin,
                                             Node->getMapTypeModifier());
         OS << ',';
       }
-      OS << getOpenACCSimpleClauseTypeName(ACCC_map, Node->getMapType());
+      OS << getOpenACCSimpleClauseTypeName(ACCC_copyin, Node->getMapType());
       OS << ':';
     }
     VisitACCClauseList(Node, ' ');
@@ -1010,11 +1026,27 @@ void ACCClausePrinter::VisitACCCopyoutClause(ACCCopyoutClause *Node) {
     OS << "copyout(";
     if (Node->getMapType() != ACCC_MAP_unknown) {
       if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
-        OS << getOpenACCSimpleClauseTypeName(ACCC_map, 
+        OS << getOpenACCSimpleClauseTypeName(ACCC_copyout,
                                             Node->getMapTypeModifier());
         OS << ',';
       }
-      OS << getOpenACCSimpleClauseTypeName(ACCC_map, Node->getMapType());
+      OS << getOpenACCSimpleClauseTypeName(ACCC_copyout, Node->getMapType());
+      OS << ':';
+    }
+    VisitACCClauseList(Node, ' ');
+    OS << ")";
+  }
+}
+void ACCClausePrinter::VisitACCDeleteClause(ACCDeleteClause *Node) {
+  if (!Node->varlist_empty()) {
+    OS << "delete(";
+    if (Node->getMapType() != ACCC_MAP_unknown) {
+      if (Node->getMapTypeModifier() != ACCC_MAP_unknown) {
+        OS << getOpenACCSimpleClauseTypeName(ACCC_delete,
+                                            Node->getMapTypeModifier());
+        OS << ',';
+      }
+      OS << getOpenACCSimpleClauseTypeName(ACCC_delete, Node->getMapType());
       OS << ':';
     }
     VisitACCClauseList(Node, ' ');
@@ -1099,7 +1131,7 @@ void StmtPrinter::VisitACCParallelDirective(ACCParallelDirective *Node) {
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCSimdDirective(ACCSimdDirective *Node) {
+void StmtPrinter::VisitACCVectorDirective(ACCVectorDirective *Node) {
   Indent() << "#pragma acc simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1109,7 +1141,7 @@ void StmtPrinter::VisitACCLoopDirective(ACCLoopDirective *Node) {
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCLoopSimdDirective(ACCLoopSimdDirective *Node) {
+void StmtPrinter::VisitACCLoopVectorDirective(ACCLoopVectorDirective *Node) {
   Indent() << "#pragma acc for simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1149,8 +1181,8 @@ void StmtPrinter::VisitACCParallelLoopDirective(ACCParallelLoopDirective *Node) 
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCParallelLoopSimdDirective(
-    ACCParallelLoopSimdDirective *Node) {
+void StmtPrinter::VisitACCParallelLoopVectorDirective(
+    ACCParallelLoopVectorDirective *Node) {
   Indent() << "#pragma acc parallel for simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1206,19 +1238,19 @@ void StmtPrinter::VisitACCTargetDirective(ACCTargetDirective *Node) {
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetDataDirective(ACCTargetDataDirective *Node) {
+void StmtPrinter::VisitACCDataDirective(ACCDataDirective *Node) {
   Indent() << "#pragma acc target data";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetEnterDataDirective(
-    ACCTargetEnterDataDirective *Node) {
+void StmtPrinter::VisitACCEnterDataDirective(
+    ACCEnterDataDirective *Node) {
   Indent() << "#pragma acc target enter data";
   PrintACCExecutableDirective(Node, /*ForceNoStmt=*/true);
 }
 
-void StmtPrinter::VisitACCTargetExitDataDirective(
-    ACCTargetExitDataDirective *Node) {
+void StmtPrinter::VisitACCExitDataDirective(
+    ACCExitDataDirective *Node) {
   Indent() << "#pragma acc target exit data";
   PrintACCExecutableDirective(Node, /*ForceNoStmt=*/true);
 }
@@ -1258,8 +1290,8 @@ void StmtPrinter::VisitACCTaskLoopDirective(ACCTaskLoopDirective *Node) {
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTaskLoopSimdDirective(
-    ACCTaskLoopSimdDirective *Node) {
+void StmtPrinter::VisitACCTaskLoopVectorDirective(
+    ACCTaskLoopVectorDirective *Node) {
   Indent() << "#pragma acc taskloop simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1281,25 +1313,25 @@ void StmtPrinter::VisitACCDistributeParallelLoopDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCDistributeParallelLoopSimdDirective(
-    ACCDistributeParallelLoopSimdDirective *Node) {
+void StmtPrinter::VisitACCDistributeParallelLoopVectorDirective(
+    ACCDistributeParallelLoopVectorDirective *Node) {
   Indent() << "#pragma acc distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCDistributeSimdDirective(
-    ACCDistributeSimdDirective *Node) {
+void StmtPrinter::VisitACCDistributeVectorDirective(
+    ACCDistributeVectorDirective *Node) {
   Indent() << "#pragma acc distribute simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetParallelLoopSimdDirective(
-    ACCTargetParallelLoopSimdDirective *Node) {
+void StmtPrinter::VisitACCTargetParallelLoopVectorDirective(
+    ACCTargetParallelLoopVectorDirective *Node) {
   Indent() << "#pragma acc target parallel for simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetSimdDirective(ACCTargetSimdDirective *Node) {
+void StmtPrinter::VisitACCTargetVectorDirective(ACCTargetVectorDirective *Node) {
   Indent() << "#pragma acc target simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1310,14 +1342,14 @@ void StmtPrinter::VisitACCTeamsDistributeDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeSimdDirective(
-    ACCTeamsDistributeSimdDirective *Node) {
+void StmtPrinter::VisitACCTeamsDistributeVectorDirective(
+    ACCTeamsDistributeVectorDirective *Node) {
   Indent() << "#pragma acc teams distribute simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeParallelLoopSimdDirective(
-    ACCTeamsDistributeParallelLoopSimdDirective *Node) {
+void StmtPrinter::VisitACCTeamsDistributeParallelLoopVectorDirective(
+    ACCTeamsDistributeParallelLoopVectorDirective *Node) {
   Indent() << "#pragma acc teams distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }
@@ -1345,14 +1377,14 @@ void StmtPrinter::VisitACCTargetTeamsDistributeParallelLoopDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
-    ACCTargetTeamsDistributeParallelLoopSimdDirective *Node) {
+void StmtPrinter::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
+    ACCTargetTeamsDistributeParallelLoopVectorDirective *Node) {
   Indent() << "#pragma acc target teams distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeSimdDirective(
-    ACCTargetTeamsDistributeSimdDirective *Node) {
+void StmtPrinter::VisitACCTargetTeamsDistributeVectorDirective(
+    ACCTargetTeamsDistributeVectorDirective *Node) {
   Indent() << "#pragma acc target teams distribute simd";
   PrintACCExecutableDirective(Node);
 }
@@ -2387,11 +2419,11 @@ void StmtPrinter::VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *Node){
   case UETT_VecStep:
     OS << "vec_step";
     break;
-  case UETT_OpenACCRequiredSimdAlign:
-    OS << "__builtin_acc_required_simd_align";
+  case UETT_OpenACCRequiredVectorAlign:
+    OS << "__builtin_acc_required_vector_align";
     break;
   case UETT_OpenMPRequiredSimdAlign:
-    OS << "__builtin_omp_required_simd_align";
+    OS << "__builtin_omp_required_vector_align";
     break;
   }
   if (Node->isArgumentType()) {

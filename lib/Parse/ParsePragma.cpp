@@ -2153,12 +2153,16 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   llvm::outs()<<"Generating tokens for OPENACC annotation:\n";
 
   while (Tok.isNot(tok::eod) && Tok.isNot(tok::eof)) {
+    IdentifierInfo* myIdInfo = Tok.getIdentifierInfo();
+    llvm::outs() << "IdentifierInfo = (" << myIdInfo << ")\n";
+    if(myIdInfo != 0){
+        llvm::outs() << "     ->getNameStart() = [" << myIdInfo->getNameStart() << "]\n";
+    }
     Pragma.push_back(Tok);
     PP.Lex(Tok);
-    llvm::outs() << "LexTok(" << Tok.getName() << ")\n";
 
     if (Tok.is(tok::annot_pragma_openacc)) {
-      PP.Diag(Tok, diag::err_omp_unexpected_directive) << 0;
+      PP.Diag(Tok, diag::err_acc_unexpected_directive) << 0;
       unsigned InnerPragmaCnt = 1;
       while (InnerPragmaCnt != 0) {
         PP.Lex(Tok);
@@ -2188,12 +2192,10 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
 
 
   while(Pragma.size() > 0){
-    llvm::outs()<<" ["<<Pragma.pop_back_val().getName()<<"]";
+    llvm::outs()<<" ["<< Pragma.pop_back_val().getName() << "]";
   }
 
   llvm::outs()<<"\nPassed tokens into PP.EnterTokenStream()\n";
-
-
 }
 
 

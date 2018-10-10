@@ -8808,11 +8808,11 @@ bool IntExprEvaluator::VisitUnaryExprOrTypeTraitExpr(
       return false;
     return Success(Sizeof, E);
   }
-  case UETT_OpenACCRequiredSimdAlign:
+  case UETT_OpenACCRequiredVectorAlign:
     assert(E->isArgumentType());
     return Success(
         Info.Ctx.toCharUnitsFromBits(
-                    Info.Ctx.getOpenACCDefaultSimdAlign(E->getArgumentType()))
+                    Info.Ctx.getOpenACCDefaultVectorAlign(E->getArgumentType()))
             .getQuantity(),
         E);
   case UETT_OpenMPRequiredSimdAlign:

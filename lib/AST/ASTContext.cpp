@@ -1981,15 +1981,15 @@ TypeInfo ASTContext::getTypeInfoImpl(const Type *T) const {
   return TypeInfo(Width, Align, AlignIsRequired);
 }
 
-unsigned ASTContext::getOpenACCDefaultSimdAlign(QualType T) const {
-  unsigned SimdAlign = getTargetInfo().getSimdDefaultAlign();
+unsigned ASTContext::getOpenACCDefaultVectorAlign(QualType T) const {
+  unsigned VectorAlign = getTargetInfo().getSimdDefaultAlign();
   // Target ppc64 with QPX: simd default alignment for pointer to double is 32.
   if ((getTargetInfo().getTriple().getArch() == llvm::Triple::ppc64 ||
        getTargetInfo().getTriple().getArch() == llvm::Triple::ppc64le) &&
       getTargetInfo().getABI() == "elfv1-qpx" &&
       T->isSpecificBuiltinType(BuiltinType::Double))
-    SimdAlign = 256;
-  return SimdAlign;
+    VectorAlign = 256;
+  return VectorAlign;
 }
 
 unsigned ASTContext::getOpenMPDefaultSimdAlign(QualType T) const {

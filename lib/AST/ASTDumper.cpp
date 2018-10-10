@@ -2073,8 +2073,17 @@ void ASTDumper::VisitCapturedStmt(const CapturedStmt *Node) {
 
 void ASTDumper::VisitACCExecutableDirective(
     const ACCExecutableDirective *Node) {
+
+  llvm::outs() << " <<<< ASTDumper DEBUG >>>>> ACCExecutableDirective name is "
+      << getOpenACCDirectiveName(Node->getDirectiveKind()) << "\n{ VisitStmt(Node): ";
+
+
   VisitStmt(Node);
+
+  llvm::outs() << "\n} Ended VisitStmt(Node)\n";
+  int iter = 0;
   for (auto *C : Node->clauses()) {
+    llvm::outs() << "Going through clauses, now it's " << iter++ <<"th iteration\n";
     dumpChild([=] {
       if (!C) {
         ColorScope Color(*this, NullColor);
@@ -2091,8 +2100,12 @@ void ASTDumper::VisitACCExecutableDirective(
       dumpSourceRange(SourceRange(C->getLocStart(), C->getLocEnd()));
       if (C->isImplicit())
         OS << " <implicit>";
-      for (auto *S : C->children())
+      int iter2 = 0;
+      for (auto *S : C->children()) {
+        llvm::outs()<<"-Visiting Child no["<<iter2++<<"]{";
         dumpStmt(S);
+        llvm::outs()<<"} ended visiting child no[" << iter2 - 1 <<"]\n";
+      }
     });
   }
 }
@@ -2322,8 +2335,8 @@ void ASTDumper::VisitUnaryExprOrTypeTraitExpr(
   case UETT_VecStep:
     OS << " vec_step";
     break;
-  case UETT_OpenACCRequiredSimdAlign:
-    OS << " __builtin_acc_required_simd_align";
+  case UETT_OpenACCRequiredVectorAlign:
+    OS << " __builtin_acc_required_vector_align";
     break;
   case UETT_OpenMPRequiredSimdAlign:
     OS << " __builtin_omp_required_simd_align";

@@ -2279,7 +2279,7 @@ static LValue EmitGlobalVarDeclLValue(CodeGenFunction &CGF,
 
   // Emit reference to the private copy of the variable if it is an OpenACC
   // threadprivate variable.
-  if (CGF.getLangOpts().OpenACC && !CGF.getLangOpts().OpenACCSimd &&
+  if (CGF.getLangOpts().OpenACC && !CGF.getLangOpts().OpenACCVector &&
       VD->hasAttr<ACCThreadPrivateDeclAttr>()) {
     return EmitACCThreadPrivateVarDeclLValue(CGF, VD, T, Addr, RealVarTy,
                                           E->getExprLoc());
@@ -2473,7 +2473,7 @@ LValue CodeGenFunction::EmitDeclRefLValue(const DeclRefExpr *E) {
     }
 
     // Check for OpenACC threadprivate variables.
-    if (getLangOpts().OpenACC && !getLangOpts().OpenACCSimd &&
+    if (getLangOpts().OpenACC && !getLangOpts().OpenACCVector &&
         VD->hasAttr<ACCThreadPrivateDeclAttr>()) {
       return EmitACCThreadPrivateVarDeclLValue(
           *this, VD, T, addr, getTypes().ConvertTypeForMem(VD->getType()),

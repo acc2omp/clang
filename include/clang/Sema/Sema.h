@@ -8750,7 +8750,7 @@ public:
                                           SourceLocation EndLoc);
   /// \brief Called on well-formed '\#pragma acc simd' after parsing
   /// of the associated statement.
-  StmtResult ActOnOpenACCSimdDirective(
+  StmtResult ActOnOpenACCVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8762,7 +8762,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc for simd' after parsing
   /// of the associated statement.
-  StmtResult ActOnOpenACCLoopSimdDirective(
+  StmtResult ActOnOpenACCLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8798,7 +8798,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc parallel for simd' after
   /// parsing of the  associated statement.
-  StmtResult ActOnOpenACCParallelLoopSimdDirective(
+  StmtResult ActOnOpenACCParallelLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8847,18 +8847,18 @@ public:
                                         SourceLocation EndLoc);
   /// \brief Called on well-formed '\#pragma acc target data' after parsing of
   /// the associated statement.
-  StmtResult ActOnOpenACCTargetDataDirective(ArrayRef<ACCClause *> Clauses,
+  StmtResult ActOnOpenACCDataDirective(ArrayRef<ACCClause *> Clauses,
                                             Stmt *AStmt, SourceLocation StartLoc,
                                             SourceLocation EndLoc);
   /// \brief Called on well-formed '\#pragma acc target enter data' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetEnterDataDirective(ArrayRef<ACCClause *> Clauses,
+  StmtResult ActOnOpenACCEnterDataDirective(ArrayRef<ACCClause *> Clauses,
                                                  SourceLocation StartLoc,
                                                  SourceLocation EndLoc,
                                                  Stmt *AStmt);
   /// \brief Called on well-formed '\#pragma acc target exit data' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetExitDataDirective(ArrayRef<ACCClause *> Clauses,
+  StmtResult ActOnOpenACCExitDataDirective(ArrayRef<ACCClause *> Clauses,
                                                 SourceLocation StartLoc,
                                                 SourceLocation EndLoc,
                                                 Stmt *AStmt);
@@ -8897,7 +8897,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc taskloop simd' after parsing of
   /// the associated statement.
-  StmtResult ActOnOpenACCTaskLoopSimdDirective(
+  StmtResult ActOnOpenACCTaskLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8920,25 +8920,25 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc distribute parallel for simd'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCDistributeParallelLoopSimdDirective(
+  StmtResult ActOnOpenACCDistributeParallelLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc distribute simd' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCDistributeSimdDirective(
+  StmtResult ActOnOpenACCDistributeVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc target parallel for simd' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetParallelLoopSimdDirective(
+  StmtResult ActOnOpenACCTargetParallelLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc target simd' after parsing of
   /// the associated statement.
-  StmtResult ActOnOpenACCTargetSimdDirective(
+  StmtResult ActOnOpenACCTargetVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8950,13 +8950,13 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute simd' after parsing
   /// of the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeSimdDirective(
+  StmtResult ActOnOpenACCTeamsDistributeVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute parallel for simd'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
+  StmtResult ActOnOpenACCTeamsDistributeParallelLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -8986,13 +8986,13 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams distribute parallel for
   /// simd' after parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
+  StmtResult ActOnOpenACCTargetTeamsDistributeParallelLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams distribute simd' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeSimdDirective(
+  StmtResult ActOnOpenACCTargetTeamsDistributeVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -9005,11 +9005,11 @@ public:
   bool CheckOpenACCLinearDecl(ValueDecl *D, SourceLocation ELoc,
                              OpenACCLinearClauseKind LinKind, QualType Type);
 
-  /// \brief Called on well-formed '\#pragma acc declare simd' after parsing of
+  /// \brief Called on well-formed '\#pragma acc declare vector' after parsing of
   /// the associated method/function.
-  DeclGroupPtrTy ActOnOpenACCDeclareSimdDirective(
-      DeclGroupPtrTy DG, ACCDeclareSimdDeclAttr::BranchStateTy BS,
-      Expr *Simdlen, ArrayRef<Expr *> Uniforms, ArrayRef<Expr *> Aligneds,
+  DeclGroupPtrTy ActOnOpenACCDeclareVectorDirective(
+      DeclGroupPtrTy DG, ACCDeclareVectorDeclAttr::BranchStateTy BS,
+      Expr *Vectorlen, ArrayRef<Expr *> Uniforms, ArrayRef<Expr *> Aligneds,
       ArrayRef<Expr *> Alignments, ArrayRef<Expr *> Linears,
       ArrayRef<unsigned> LinModifiers, ArrayRef<Expr *> Steps, SourceRange SR);
 
@@ -9039,8 +9039,8 @@ public:
                                       SourceLocation StartLoc,
                                       SourceLocation LParenLoc,
                                       SourceLocation EndLoc);
-  /// \brief Called on well-formed 'simdlen' clause.
-  ACCClause *ActOnOpenACCSimdlenClause(Expr *Length, SourceLocation StartLoc,
+  /// \brief Called on well-formed 'vectorlen' clause.
+  ACCClause *ActOnOpenACCVectorlenClause(Expr *Length, SourceLocation StartLoc,
                                       SourceLocation LParenLoc,
                                       SourceLocation EndLoc);
   /// \brief Called on well-formed 'collapse' clause.
@@ -9126,8 +9126,8 @@ public:
   /// \brief Called on well-formed 'threads' clause.
   ACCClause *ActOnOpenACCThreadsClause(SourceLocation StartLoc,
                                       SourceLocation EndLoc);
-  /// \brief Called on well-formed 'simd' clause.
-  ACCClause *ActOnOpenACCSIMDClause(SourceLocation StartLoc,
+  /// \brief Called on well-formed 'vector' clause.
+  ACCClause *ActOnOpenACCVectorClause(SourceLocation StartLoc,
                                    SourceLocation EndLoc);
   /// \brief Called on well-formed 'nogroup' clause.
   ACCClause *ActOnOpenACCNogroupClause(SourceLocation StartLoc,
@@ -9230,6 +9230,13 @@ public:
                        SourceLocation LParenLoc, SourceLocation EndLoc);
   /// \brief Called on well-formed 'copy' clause.
   ACCClause *
+  ActOnOpenACCCreateClause(OpenACCMapClauseKind MapTypeModifier,
+                       OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                       SourceLocation MapLoc, SourceLocation ColonLoc,
+                       ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                       SourceLocation LParenLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'copy' clause.
+  ACCClause *
   ActOnOpenACCCopyClause(OpenACCMapClauseKind MapTypeModifier,
                        OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
                        SourceLocation MapLoc, SourceLocation ColonLoc,
@@ -9245,6 +9252,13 @@ public:
   /// \brief Called on well-formed 'copyout' clause.
   ACCClause *
   ActOnOpenACCCopyoutClause(OpenACCMapClauseKind MapTypeModifier,
+                       OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                       SourceLocation MapLoc, SourceLocation ColonLoc,
+                       ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                       SourceLocation LParenLoc, SourceLocation EndLoc);
+  /// \brief Called on well-formed 'copy' clause.
+  ACCClause *
+  ActOnOpenACCDeleteClause(OpenACCMapClauseKind MapTypeModifier,
                        OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
                        SourceLocation MapLoc, SourceLocation ColonLoc,
                        ArrayRef<Expr *> VarList, SourceLocation StartLoc,

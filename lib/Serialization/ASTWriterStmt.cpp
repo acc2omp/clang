@@ -1865,8 +1865,8 @@ void ACCClauseWriter::VisitACCSafelenClause(ACCSafelenClause *C) {
   Record.AddSourceLocation(C->getLParenLoc());
 }
 
-void ACCClauseWriter::VisitACCSimdlenClause(ACCSimdlenClause *C) {
-  Record.AddStmt(C->getSimdlen());
+void ACCClauseWriter::VisitACCVectorlenClause(ACCVectorlenClause *C) {
+  Record.AddStmt(C->getVectorlen());
   Record.AddSourceLocation(C->getLParenLoc());
 }
 
@@ -1923,7 +1923,7 @@ void ACCClauseWriter::VisitACCSeqCstClause(ACCSeqCstClause *) {}
 
 void ACCClauseWriter::VisitACCThreadsClause(ACCThreadsClause *) {}
 
-void ACCClauseWriter::VisitACCSIMDClause(ACCSIMDClause *) {}
+void ACCClauseWriter::VisitACCVectorClause(ACCVectorClause *) {}
 
 void ACCClauseWriter::VisitACCNogroupClause(ACCNogroupClause *) {}
 
@@ -2130,7 +2130,30 @@ void ACCClauseWriter::VisitACCMapClause(ACCMapClause *C) {
     Record.AddDeclRef(M.getAssociatedDeclaration());
   }
 }
-//TODO acc2mp Modify copy copyin copyout
+//TODO acc2mp Modify create, copy, copyin, copyout, delete
+void ACCClauseWriter::VisitACCCreateClause(ACCCreateClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.push_back(C->getMapTypeModifier());
+  Record.push_back(C->getMapType());
+  Record.AddSourceLocation(C->getMapLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
 void ACCClauseWriter::VisitACCCopyClause(ACCCopyClause *C) {
   Record.push_back(C->varlist_size());
   Record.push_back(C->getUniqueDeclarationsNum());
@@ -2178,6 +2201,29 @@ void ACCClauseWriter::VisitACCCopyinClause(ACCCopyinClause *C) {
   }
 }
 void ACCClauseWriter::VisitACCCopyoutClause(ACCCopyoutClause *C) {
+  Record.push_back(C->varlist_size());
+  Record.push_back(C->getUniqueDeclarationsNum());
+  Record.push_back(C->getTotalComponentListNum());
+  Record.push_back(C->getTotalComponentsNum());
+  Record.AddSourceLocation(C->getLParenLoc());
+  Record.push_back(C->getMapTypeModifier());
+  Record.push_back(C->getMapType());
+  Record.AddSourceLocation(C->getMapLoc());
+  Record.AddSourceLocation(C->getColonLoc());
+  for (auto *E : C->varlists())
+    Record.AddStmt(E);
+  for (auto *D : C->all_decls())
+    Record.AddDeclRef(D);
+  for (auto N : C->all_num_lists())
+    Record.push_back(N);
+  for (auto N : C->all_lists_sizes())
+    Record.push_back(N);
+  for (auto &M : C->all_components()) {
+    Record.AddStmt(M.getAssociatedExpression());
+    Record.AddDeclRef(M.getAssociatedDeclaration());
+  }
+}
+void ACCClauseWriter::VisitACCDeleteClause(ACCDeleteClause *C) {
   Record.push_back(C->varlist_size());
   Record.push_back(C->getUniqueDeclarationsNum());
   Record.push_back(C->getTotalComponentListNum());
@@ -2411,9 +2457,9 @@ void ASTStmtWriter::VisitACCParallelDirective(ACCParallelDirective *D) {
   Code = serialization::STMT_ACC_PARALLEL_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCSimdDirective(ACCSimdDirective *D) {
+void ASTStmtWriter::VisitACCVectorDirective(ACCVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_VECTOR_DIRECTIVE;
 }
 
 void ASTStmtWriter::VisitACCLoopDirective(ACCLoopDirective *D) {
@@ -2422,9 +2468,9 @@ void ASTStmtWriter::VisitACCLoopDirective(ACCLoopDirective *D) {
   Code = serialization::STMT_ACC_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCLoopSimdDirective(ACCLoopSimdDirective *D) {
+void ASTStmtWriter::VisitACCLoopVectorDirective(ACCLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_FOR_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_FOR_VECTOR_DIRECTIVE;
 }
 
 void ASTStmtWriter::VisitACCSectionsDirective(ACCSectionsDirective *D) {
@@ -2469,10 +2515,10 @@ void ASTStmtWriter::VisitACCParallelLoopDirective(ACCParallelLoopDirective *D) {
   Code = serialization::STMT_ACC_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCParallelLoopSimdDirective(
-    ACCParallelLoopSimdDirective *D) {
+void ASTStmtWriter::VisitACCParallelLoopVectorDirective(
+    ACCParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_PARALLEL_FOR_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_PARALLEL_FOR_VECTOR_DIRECTIVE;
 }
 
 void ASTStmtWriter::VisitACCParallelSectionsDirective(
@@ -2512,23 +2558,23 @@ void ASTStmtWriter::VisitACCTargetDirective(ACCTargetDirective *D) {
   Code = serialization::STMT_ACC_TARGET_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetDataDirective(ACCTargetDataDirective *D) {
+void ASTStmtWriter::VisitACCDataDirective(ACCDataDirective *D) {
   VisitStmt(D);
   Record.push_back(D->getNumClauses());
   VisitACCExecutableDirective(D);
   Code = serialization::STMT_ACC_TARGET_DATA_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetEnterDataDirective(
-    ACCTargetEnterDataDirective *D) {
+void ASTStmtWriter::VisitACCEnterDataDirective(
+    ACCEnterDataDirective *D) {
   VisitStmt(D);
   Record.push_back(D->getNumClauses());
   VisitACCExecutableDirective(D);
   Code = serialization::STMT_ACC_TARGET_ENTER_DATA_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetExitDataDirective(
-    ACCTargetExitDataDirective *D) {
+void ASTStmtWriter::VisitACCExitDataDirective(
+    ACCExitDataDirective *D) {
   VisitStmt(D);
   Record.push_back(D->getNumClauses());
   VisitACCExecutableDirective(D);
@@ -2618,9 +2664,9 @@ void ASTStmtWriter::VisitACCTaskLoopDirective(ACCTaskLoopDirective *D) {
   Code = serialization::STMT_ACC_TASKLOOP_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTaskLoopSimdDirective(ACCTaskLoopSimdDirective *D) {
+void ASTStmtWriter::VisitACCTaskLoopVectorDirective(ACCTaskLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_TASKLOOP_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_TASKLOOP_VECTOR_DIRECTIVE;
 }
 
 void ASTStmtWriter::VisitACCDistributeDirective(ACCDistributeDirective *D) {
@@ -2642,27 +2688,27 @@ void ASTStmtWriter::VisitACCDistributeParallelLoopDirective(
   Code = serialization::STMT_ACC_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCDistributeParallelLoopSimdDirective(
-    ACCDistributeParallelLoopSimdDirective *D) {
+void ASTStmtWriter::VisitACCDistributeParallelLoopVectorDirective(
+    ACCDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCDistributeSimdDirective(
-    ACCDistributeSimdDirective *D) {
+void ASTStmtWriter::VisitACCDistributeVectorDirective(
+    ACCDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_DISTRIBUTE_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_DISTRIBUTE_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetParallelLoopSimdDirective(
-    ACCTargetParallelLoopSimdDirective *D) {
+void ASTStmtWriter::VisitACCTargetParallelLoopVectorDirective(
+    ACCTargetParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_TARGET_PARALLEL_FOR_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetSimdDirective(ACCTargetSimdDirective *D) {
+void ASTStmtWriter::VisitACCTargetVectorDirective(ACCTargetVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_TARGET_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_TARGET_VECTOR_DIRECTIVE;
 }
 
 void ASTStmtWriter::VisitACCTeamsDistributeDirective(
@@ -2671,16 +2717,16 @@ void ASTStmtWriter::VisitACCTeamsDistributeDirective(
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeSimdDirective(
-    ACCTeamsDistributeSimdDirective *D) {
+void ASTStmtWriter::VisitACCTeamsDistributeVectorDirective(
+    ACCTeamsDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeParallelLoopSimdDirective(
-    ACCTeamsDistributeParallelLoopSimdDirective *D) {
+void ASTStmtWriter::VisitACCTeamsDistributeParallelLoopVectorDirective(
+    ACCTeamsDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE;
 }
 
 void ASTStmtWriter::VisitACCTeamsDistributeParallelLoopDirective(
@@ -2710,17 +2756,17 @@ void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelLoopDirective(
   Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
-    ACCTargetTeamsDistributeParallelLoopSimdDirective *D) {
+void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
+    ACCTargetTeamsDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::
-      STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE;
+      STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeSimdDirective(
-    ACCTargetTeamsDistributeSimdDirective *D) {
+void ASTStmtWriter::VisitACCTargetTeamsDistributeVectorDirective(
+    ACCTargetTeamsDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
-  Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE;
+  Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE;
 }
 
 // -- MYHEADER -- 

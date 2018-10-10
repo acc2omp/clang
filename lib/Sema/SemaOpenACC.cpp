@@ -2101,11 +2101,11 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   switch (DKind) {
   case ACCD_parallel:
   case ACCD_parallel_loop:
-  case ACCD_parallel_loop_simd:
+  case ACCD_parallel_loop_vector:
   case ACCD_parallel_sections:
   case ACCD_teams:
   case ACCD_teams_distribute:
-  case ACCD_teams_distribute_simd: {
+  case ACCD_teams_distribute_vector: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType KmpInt32PtrTy =
         Context.getPointerType(KmpInt32Ty).withConst().withRestrict();
@@ -2121,9 +2121,9 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   case ACCD_target_teams:
   case ACCD_target_parallel:
   case ACCD_target_parallel_loop:
-  case ACCD_target_parallel_loop_simd:
+  case ACCD_target_parallel_loop_vector:
   case ACCD_target_teams_distribute:
-  case ACCD_target_teams_distribute_simd: {
+  case ACCD_target_teams_distribute_vector: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType Args[] = {Context.VoidPtrTy.withConst().withRestrict()};
     FunctionProtoType::ExtProtoInfo EPI;
@@ -2165,7 +2165,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
     break;
   }
   case ACCD_target:
-  case ACCD_target_simd: {
+  case ACCD_target_vector: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType Args[] = {Context.VoidPtrTy.withConst().withRestrict()};
     FunctionProtoType::ExtProtoInfo EPI;
@@ -2191,9 +2191,9 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
                              std::make_pair(StringRef(), QualType()));
     break;
   }
-  case ACCD_simd:
+  case ACCD_vector:
   case ACCD_loop:
-  case ACCD_loop_simd:
+  case ACCD_loop_vector:
   case ACCD_sections:
   case ACCD_section:
   case ACCD_single:
@@ -2201,10 +2201,10 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   case ACCD_critical:
   case ACCD_taskgroup:
   case ACCD_distribute:
-  case ACCD_distribute_simd:
+  case ACCD_distribute_vector:
   case ACCD_ordered:
   case ACCD_atomic:
-  case ACCD_target_data: {
+  case ACCD_data: {
     Sema::CapturedParamNameType Params[] = {
         std::make_pair(StringRef(), QualType()) // __context with shared vars
     };
@@ -2237,7 +2237,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
     break;
   }
   case ACCD_taskloop:
-  case ACCD_taskloop_simd: {
+  case ACCD_taskloop_vector: {
     QualType KmpInt32Ty =
         Context.getIntTypeForBitwidth(/*DestWidth=*/32, /*Signed=*/1);
     QualType KmpUInt64Ty =
@@ -2273,7 +2273,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
             Context, AlwaysInlineAttr::Keyword_forceinline, SourceRange()));
     break;
   }
-  case ACCD_distribute_parallel_loop_simd:
+  case ACCD_distribute_parallel_loop_vector:
   case ACCD_distribute_parallel_loop: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType KmpInt32PtrTy =
@@ -2290,7 +2290,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
     break;
   }
   case ACCD_target_teams_distribute_parallel_loop:
-  case ACCD_target_teams_distribute_parallel_loop_simd: {
+  case ACCD_target_teams_distribute_parallel_loop_vector: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType KmpInt32PtrTy =
         Context.getPointerType(KmpInt32Ty).withConst().withRestrict();
@@ -2346,7 +2346,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   }
 
   case ACCD_teams_distribute_parallel_loop:
-  case ACCD_teams_distribute_parallel_loop_simd: {
+  case ACCD_teams_distribute_parallel_loop_vector: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType KmpInt32PtrTy =
         Context.getPointerType(KmpInt32Ty).withConst().withRestrict();
@@ -2374,8 +2374,8 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
     break;
   }
   case ACCD_target_update:
-  case ACCD_target_enter_data:
-  case ACCD_target_exit_data: {
+  case ACCD_enter_data:
+  case ACCD_exit_data: {
     QualType KmpInt32Ty = Context.getIntTypeForBitwidth(32, 1);
     QualType Args[] = {Context.VoidPtrTy.withConst().withRestrict()};
     FunctionProtoType::ExtProtoInfo EPI;
@@ -2407,7 +2407,7 @@ void Sema::ActOnOpenACCRegionStart(OpenACCDirectiveKind DKind, Scope *CurScope) 
   case ACCD_cancel:
   case ACCD_flush:
   case ACCD_declare_reduction:
-  case ACCD_declare_simd:
+  case ACCD_declare_vector:
   case ACCD_declare_target:
   case ACCD_end_declare_target:
     llvm_unreachable("OpenACC Directive is not allowed");
@@ -2592,9 +2592,9 @@ StmtResult Sema::ActOnOpenACCRegionEnd(StmtResult S,
     ErrorFound = true;
   }
   if (isOpenACCWorksharingDirective(DSAStack->getCurrentDirective()) &&
-      isOpenACCSimdDirective(DSAStack->getCurrentDirective()) && OC &&
+      isOpenACCVectorDirective(DSAStack->getCurrentDirective()) && OC &&
       OC->getNumForLoops()) {
-    Diag(OC->getLocStart(), diag::err_acc_ordered_simd)
+    Diag(OC->getLocStart(), diag::err_acc_ordered_vector)
         << getOpenACCDirectiveName(DSAStack->getCurrentDirective());
     ErrorFound = true;
   }
@@ -2662,19 +2662,19 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
       ShouldBeInTargetRegion,
       ShouldBeInTeamsRegion
     } Recommend = NoRecommend;
-    if (isOpenACCSimdDirective(ParentRegion) && CurrentRegion != ACCD_ordered) {
+    if (isOpenACCVectorDirective(ParentRegion) && CurrentRegion != ACCD_ordered) {
       // OpenACC [2.16, Nesting of Regions]
-      // OpenACC constructs may not be nested inside a simd region.
-      // OpenACC [2.8.1,simd Construct, Restrictions]
-      // An ordered construct with the simd clause is the only OpenACC
-      // construct that can appear in the simd region.
-      // Allowing a SIMD construct nested in another SIMD construct is an
+      // OpenACC constructs may not be nested inside a vector region.
+      // OpenACC [2.8.1,vector Construct, Restrictions]
+      // An ordered construct with the vector clause is the only OpenACC
+      // construct that can appear in the vector region.
+      // Allowing a VECTOR construct nested in another VECTOR construct is an
       // extension. The OpenACC 4.5 spec does not allow it. Issue a warning
       // message.
-      SemaRef.Diag(StartLoc, (CurrentRegion != ACCD_simd)
-                                 ? diag::err_acc_prohibited_region_simd
-                                 : diag::warn_acc_nesting_simd);
-      return CurrentRegion != ACCD_simd;
+      SemaRef.Diag(StartLoc, (CurrentRegion != ACCD_vector)
+                                 ? diag::err_acc_prohibited_region_vector
+                                 : diag::warn_acc_nesting_vector);
+      return CurrentRegion != ACCD_vector;
     }
     if (ParentRegion == ACCD_atomic) {
       // OpenACC [2.16, Nesting of Regions]
@@ -2788,12 +2788,12 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
       // atomic, or explicit task region.
       // An ordered region must be closely nested inside a loop region (or
       // parallel loop region) with an ordered clause.
-      // OpenACC [2.8.1,simd Construct, Restrictions]
-      // An ordered construct with the simd clause is the only OpenACC construct
-      // that can appear in the simd region.
+      // OpenACC [2.8.1,vector Construct, Restrictions]
+      // An ordered construct with the vector clause is the only OpenACC construct
+      // that can appear in the vector region.
       NestingProhibited = ParentRegion == ACCD_critical ||
                           isOpenACCTaskingDirective(ParentRegion) ||
-                          !(isOpenACCSimdDirective(ParentRegion) ||
+                          !(isOpenACCVectorDirective(ParentRegion) ||
                             Stack->isParentOrderedRegion());
       Recommend = ShouldBeInOrderedRegion;
     } else if (isOpenACCNestingTeamsDirective(CurrentRegion)) {
@@ -2806,11 +2806,11 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
     }
     if (!NestingProhibited &&
         !isOpenACCTargetExecutionDirective(CurrentRegion) &&
-        !isOpenACCTargetDataManagementDirective(CurrentRegion) &&
+        !isOpenACCDataManagementDirective(CurrentRegion) &&
         (ParentRegion == ACCD_teams || ParentRegion == ACCD_target_teams)) {
       // OpenACC [2.16, Nesting of Regions]
       // distribute, parallel, parallel sections, parallel workshare, and the
-      // parallel loop and parallel loop SIMD constructs are the only OpenACC
+      // parallel loop and parallel loop vector constructs are the only OpenACC
       // constructs that can be closely nested in the teams region.
       NestingProhibited = !isOpenACCParallelDirective(CurrentRegion) &&
                           !isOpenACCDistributeDirective(CurrentRegion);
@@ -2827,7 +2827,7 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
     }
     if (!NestingProhibited &&
         (isOpenACCTargetExecutionDirective(CurrentRegion) ||
-         isOpenACCTargetDataManagementDirective(CurrentRegion))) {
+         isOpenACCDataManagementDirective(CurrentRegion))) {
       // OpenACC 4.5 [2.17 Nesting of Regions]
       // If a target, target update, target data, target enter data, or
       // target exit data construct is encountered during execution of a
@@ -3016,16 +3016,16 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
                                        EndLoc);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_simd:
-    Res = ActOnOpenACCSimdDirective(ClausesWithImplicit, AStmt, StartLoc, EndLoc,
+  case ACCD_vector:
+    Res = ActOnOpenACCVectorDirective(ClausesWithImplicit, AStmt, StartLoc, EndLoc,
                                    VarsWithInheritedDSA);
     break;
   case ACCD_loop:
     Res = ActOnOpenACCLoopDirective(ClausesWithImplicit, AStmt, StartLoc, EndLoc,
                                   VarsWithInheritedDSA);
     break;
-  case ACCD_loop_simd:
-    Res = ActOnOpenACCLoopSimdDirective(ClausesWithImplicit, AStmt, StartLoc,
+  case ACCD_loop_vector:
+    Res = ActOnOpenACCLoopVectorDirective(ClausesWithImplicit, AStmt, StartLoc,
                                       EndLoc, VarsWithInheritedDSA);
     break;
   case ACCD_sections:
@@ -3055,8 +3055,8 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
                                           EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_parallel_loop_simd:
-    Res = ActOnOpenACCParallelLoopSimdDirective(
+  case ACCD_parallel_loop_vector:
+    Res = ActOnOpenACCParallelLoopVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
@@ -3143,28 +3143,28 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
                                      CancelRegion);
     AllowedNameModifiers.push_back(ACCD_cancel);
     break;
-  case ACCD_target_data:
-    Res = ActOnOpenACCTargetDataDirective(ClausesWithImplicit, AStmt, StartLoc,
+  case ACCD_data:
+    Res = ActOnOpenACCDataDirective(ClausesWithImplicit, AStmt, StartLoc,
                                          EndLoc);
-    AllowedNameModifiers.push_back(ACCD_target_data);
+    AllowedNameModifiers.push_back(ACCD_data);
     break;
-  case ACCD_target_enter_data:
-    Res = ActOnOpenACCTargetEnterDataDirective(ClausesWithImplicit, StartLoc,
+  case ACCD_enter_data:
+    Res = ActOnOpenACCEnterDataDirective(ClausesWithImplicit, StartLoc,
                                               EndLoc, AStmt);
-    AllowedNameModifiers.push_back(ACCD_target_enter_data);
+    AllowedNameModifiers.push_back(ACCD_enter_data);
     break;
-  case ACCD_target_exit_data:
-    Res = ActOnOpenACCTargetExitDataDirective(ClausesWithImplicit, StartLoc,
+  case ACCD_exit_data:
+    Res = ActOnOpenACCExitDataDirective(ClausesWithImplicit, StartLoc,
                                              EndLoc, AStmt);
-    AllowedNameModifiers.push_back(ACCD_target_exit_data);
+    AllowedNameModifiers.push_back(ACCD_exit_data);
     break;
   case ACCD_taskloop:
     Res = ActOnOpenACCTaskLoopDirective(ClausesWithImplicit, AStmt, StartLoc,
                                        EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_taskloop);
     break;
-  case ACCD_taskloop_simd:
-    Res = ActOnOpenACCTaskLoopSimdDirective(ClausesWithImplicit, AStmt, StartLoc,
+  case ACCD_taskloop_vector:
+    Res = ActOnOpenACCTaskLoopVectorDirective(ClausesWithImplicit, AStmt, StartLoc,
                                            EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_taskloop);
     break;
@@ -3182,23 +3182,23 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_distribute_parallel_loop_simd:
-    Res = ActOnOpenACCDistributeParallelLoopSimdDirective(
+  case ACCD_distribute_parallel_loop_vector:
+    Res = ActOnOpenACCDistributeParallelLoopVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_distribute_simd:
-    Res = ActOnOpenACCDistributeSimdDirective(
+  case ACCD_distribute_vector:
+    Res = ActOnOpenACCDistributeVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     break;
-  case ACCD_target_parallel_loop_simd:
-    Res = ActOnOpenACCTargetParallelLoopSimdDirective(
+  case ACCD_target_parallel_loop_vector:
+    Res = ActOnOpenACCTargetParallelLoopVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_target_simd:
-    Res = ActOnOpenACCTargetSimdDirective(ClausesWithImplicit, AStmt, StartLoc,
+  case ACCD_target_vector:
+    Res = ActOnOpenACCTargetVectorDirective(ClausesWithImplicit, AStmt, StartLoc,
                                          EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     break;
@@ -3206,12 +3206,12 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     Res = ActOnOpenACCTeamsDistributeDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     break;
-  case ACCD_teams_distribute_simd:
-    Res = ActOnOpenACCTeamsDistributeSimdDirective(
+  case ACCD_teams_distribute_vector:
+    Res = ActOnOpenACCTeamsDistributeVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     break;
-  case ACCD_teams_distribute_parallel_loop_simd:
-    Res = ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
+  case ACCD_teams_distribute_parallel_loop_vector:
+    Res = ActOnOpenACCTeamsDistributeParallelLoopVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
@@ -3236,14 +3236,14 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_target_teams_distribute_parallel_loop_simd:
-    Res = ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
+  case ACCD_target_teams_distribute_parallel_loop_vector:
+    Res = ActOnOpenACCTargetTeamsDistributeParallelLoopVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     AllowedNameModifiers.push_back(ACCD_parallel);
     break;
-  case ACCD_target_teams_distribute_simd:
-    Res = ActOnOpenACCTargetTeamsDistributeSimdDirective(
+  case ACCD_target_teams_distribute_vector:
+    Res = ActOnOpenACCTargetTeamsDistributeVectorDirective(
         ClausesWithImplicit, AStmt, StartLoc, EndLoc, VarsWithInheritedDSA);
     AllowedNameModifiers.push_back(ACCD_target);
     break;
@@ -3251,7 +3251,7 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   case ACCD_end_declare_target:
   case ACCD_threadprivate:
   case ACCD_declare_reduction:
-  case ACCD_declare_simd:
+  case ACCD_declare_vector:
     llvm_unreachable("OpenACC Directive is not allowed");
   case ACCD_unknown:
     llvm_unreachable("Unknown OpenACC directive");
@@ -3272,8 +3272,8 @@ StmtResult Sema::ActOnOpenACCExecutableDirective(
   return Res;
 }
 
-Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
-    DeclGroupPtrTy DG, ACCDeclareSimdDeclAttr::BranchStateTy BS, Expr *Simdlen,
+Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareVectorDirective(
+    DeclGroupPtrTy DG, ACCDeclareVectorDeclAttr::BranchStateTy BS, Expr *Vectorlen,
     ArrayRef<Expr *> Uniforms, ArrayRef<Expr *> Aligneds,
     ArrayRef<Expr *> Alignments, ArrayRef<Expr *> Linears,
     ArrayRef<unsigned> LinModifiers, ArrayRef<Expr *> Steps, SourceRange SR) {
@@ -3284,7 +3284,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
     return DeclGroupPtrTy();
 
   if (!DG.get().isSingleDecl()) {
-    Diag(SR.getBegin(), diag::err_acc_single_decl_in_declare_simd);
+    Diag(SR.getBegin(), diag::err_acc_single_decl_in_declare_vector);
     return DG;
   }
   auto *ADecl = DG.get().getSingleDecl();
@@ -3297,18 +3297,18 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
     return DeclGroupPtrTy();
   }
 
-  // OpenACC [2.8.2, declare simd construct, Description]
-  // The parameter of the simdlen clause must be a constant positive integer
+  // OpenACC [2.8.2, declare vector construct, Description]
+  // The parameter of the vectorlen clause must be a constant positive integer
   // expression.
   ExprResult SL;
-  if (Simdlen)
-    SL = VerifyPositiveIntegerConstantInClause(Simdlen, ACCC_simdlen);
-  // OpenACC [2.8.2, declare simd construct, Description]
+  if (Vectorlen)
+    SL = VerifyPositiveIntegerConstantInClause(Vectorlen, ACCC_vectorlen);
+  // OpenACC [2.8.2, declare vector construct, Description]
   // The special this pointer can be used as if was one of the arguments to the
   // function in any of the linear, aligned, or uniform clauses.
   // The uniform clause declares one or more arguments to have an invariant
   // value for all concurrent invocations of the function in the execution of a
-  // single SIMD loop.
+  // single vector loop.
   llvm::DenseMap<Decl *, Expr *> UniformedArgs;
   Expr *UniformedLinearThis = nullptr;
   for (auto *E : Uniforms) {
@@ -3328,7 +3328,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
     Diag(E->getExprLoc(), diag::err_acc_param_or_this_in_clause)
         << FD->getDeclName() << (isa<CXXMethodDecl>(ADecl) ? 1 : 0);
   }
-  // OpenACC [2.8.2, declare simd construct, Description]
+  // OpenACC [2.8.2, declare vector construct, Description]
   // The aligned clause declares that the object to which each list item points
   // is aligned to the number of bytes expressed in the optional parameter of
   // the aligned clause.
@@ -3346,7 +3346,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
         if (FD->getNumParams() > PVD->getFunctionScopeIndex() &&
             FD->getParamDecl(PVD->getFunctionScopeIndex())
                     ->getCanonicalDecl() == CanonPVD) {
-          // OpenACC  [2.8.1, simd construct, Restrictions]
+          // OpenACC  [2.8.1, vector construct, Restrictions]
           // A list-item cannot appear in more than one aligned clause.
           if (AlignedArgs.count(CanonPVD) > 0) {
             Diag(E->getExprLoc(), diag::err_acc_aligned_twice)
@@ -3385,7 +3385,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
   }
   // The optional parameter of the aligned clause, alignment, must be a constant
   // positive integer expression. If no optional parameter is specified,
-  // implementation-defined default alignments for SIMD instructions on the
+  // implementation-defined default alignments for vector instructions on the
   // target platforms are assumed.
   SmallVector<Expr *, 4> NewAligns;
   for (auto *E : Alignments) {
@@ -3394,8 +3394,8 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
       Align = VerifyPositiveIntegerConstantInClause(E, ACCC_aligned);
     NewAligns.push_back(Align.get());
   }
-  // OpenACC [2.8.2, declare simd construct, Description]
-  // The linear clause declares one or more list items to be private to a SIMD
+  // OpenACC [2.8.2, declare vector construct, Description]
+  // The linear clause declares one or more list items to be private to a vector
   // lane and to have a linear relationship with respect to the iteration space
   // of a loop.
   // The special this pointer can be used as if was one of the arguments to the
@@ -3507,7 +3507,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareSimdDirective(
     }
     NewSteps.push_back(NewStep);
   }
-  auto *NewAttr = ACCDeclareSimdDeclAttr::CreateImplicit(
+  auto *NewAttr = ACCDeclareVectorDeclAttr::CreateImplicit(
       Context, BS, SL.get(), const_cast<Expr **>(Uniforms.data()),
       Uniforms.size(), const_cast<Expr **>(Aligneds.data()), Aligneds.size(),
       const_cast<Expr **>(NewAligns.data()), NewAligns.size(),
@@ -4300,7 +4300,7 @@ static bool CheckOpenACCIterationSpace(
     // a Construct
     // The loop iteration variable(s) in the associated for-loop(s) of a for or
     // parallel for construct is (are) private.
-    // The loop iteration variable in the associated for-loop of a simd
+    // The loop iteration variable in the associated for-loop of a vector
     // construct with just one associated for-loop is linear with a
     // constant-linear-step that is the increment of the associated for-loop.
     // Exclude loop var from the list of variables with implicitly defined data
@@ -4309,7 +4309,7 @@ static bool CheckOpenACCIterationSpace(
 
     // OpenACC [2.14.1.1, Data-sharing Attribute Rules for Variables Referenced
     // in a Construct, C/C++].
-    // The loop iteration variable in the associated for-loop of a simd
+    // The loop iteration variable in the associated for-loop of a vector
     // construct with just one associated for-loop may be listed in a linear
     // clause with a constant-linear-step that is the increment of the
     // associated for-loop.
@@ -4319,14 +4319,14 @@ static bool CheckOpenACCIterationSpace(
     // If LoopVarRefExpr is nullptr it means the corresponding loop variable is
     // declared in the loop and it is predetermined as a private.
     auto PredeterminedCKind =
-        isOpenACCSimdDirective(DKind)
+        isOpenACCVectorDirective(DKind)
             ? ((NestedLoopCount == 1) ? ACCC_linear : ACCC_lastprivate)
             : ACCC_private;
-    if (((isOpenACCSimdDirective(DKind) && DVar.CKind != ACCC_unknown &&
+    if (((isOpenACCVectorDirective(DKind) && DVar.CKind != ACCC_unknown &&
           DVar.CKind != PredeterminedCKind) ||
          ((isOpenACCWorksharingDirective(DKind) || DKind == ACCD_taskloop ||
            isOpenACCDistributeDirective(DKind)) &&
-          !isOpenACCSimdDirective(DKind) && DVar.CKind != ACCC_unknown &&
+          !isOpenACCVectorDirective(DKind) && DVar.CKind != ACCC_unknown &&
           DVar.CKind != ACCC_private && DVar.CKind != ACCC_lastprivate)) &&
         (DVar.CKind != ACCC_private || DVar.RefExpr != nullptr)) {
       SemaRef.Diag(Init->getLocStart(), diag::err_acc_loop_var_dsa)
@@ -4338,8 +4338,8 @@ static bool CheckOpenACCIterationSpace(
       HasErrors = true;
     } else if (LoopDeclRefExpr != nullptr) {
       // Make the loop iteration variable private (for worksharing constructs),
-      // linear (for simd directives with the only one associated loop) or
-      // lastprivate (for simd directives with several collapsed or ordered
+      // linear (for vector directives with the only one associated loop) or
+      // lastprivate (for vector directives with several collapsed or ordered
       // loops).
       if (DVar.CKind == ACCC_unknown)
         DVar = DSA.hasDSA(LCDecl, isOpenACCPrivate,
@@ -4584,8 +4584,8 @@ CheckOpenACCLoop(OpenACCDirectiveKind DKind, Expr *CollapseLoopCountExpr,
       NestedLoopCount = Result.getLimitedValue();
     }
   }
-  // This is helper routine for loop directives (e.g., 'for', 'simd',
-  // 'for simd', etc.).
+  // This is helper routine for loop directives (e.g., 'for', 'vector',
+  // 'for vector', etc.).
   llvm::MapVector<Expr *, DeclRefExpr *> Captures;
   SmallVector<LoopIterationSpace, 4> IterSpaces;
   IterSpaces.resize(NestedLoopCount);
@@ -4597,7 +4597,7 @@ CheckOpenACCLoop(OpenACCDirectiveKind DKind, Expr *CollapseLoopCountExpr,
                                   IterSpaces[Cnt], Captures))
       return 0;
     // Move on to the next nested for loop, or to the loop body.
-    // OpenACC [2.8.1, simd construct, Restrictions]
+    // OpenACC [2.8.1, vector construct, Restrictions]
     // All loops associated with the construct must be perfectly nested; that
     // is, there must be no intervening code nor any OpenACC directive between
     // any two loops.
@@ -4611,7 +4611,7 @@ CheckOpenACCLoop(OpenACCDirectiveKind DKind, Expr *CollapseLoopCountExpr,
 
   // An example of what is generated for the following code:
   //
-  //   #pragma acc simd collapse(2) ordered(2)
+  //   #pragma acc vector collapse(2) ordered(2)
   //   for (i = 0; i < NI; ++i)
   //     for (k = 0; k < NK; ++k)
   //       for (j = J0; j < NJ; j+=2) {
@@ -4791,7 +4791,7 @@ CheckOpenACCLoop(OpenACCDirectiveKind DKind, Expr *CollapseLoopCountExpr,
     EUB = SemaRef.ActOnFinishFullExpr(EUB.get());
 
     // If we have a combined directive that combines 'distribute', 'for' or
-    // 'simd' we need to be able to access the bounds of the schedule of the
+    // 'vector' we need to be able to access the bounds of the schedule of the
     // enclosing region. E.g. in 'distribute parallel for' the bounds obtained
     // by scheduling 'distribute' have to be passed to the schedule of 'for'.
     if (isOpenACCLoopBoundSharingDirective(DKind)) {
@@ -5166,49 +5166,49 @@ static Expr *getOrderedNumberExpr(ArrayRef<ACCClause *> Clauses) {
   return nullptr;
 }
 
-static bool checkSimdlenSafelenSpecified(Sema &S,
+static bool checkVectorlenSafelenSpecified(Sema &S,
                                          const ArrayRef<ACCClause *> Clauses) {
   ACCSafelenClause *Safelen = nullptr;
-  ACCSimdlenClause *Simdlen = nullptr;
+  ACCVectorlenClause *Vectorlen = nullptr;
 
   for (auto *Clause : Clauses) {
     if (Clause->getClauseKind() == ACCC_safelen)
       Safelen = cast<ACCSafelenClause>(Clause);
-    else if (Clause->getClauseKind() == ACCC_simdlen)
-      Simdlen = cast<ACCSimdlenClause>(Clause);
-    if (Safelen && Simdlen)
+    else if (Clause->getClauseKind() == ACCC_vectorlen)
+      Vectorlen = cast<ACCVectorlenClause>(Clause);
+    if (Safelen && Vectorlen)
       break;
   }
 
-  if (Simdlen && Safelen) {
-    llvm::APSInt SimdlenRes, SafelenRes;
-    auto SimdlenLength = Simdlen->getSimdlen();
+  if (Vectorlen && Safelen) {
+    llvm::APSInt VectorlenRes, SafelenRes;
+    auto VectorlenLength = Vectorlen->getVectorlen();
     auto SafelenLength = Safelen->getSafelen();
-    if (SimdlenLength->isValueDependent() || SimdlenLength->isTypeDependent() ||
-        SimdlenLength->isInstantiationDependent() ||
-        SimdlenLength->containsUnexpandedParameterPack())
+    if (VectorlenLength->isValueDependent() || VectorlenLength->isTypeDependent() ||
+        VectorlenLength->isInstantiationDependent() ||
+        VectorlenLength->containsUnexpandedParameterPack())
       return false;
     if (SafelenLength->isValueDependent() || SafelenLength->isTypeDependent() ||
         SafelenLength->isInstantiationDependent() ||
         SafelenLength->containsUnexpandedParameterPack())
       return false;
-    SimdlenLength->EvaluateAsInt(SimdlenRes, S.Context);
+    VectorlenLength->EvaluateAsInt(VectorlenRes, S.Context);
     SafelenLength->EvaluateAsInt(SafelenRes, S.Context);
-    // OpenACC 4.5 [2.8.1, simd Construct, Restrictions]
-    // If both simdlen and safelen clauses are specified, the value of the
-    // simdlen parameter must be less than or equal to the value of the safelen
+    // OpenACC 4.5 [2.8.1, vector Construct, Restrictions]
+    // If both vectorlen and safelen clauses are specified, the value of the
+    // vectorlen parameter must be less than or equal to the value of the safelen
     // parameter.
-    if (SimdlenRes > SafelenRes) {
-      S.Diag(SimdlenLength->getExprLoc(),
-             diag::err_acc_wrong_simdlen_safelen_values)
-          << SimdlenLength->getSourceRange() << SafelenLength->getSourceRange();
+    if (VectorlenRes > SafelenRes) {
+      S.Diag(VectorlenLength->getExprLoc(),
+             diag::err_acc_wrong_vectorlen_safelen_values)
+          << VectorlenLength->getSourceRange() << SafelenLength->getSourceRange();
       return true;
     }
   }
   return false;
 }
 
-StmtResult Sema::ActOnOpenACCSimdDirective(
+StmtResult Sema::ActOnOpenACCVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -5220,13 +5220,13 @@ StmtResult Sema::ActOnOpenACCSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_simd, getCollapseNumberExpr(Clauses), getOrderedNumberExpr(Clauses),
+      ACCD_vector, getCollapseNumberExpr(Clauses), getOrderedNumberExpr(Clauses),
       AStmt, *this, *DSAStack, VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
     return StmtError();
 
   assert((CurContext->isDependentContext() || B.builtAll()) &&
-         "acc simd loop exprs were not built");
+         "acc vector loop exprs were not built");
 
   if (!CurContext->isDependentContext()) {
     // Finalize the clauses that need pre-built expressions for CodeGen.
@@ -5239,11 +5239,11 @@ StmtResult Sema::ActOnOpenACCSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCSimdDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
+  return ACCVectorDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
                                   Clauses, AStmt, B);
 }
 
@@ -5283,7 +5283,7 @@ StmtResult Sema::ActOnOpenACCLoopDirective(
                                  Clauses, AStmt, B, DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCLoopSimdDirective(
+StmtResult Sema::ActOnOpenACCLoopVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -5295,14 +5295,14 @@ StmtResult Sema::ActOnOpenACCLoopSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_loop_simd, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_loop_vector, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), AStmt, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
     return StmtError();
 
   assert((CurContext->isDependentContext() || B.builtAll()) &&
-         "acc for simd loop exprs were not built");
+         "acc for vector loop exprs were not built");
 
   if (!CurContext->isDependentContext()) {
     // Finalize the clauses that need pre-built expressions for CodeGen.
@@ -5315,11 +5315,11 @@ StmtResult Sema::ActOnOpenACCLoopSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCLoopSimdDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
+  return ACCLoopVectorDirective::Create(Context, StartLoc, EndLoc, NestedLoopCount,
                                      Clauses, AStmt, B);
 }
 
@@ -5525,7 +5525,7 @@ StmtResult Sema::ActOnOpenACCParallelLoopDirective(
                                          DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCParallelLoopSimdDirective(
+StmtResult Sema::ActOnOpenACCParallelLoopVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -5544,7 +5544,7 @@ StmtResult Sema::ActOnOpenACCParallelLoopSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_parallel_loop_simd, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_parallel_loop_vector, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), AStmt, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -5561,11 +5561,11 @@ StmtResult Sema::ActOnOpenACCParallelLoopSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCParallelLoopSimdDirective::Create(
+  return ACCParallelLoopVectorDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -5675,7 +5675,7 @@ StmtResult Sema::ActOnOpenACCOrderedDirective(ArrayRef<ACCClause *> Clauses,
   ACCClause *DependSinkClause = nullptr;
   bool ErrorFound = false;
   ACCThreadsClause *TC = nullptr;
-  ACCSIMDClause *SC = nullptr;
+  ACCVectorClause *SC = nullptr;
   for (auto *C : Clauses) {
     if (auto *DC = dyn_cast<ACCDependClause>(C)) {
       DependFound = C;
@@ -5702,18 +5702,18 @@ StmtResult Sema::ActOnOpenACCOrderedDirective(ArrayRef<ACCClause *> Clauses,
       }
     } else if (C->getClauseKind() == ACCC_threads)
       TC = cast<ACCThreadsClause>(C);
-    else if (C->getClauseKind() == ACCC_simd)
-      SC = cast<ACCSIMDClause>(C);
+    else if (C->getClauseKind() == ACCC_vector)
+      SC = cast<ACCVectorClause>(C);
   }
   if (!ErrorFound && !SC &&
-      isOpenACCSimdDirective(DSAStack->getParentDirective())) {
-    // OpenACC [2.8.1,simd Construct, Restrictions]
-    // An ordered construct with the simd clause is the only OpenACC construct
-    // that can appear in the simd region.
-    Diag(StartLoc, diag::err_acc_prohibited_region_simd);
+      isOpenACCVectorDirective(DSAStack->getParentDirective())) {
+    // OpenACC [2.8.1,vector Construct, Restrictions]
+    // An ordered construct with the vector clause is the only OpenACC construct
+    // that can appear in the vector region.
+    Diag(StartLoc, diag::err_acc_prohibited_region_vector);
     ErrorFound = true;
   } else if (DependFound && (TC || SC)) {
-    Diag(DependFound->getLocStart(), diag::err_acc_depend_clause_thread_simd)
+    Diag(DependFound->getLocStart(), diag::err_acc_depend_clause_thread_vector)
         << getOpenACCClauseName(TC ? TC->getClauseKind() : SC->getClauseKind());
     ErrorFound = true;
   } else if (DependFound && !DSAStack->getParentOrderedRegionParam()) {
@@ -6574,7 +6574,7 @@ static bool hasClauses(ArrayRef<ACCClause *> Clauses, const OpenACCClauseKind K,
   return hasClauses(Clauses, K) || hasClauses(Clauses, ClauseTypes...);
 }
 
-StmtResult Sema::ActOnOpenACCTargetDataDirective(ArrayRef<ACCClause *> Clauses,
+StmtResult Sema::ActOnOpenACCDataDirective(ArrayRef<ACCClause *> Clauses,
                                                 Stmt *AStmt,
                                                 SourceLocation StartLoc,
                                                 SourceLocation EndLoc) {
@@ -6588,18 +6588,18 @@ StmtResult Sema::ActOnOpenACCTargetDataDirective(ArrayRef<ACCClause *> Clauses,
   if (!hasClauses(Clauses, ACCC_map, ACCC_use_device_ptr)) {
     Diag(StartLoc, diag::err_acc_no_clause_for_directive)
         << "'map' or 'use_device_ptr'"
-        << getOpenACCDirectiveName(ACCD_target_data);
+        << getOpenACCDirectiveName(ACCD_data);
     return StmtError();
   }
 
   getCurFunction()->setHasBranchProtectedScope();
 
-  return ACCTargetDataDirective::Create(Context, StartLoc, EndLoc, Clauses,
+  return ACCDataDirective::Create(Context, StartLoc, EndLoc, Clauses,
                                         AStmt);
 }
 
 StmtResult
-Sema::ActOnOpenACCTargetEnterDataDirective(ArrayRef<ACCClause *> Clauses,
+Sema::ActOnOpenACCEnterDataDirective(ArrayRef<ACCClause *> Clauses,
                                           SourceLocation StartLoc,
                                           SourceLocation EndLoc, Stmt *AStmt) {
   if (!AStmt)
@@ -6612,7 +6612,7 @@ Sema::ActOnOpenACCTargetEnterDataDirective(ArrayRef<ACCClause *> Clauses,
   // The point of exit cannot be a branch out of the structured block.
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
-  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_enter_data);
+  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_enter_data);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -6627,16 +6627,16 @@ Sema::ActOnOpenACCTargetEnterDataDirective(ArrayRef<ACCClause *> Clauses,
   // At least one map clause must appear on the directive.
   if (!hasClauses(Clauses, ACCC_map)) {
     Diag(StartLoc, diag::err_acc_no_clause_for_directive)
-        << "'map'" << getOpenACCDirectiveName(ACCD_target_enter_data);
+        << "'map'" << getOpenACCDirectiveName(ACCD_enter_data);
     return StmtError();
   }
 
-  return ACCTargetEnterDataDirective::Create(Context, StartLoc, EndLoc, Clauses,
+  return ACCEnterDataDirective::Create(Context, StartLoc, EndLoc, Clauses,
                                              AStmt);
 }
 
 StmtResult
-Sema::ActOnOpenACCTargetExitDataDirective(ArrayRef<ACCClause *> Clauses,
+Sema::ActOnOpenACCExitDataDirective(ArrayRef<ACCClause *> Clauses,
                                          SourceLocation StartLoc,
                                          SourceLocation EndLoc, Stmt *AStmt) {
   if (!AStmt)
@@ -6649,7 +6649,7 @@ Sema::ActOnOpenACCTargetExitDataDirective(ArrayRef<ACCClause *> Clauses,
   // The point of exit cannot be a branch out of the structured block.
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
-  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_exit_data);
+  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_exit_data);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -6664,11 +6664,11 @@ Sema::ActOnOpenACCTargetExitDataDirective(ArrayRef<ACCClause *> Clauses,
   // At least one map clause must appear on the directive.
   if (!hasClauses(Clauses, ACCC_map)) {
     Diag(StartLoc, diag::err_acc_no_clause_for_directive)
-        << "'map'" << getOpenACCDirectiveName(ACCD_target_exit_data);
+        << "'map'" << getOpenACCDirectiveName(ACCD_exit_data);
     return StmtError();
   }
 
-  return ACCTargetExitDataDirective::Create(Context, StartLoc, EndLoc, Clauses,
+  return ACCExitDataDirective::Create(Context, StartLoc, EndLoc, Clauses,
                                             AStmt);
 }
 
@@ -6847,7 +6847,7 @@ StmtResult Sema::ActOnOpenACCTaskLoopDirective(
                                       NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTaskLoopSimdDirective(
+StmtResult Sema::ActOnOpenACCTaskLoopVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -6859,7 +6859,7 @@ StmtResult Sema::ActOnOpenACCTaskLoopSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_taskloop_simd, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_taskloop_vector, getCollapseNumberExpr(Clauses),
                       /*OrderedLoopCountExpr=*/nullptr, AStmt, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -6889,11 +6889,11 @@ StmtResult Sema::ActOnOpenACCTaskLoopSimdDirective(
   // clause must not be specified.
   if (checkReductionClauseWithNogroup(*this, Clauses))
     return StmtError();
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTaskLoopSimdDirective::Create(Context, StartLoc, EndLoc,
+  return ACCTaskLoopVectorDirective::Create(Context, StartLoc, EndLoc,
                                           NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -6968,7 +6968,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopDirective(
       DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCDistributeParallelLoopSimdDirective(
+StmtResult Sema::ActOnOpenACCDistributeParallelLoopVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -6983,7 +6983,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_distribute_parallel_loop_simd);
+           getOpenACCCaptureLevels(ACCD_distribute_parallel_loop_vector);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -6998,7 +6998,7 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_distribute_parallel_loop_simd, getCollapseNumberExpr(Clauses),
+      ACCD_distribute_parallel_loop_vector, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -7018,15 +7018,15 @@ StmtResult Sema::ActOnOpenACCDistributeParallelLoopSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCDistributeParallelLoopSimdDirective::Create(
+  return ACCDistributeParallelLoopVectorDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCDistributeSimdDirective(
+StmtResult Sema::ActOnOpenACCDistributeVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7040,7 +7040,7 @@ StmtResult Sema::ActOnOpenACCDistributeSimdDirective(
   // The point of exit cannot be a branch out of the structured block.
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
-  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_distribute_simd);
+  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_distribute_vector);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7055,7 +7055,7 @@ StmtResult Sema::ActOnOpenACCDistributeSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_distribute_simd, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_distribute_vector, getCollapseNumberExpr(Clauses),
                       nullptr /*ordered not a clause on distribute*/, CS, *this,
                       *DSAStack, VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
@@ -7075,15 +7075,15 @@ StmtResult Sema::ActOnOpenACCDistributeSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCDistributeSimdDirective::Create(Context, StartLoc, EndLoc,
+  return ACCDistributeVectorDirective::Create(Context, StartLoc, EndLoc,
                                             NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTargetParallelLoopSimdDirective(
+StmtResult Sema::ActOnOpenACCTargetParallelLoopVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7112,14 +7112,14 @@ StmtResult Sema::ActOnOpenACCTargetParallelLoopSimdDirective(
   // In presence of clause 'collapse' or 'ordered' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_target_parallel_loop_simd, getCollapseNumberExpr(Clauses),
+      ACCD_target_parallel_loop_vector, getCollapseNumberExpr(Clauses),
       getOrderedNumberExpr(Clauses), CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
     return StmtError();
 
   assert((CurContext->isDependentContext() || B.builtAll()) &&
-         "acc target parallel for simd loop exprs were not built");
+         "acc target parallel for vector loop exprs were not built");
 
   if (!CurContext->isDependentContext()) {
     // Finalize the clauses that need pre-built expressions for CodeGen.
@@ -7131,15 +7131,15 @@ StmtResult Sema::ActOnOpenACCTargetParallelLoopSimdDirective(
           return StmtError();
     }
   }
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetParallelLoopSimdDirective::Create(
+  return ACCTargetParallelLoopVectorDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTargetSimdDirective(
+StmtResult Sema::ActOnOpenACCTargetVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7153,7 +7153,7 @@ StmtResult Sema::ActOnOpenACCTargetSimdDirective(
   // The point of exit cannot be a branch out of the structured block.
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
-  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_simd);
+  for (int ThisCaptureLevel = getOpenACCCaptureLevels(ACCD_target_vector);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7168,14 +7168,14 @@ StmtResult Sema::ActOnOpenACCTargetSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will define the
   // nested loops number.
   unsigned NestedLoopCount =
-      CheckOpenACCLoop(ACCD_target_simd, getCollapseNumberExpr(Clauses),
+      CheckOpenACCLoop(ACCD_target_vector, getCollapseNumberExpr(Clauses),
                       getOrderedNumberExpr(Clauses), CS, *this, *DSAStack,
                       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
     return StmtError();
 
   assert((CurContext->isDependentContext() || B.builtAll()) &&
-         "acc target simd loop exprs were not built");
+         "acc target vector exprs were not built");
 
   if (!CurContext->isDependentContext()) {
     // Finalize the clauses that need pre-built expressions for CodeGen.
@@ -7188,11 +7188,11 @@ StmtResult Sema::ActOnOpenACCTargetSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetSimdDirective::Create(Context, StartLoc, EndLoc,
+  return ACCTargetVectorDirective::Create(Context, StartLoc, EndLoc,
                                         NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -7242,7 +7242,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeDirective(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTeamsDistributeSimdDirective(
+StmtResult Sema::ActOnOpenACCTeamsDistributeVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7257,7 +7257,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_teams_distribute_simd);
+           getOpenACCCaptureLevels(ACCD_teams_distribute_vector);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7273,7 +7273,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   unsigned NestedLoopCount = CheckOpenACCLoop(
-      ACCD_teams_distribute_simd, getCollapseNumberExpr(Clauses),
+      ACCD_teams_distribute_vector, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
 
@@ -7281,7 +7281,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeSimdDirective(
     return StmtError();
 
   assert((CurContext->isDependentContext() || B.builtAll()) &&
-         "acc teams distribute simd loop exprs were not built");
+         "acc teams distribute vector loop exprs were not built");
 
   if (!CurContext->isDependentContext()) {
     // Finalize the clauses that need pre-built expressions for CodeGen.
@@ -7294,18 +7294,18 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
 
   DSAStack->setParentTeamsRegionLoc(StartLoc);
 
-  return ACCTeamsDistributeSimdDirective::Create(
+  return ACCTeamsDistributeVectorDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
+StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7321,7 +7321,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
   CS->getCapturedDecl()->setNothrow();
 
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_teams_distribute_parallel_loop_simd);
+           getOpenACCCaptureLevels(ACCD_teams_distribute_parallel_loop_vector);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7336,7 +7336,7 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
-      ACCD_teams_distribute_parallel_loop_simd, getCollapseNumberExpr(Clauses),
+      ACCD_teams_distribute_parallel_loop_vector, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
 
@@ -7357,14 +7357,14 @@ StmtResult Sema::ActOnOpenACCTeamsDistributeParallelLoopSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
 
   DSAStack->setParentTeamsRegionLoc(StartLoc);
 
-  return ACCTeamsDistributeParallelLoopSimdDirective::Create(
+  return ACCTeamsDistributeParallelLoopVectorDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -7549,7 +7549,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
       DSAStack->isCancelRegion());
 }
 
-StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
+StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7564,7 +7564,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel = getOpenACCCaptureLevels(
-           ACCD_target_teams_distribute_parallel_loop_simd);
+           ACCD_target_teams_distribute_parallel_loop_vector);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7579,7 +7579,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount =
-      CheckOpenACCLoop(ACCD_target_teams_distribute_parallel_loop_simd,
+      CheckOpenACCLoop(ACCD_target_teams_distribute_parallel_loop_vector,
                       getCollapseNumberExpr(Clauses),
                       nullptr /*ordered not a clause on distribute*/, CS, *this,
                       *DSAStack, VarsWithImplicitDSA, B);
@@ -7587,7 +7587,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
     return StmtError();
 
   assert((CurContext->isDependentContext() || B.builtAll()) &&
-         "acc target teams distribute parallel for simd loop exprs were not "
+         "acc target teams distribute parallel for vector loop exprs were not "
          "built");
 
   if (!CurContext->isDependentContext()) {
@@ -7601,15 +7601,15 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeParallelLoopSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetTeamsDistributeParallelLoopSimdDirective::Create(
+  return ACCTargetTeamsDistributeParallelLoopVectorDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
-StmtResult Sema::ActOnOpenACCTargetTeamsDistributeSimdDirective(
+StmtResult Sema::ActOnOpenACCTargetTeamsDistributeVectorDirective(
     ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
     SourceLocation EndLoc,
     llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA) {
@@ -7624,7 +7624,7 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeSimdDirective(
   // longjmp() and throw() must not violate the entry/exit criteria.
   CS->getCapturedDecl()->setNothrow();
   for (int ThisCaptureLevel =
-           getOpenACCCaptureLevels(ACCD_target_teams_distribute_simd);
+           getOpenACCCaptureLevels(ACCD_target_teams_distribute_vector);
        ThisCaptureLevel > 1; --ThisCaptureLevel) {
     CS = cast<CapturedStmt>(CS->getCapturedStmt());
     // 1.2.2 OpenACC Language Terminology
@@ -7639,14 +7639,14 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeSimdDirective(
   // In presence of clause 'collapse' with number of loops, it will
   // define the nested loops number.
   auto NestedLoopCount = CheckOpenACCLoop(
-      ACCD_target_teams_distribute_simd, getCollapseNumberExpr(Clauses),
+      ACCD_target_teams_distribute_vector, getCollapseNumberExpr(Clauses),
       nullptr /*ordered not a clause on distribute*/, CS, *this, *DSAStack,
       VarsWithImplicitDSA, B);
   if (NestedLoopCount == 0)
     return StmtError();
 
   assert((CurContext->isDependentContext() || B.builtAll()) &&
-         "acc target teams distribute simd loop exprs were not built");
+         "acc target teams distribute vector loop exprs were not built");
 
   if (!CurContext->isDependentContext()) {
     // Finalize the clauses that need pre-built expressions for CodeGen.
@@ -7659,11 +7659,11 @@ StmtResult Sema::ActOnOpenACCTargetTeamsDistributeSimdDirective(
     }
   }
 
-  if (checkSimdlenSafelenSpecified(*this, Clauses))
+  if (checkVectorlenSafelenSpecified(*this, Clauses))
     return StmtError();
 
   getCurFunction()->setHasBranchProtectedScope();
-  return ACCTargetTeamsDistributeSimdDirective::Create(
+  return ACCTargetTeamsDistributeVectorDirective::Create(
       Context, StartLoc, EndLoc, NestedLoopCount, Clauses, AStmt, B);
 }
 
@@ -7682,8 +7682,8 @@ ACCClause *Sema::ActOnOpenACCSingleExprClause(OpenACCClauseKind Kind, Expr *Expr
   case ACCC_safelen:
     Res = ActOnOpenACCSafelenClause(Expr, StartLoc, LParenLoc, EndLoc);
     break;
-  case ACCC_simdlen:
-    Res = ActOnOpenACCSimdlenClause(Expr, StartLoc, LParenLoc, EndLoc);
+  case ACCC_vectorlen:
+    Res = ActOnOpenACCVectorlenClause(Expr, StartLoc, LParenLoc, EndLoc);
     break;
   case ACCC_collapse:
     Res = ActOnOpenACCCollapseClause(Expr, StartLoc, LParenLoc, EndLoc);
@@ -7738,11 +7738,13 @@ ACCClause *Sema::ActOnOpenACCSingleExprClause(OpenACCClauseKind Kind, Expr *Expr
   case ACCC_seq_cst:
   case ACCC_depend:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_map:
+  case ACCC_create:
   case ACCC_copy:
   case ACCC_copyin:
   case ACCC_copyout:
+  case ACCC_delete:
   case ACCC_nogroup:
   case ACCC_dist_schedule:
   case ACCC_defaultmap:
@@ -7771,44 +7773,44 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     switch (DKind) {
     case ACCD_target_parallel:
     case ACCD_target_parallel_loop:
-    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_parallel_loop_vector:
       // If this clause applies to the nested 'parallel' region, capture within
       // the 'target' region, otherwise do not capture.
       if (NameModifier == ACCD_unknown || NameModifier == ACCD_parallel)
         CaptureRegion = ACCD_target;
       break;
     case ACCD_target_teams_distribute_parallel_loop:
-    case ACCD_target_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop_vector:
       // If this clause applies to the nested 'parallel' region, capture within
       // the 'teams' region, otherwise do not capture.
       if (NameModifier == ACCD_unknown || NameModifier == ACCD_parallel)
         CaptureRegion = ACCD_teams;
       break;
     case ACCD_teams_distribute_parallel_loop:
-    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop_vector:
       CaptureRegion = ACCD_teams;
       break;
     case ACCD_target_update:
-    case ACCD_target_enter_data:
-    case ACCD_target_exit_data:
+    case ACCD_enter_data:
+    case ACCD_exit_data:
       CaptureRegion = ACCD_task;
       break;
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_loop_simd:
+    case ACCD_parallel_loop_vector:
     case ACCD_target:
-    case ACCD_target_simd:
+    case ACCD_target_vector:
     case ACCD_target_teams:
     case ACCD_target_teams_distribute:
-    case ACCD_target_teams_distribute_simd:
+    case ACCD_target_teams_distribute_vector:
     case ACCD_distribute_parallel_loop:
-    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop_vector:
     case ACCD_task:
     case ACCD_taskloop:
-    case ACCD_taskloop_simd:
-    case ACCD_target_data:
+    case ACCD_taskloop_vector:
+    case ACCD_data:
       // Do not capture if-clause expressions.
       break;
     case ACCD_threadprivate:
@@ -7818,13 +7820,13 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancellation_point:
     case ACCD_flush:
     case ACCD_declare_reduction:
-    case ACCD_declare_simd:
+    case ACCD_declare_vector:
     case ACCD_declare_target:
     case ACCD_end_declare_target:
     case ACCD_teams:
-    case ACCD_simd:
+    case ACCD_vector:
     case ACCD_loop:
-    case ACCD_loop_simd:
+    case ACCD_loop_vector:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -7834,9 +7836,9 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute:
     case ACCD_ordered:
     case ACCD_atomic:
-    case ACCD_distribute_simd:
+    case ACCD_distribute_vector:
     case ACCD_teams_distribute:
-    case ACCD_teams_distribute_simd:
+    case ACCD_teams_distribute_vector:
       llvm_unreachable("Unexpected OpenACC directive with if-clause");
     case ACCD_unknown:
       llvm_unreachable("Unknown OpenACC directive");
@@ -7846,36 +7848,36 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     switch (DKind) {
     case ACCD_target_parallel:
     case ACCD_target_parallel_loop:
-    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_parallel_loop_vector:
       CaptureRegion = ACCD_target;
       break;
     case ACCD_teams_distribute_parallel_loop:
-    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop_vector:
     case ACCD_target_teams_distribute_parallel_loop:
-    case ACCD_target_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop_vector:
       CaptureRegion = ACCD_teams;
       break;
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_loop_simd:
+    case ACCD_parallel_loop_vector:
     case ACCD_distribute_parallel_loop:
-    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop_vector:
       // Do not capture num_threads-clause expressions.
       break;
-    case ACCD_target_data:
-    case ACCD_target_enter_data:
-    case ACCD_target_exit_data:
+    case ACCD_data:
+    case ACCD_enter_data:
+    case ACCD_exit_data:
     case ACCD_target_update:
     case ACCD_target:
-    case ACCD_target_simd:
+    case ACCD_target_vector:
     case ACCD_target_teams:
     case ACCD_target_teams_distribute:
-    case ACCD_target_teams_distribute_simd:
+    case ACCD_target_teams_distribute_vector:
     case ACCD_cancel:
     case ACCD_task:
     case ACCD_taskloop:
-    case ACCD_taskloop_simd:
+    case ACCD_taskloop_vector:
     case ACCD_threadprivate:
     case ACCD_taskyield:
     case ACCD_barrier:
@@ -7883,13 +7885,13 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancellation_point:
     case ACCD_flush:
     case ACCD_declare_reduction:
-    case ACCD_declare_simd:
+    case ACCD_declare_vector:
     case ACCD_declare_target:
     case ACCD_end_declare_target:
     case ACCD_teams:
-    case ACCD_simd:
+    case ACCD_vector:
     case ACCD_loop:
-    case ACCD_loop_simd:
+    case ACCD_loop_vector:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -7899,9 +7901,9 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute:
     case ACCD_ordered:
     case ACCD_atomic:
-    case ACCD_distribute_simd:
+    case ACCD_distribute_vector:
     case ACCD_teams_distribute:
-    case ACCD_teams_distribute_simd:
+    case ACCD_teams_distribute_vector:
       llvm_unreachable("Unexpected OpenACC directive with num_threads-clause");
     case ACCD_unknown:
       llvm_unreachable("Unknown OpenACC directive");
@@ -7911,37 +7913,37 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     switch (DKind) {
     case ACCD_target_teams:
     case ACCD_target_teams_distribute:
-    case ACCD_target_teams_distribute_simd:
+    case ACCD_target_teams_distribute_vector:
     case ACCD_target_teams_distribute_parallel_loop:
-    case ACCD_target_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop_vector:
       CaptureRegion = ACCD_target;
       break;
     case ACCD_teams_distribute_parallel_loop:
-    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop_vector:
     case ACCD_teams:
     case ACCD_teams_distribute:
-    case ACCD_teams_distribute_simd:
+    case ACCD_teams_distribute_vector:
       // Do not capture num_teams-clause expressions.
       break;
     case ACCD_distribute_parallel_loop:
-    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop_vector:
     case ACCD_task:
     case ACCD_taskloop:
-    case ACCD_taskloop_simd:
-    case ACCD_target_data:
-    case ACCD_target_enter_data:
-    case ACCD_target_exit_data:
+    case ACCD_taskloop_vector:
+    case ACCD_data:
+    case ACCD_enter_data:
+    case ACCD_exit_data:
     case ACCD_target_update:
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_loop_simd:
+    case ACCD_parallel_loop_vector:
     case ACCD_target:
-    case ACCD_target_simd:
+    case ACCD_target_vector:
     case ACCD_target_parallel:
     case ACCD_target_parallel_loop:
-    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_parallel_loop_vector:
     case ACCD_threadprivate:
     case ACCD_taskyield:
     case ACCD_barrier:
@@ -7949,12 +7951,12 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancellation_point:
     case ACCD_flush:
     case ACCD_declare_reduction:
-    case ACCD_declare_simd:
+    case ACCD_declare_vector:
     case ACCD_declare_target:
     case ACCD_end_declare_target:
-    case ACCD_simd:
+    case ACCD_vector:
     case ACCD_loop:
-    case ACCD_loop_simd:
+    case ACCD_loop_vector:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -7964,7 +7966,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute:
     case ACCD_ordered:
     case ACCD_atomic:
-    case ACCD_distribute_simd:
+    case ACCD_distribute_vector:
       llvm_unreachable("Unexpected OpenACC directive with num_teams-clause");
     case ACCD_unknown:
       llvm_unreachable("Unknown OpenACC directive");
@@ -7974,37 +7976,37 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     switch (DKind) {
     case ACCD_target_teams:
     case ACCD_target_teams_distribute:
-    case ACCD_target_teams_distribute_simd:
+    case ACCD_target_teams_distribute_vector:
     case ACCD_target_teams_distribute_parallel_loop:
-    case ACCD_target_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop_vector:
       CaptureRegion = ACCD_target;
       break;
     case ACCD_teams_distribute_parallel_loop:
-    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop_vector:
     case ACCD_teams:
     case ACCD_teams_distribute:
-    case ACCD_teams_distribute_simd:
+    case ACCD_teams_distribute_vector:
       // Do not capture thread_limit-clause expressions.
       break;
     case ACCD_distribute_parallel_loop:
-    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop_vector:
     case ACCD_task:
     case ACCD_taskloop:
-    case ACCD_taskloop_simd:
-    case ACCD_target_data:
-    case ACCD_target_enter_data:
-    case ACCD_target_exit_data:
+    case ACCD_taskloop_vector:
+    case ACCD_data:
+    case ACCD_enter_data:
+    case ACCD_exit_data:
     case ACCD_target_update:
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_loop_simd:
+    case ACCD_parallel_loop_vector:
     case ACCD_target:
-    case ACCD_target_simd:
+    case ACCD_target_vector:
     case ACCD_target_parallel:
     case ACCD_target_parallel_loop:
-    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_parallel_loop_vector:
     case ACCD_threadprivate:
     case ACCD_taskyield:
     case ACCD_barrier:
@@ -8012,12 +8014,12 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancellation_point:
     case ACCD_flush:
     case ACCD_declare_reduction:
-    case ACCD_declare_simd:
+    case ACCD_declare_vector:
     case ACCD_declare_target:
     case ACCD_end_declare_target:
-    case ACCD_simd:
+    case ACCD_vector:
     case ACCD_loop:
-    case ACCD_loop_simd:
+    case ACCD_loop_vector:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -8027,7 +8029,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute:
     case ACCD_ordered:
     case ACCD_atomic:
-    case ACCD_distribute_simd:
+    case ACCD_distribute_vector:
       llvm_unreachable("Unexpected OpenACC directive with thread_limit-clause");
     case ACCD_unknown:
       llvm_unreachable("Unknown OpenACC directive");
@@ -8036,35 +8038,35 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_schedule:
     switch (DKind) {
     case ACCD_parallel_loop:
-    case ACCD_parallel_loop_simd:
+    case ACCD_parallel_loop_vector:
     case ACCD_distribute_parallel_loop:
-    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop_vector:
     case ACCD_teams_distribute_parallel_loop:
-    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop_vector:
     case ACCD_target_parallel_loop:
-    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_parallel_loop_vector:
     case ACCD_target_teams_distribute_parallel_loop:
-    case ACCD_target_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop_vector:
       CaptureRegion = ACCD_parallel;
       break;
     case ACCD_loop:
-    case ACCD_loop_simd:
+    case ACCD_loop_vector:
       // Do not capture schedule-clause expressions.
       break;
     case ACCD_task:
     case ACCD_taskloop:
-    case ACCD_taskloop_simd:
-    case ACCD_target_data:
-    case ACCD_target_enter_data:
-    case ACCD_target_exit_data:
+    case ACCD_taskloop_vector:
+    case ACCD_data:
+    case ACCD_enter_data:
+    case ACCD_exit_data:
     case ACCD_target_update:
     case ACCD_teams:
     case ACCD_teams_distribute:
-    case ACCD_teams_distribute_simd:
+    case ACCD_teams_distribute_vector:
     case ACCD_target_teams_distribute:
-    case ACCD_target_teams_distribute_simd:
+    case ACCD_target_teams_distribute_vector:
     case ACCD_target:
-    case ACCD_target_simd:
+    case ACCD_target_vector:
     case ACCD_target_parallel:
     case ACCD_cancel:
     case ACCD_parallel:
@@ -8076,10 +8078,10 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancellation_point:
     case ACCD_flush:
     case ACCD_declare_reduction:
-    case ACCD_declare_simd:
+    case ACCD_declare_vector:
     case ACCD_declare_target:
     case ACCD_end_declare_target:
-    case ACCD_simd:
+    case ACCD_vector:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -8089,7 +8091,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute:
     case ACCD_ordered:
     case ACCD_atomic:
-    case ACCD_distribute_simd:
+    case ACCD_distribute_vector:
     case ACCD_target_teams:
       llvm_unreachable("Unexpected OpenACC directive with schedule clause");
     case ACCD_unknown:
@@ -8099,35 +8101,35 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_dist_schedule:
     switch (DKind) {
     case ACCD_teams_distribute_parallel_loop:
-    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop_vector:
     case ACCD_teams_distribute:
-    case ACCD_teams_distribute_simd:
+    case ACCD_teams_distribute_vector:
     case ACCD_target_teams_distribute_parallel_loop:
-    case ACCD_target_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop_vector:
     case ACCD_target_teams_distribute:
-    case ACCD_target_teams_distribute_simd:
+    case ACCD_target_teams_distribute_vector:
       CaptureRegion = ACCD_teams;
       break;
     case ACCD_distribute_parallel_loop:
-    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop_vector:
     case ACCD_distribute:
-    case ACCD_distribute_simd:
+    case ACCD_distribute_vector:
       // Do not capture thread_limit-clause expressions.
       break;
     case ACCD_parallel_loop:
-    case ACCD_parallel_loop_simd:
-    case ACCD_target_parallel_loop_simd:
+    case ACCD_parallel_loop_vector:
+    case ACCD_target_parallel_loop_vector:
     case ACCD_target_parallel_loop:
     case ACCD_task:
     case ACCD_taskloop:
-    case ACCD_taskloop_simd:
-    case ACCD_target_data:
-    case ACCD_target_enter_data:
-    case ACCD_target_exit_data:
+    case ACCD_taskloop_vector:
+    case ACCD_data:
+    case ACCD_enter_data:
+    case ACCD_exit_data:
     case ACCD_target_update:
     case ACCD_teams:
     case ACCD_target:
-    case ACCD_target_simd:
+    case ACCD_target_vector:
     case ACCD_target_parallel:
     case ACCD_cancel:
     case ACCD_parallel:
@@ -8139,12 +8141,12 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancellation_point:
     case ACCD_flush:
     case ACCD_declare_reduction:
-    case ACCD_declare_simd:
+    case ACCD_declare_vector:
     case ACCD_declare_target:
     case ACCD_end_declare_target:
-    case ACCD_simd:
+    case ACCD_vector:
     case ACCD_loop:
-    case ACCD_loop_simd:
+    case ACCD_loop_vector:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -8162,38 +8164,38 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_device:
     switch (DKind) {
     case ACCD_target_update:
-    case ACCD_target_enter_data:
-    case ACCD_target_exit_data:
+    case ACCD_enter_data:
+    case ACCD_exit_data:
     case ACCD_target:
-    case ACCD_target_simd:
+    case ACCD_target_vector:
     case ACCD_target_teams:
     case ACCD_target_parallel:
     case ACCD_target_teams_distribute:
-    case ACCD_target_teams_distribute_simd:
+    case ACCD_target_teams_distribute_vector:
     case ACCD_target_parallel_loop:
-    case ACCD_target_parallel_loop_simd:
+    case ACCD_target_parallel_loop_vector:
     case ACCD_target_teams_distribute_parallel_loop:
-    case ACCD_target_teams_distribute_parallel_loop_simd:
+    case ACCD_target_teams_distribute_parallel_loop_vector:
       CaptureRegion = ACCD_task;
       break;
-    case ACCD_target_data:
+    case ACCD_data:
       // Do not capture device-clause expressions.
       break;
     case ACCD_teams_distribute_parallel_loop:
-    case ACCD_teams_distribute_parallel_loop_simd:
+    case ACCD_teams_distribute_parallel_loop_vector:
     case ACCD_teams:
     case ACCD_teams_distribute:
-    case ACCD_teams_distribute_simd:
+    case ACCD_teams_distribute_vector:
     case ACCD_distribute_parallel_loop:
-    case ACCD_distribute_parallel_loop_simd:
+    case ACCD_distribute_parallel_loop_vector:
     case ACCD_task:
     case ACCD_taskloop:
-    case ACCD_taskloop_simd:
+    case ACCD_taskloop_vector:
     case ACCD_cancel:
     case ACCD_parallel:
     case ACCD_parallel_sections:
     case ACCD_parallel_loop:
-    case ACCD_parallel_loop_simd:
+    case ACCD_parallel_loop_vector:
     case ACCD_threadprivate:
     case ACCD_taskyield:
     case ACCD_barrier:
@@ -8201,12 +8203,12 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_cancellation_point:
     case ACCD_flush:
     case ACCD_declare_reduction:
-    case ACCD_declare_simd:
+    case ACCD_declare_vector:
     case ACCD_declare_target:
     case ACCD_end_declare_target:
-    case ACCD_simd:
+    case ACCD_vector:
     case ACCD_loop:
-    case ACCD_loop_simd:
+    case ACCD_loop_vector:
     case ACCD_sections:
     case ACCD_section:
     case ACCD_single:
@@ -8216,7 +8218,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
     case ACCD_distribute:
     case ACCD_ordered:
     case ACCD_atomic:
-    case ACCD_distribute_simd:
+    case ACCD_distribute_vector:
       llvm_unreachable("Unexpected OpenACC directive with num_teams-clause");
     case ACCD_unknown:
       llvm_unreachable("Unknown OpenACC directive");
@@ -8232,7 +8234,7 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_proc_bind:
   case ACCC_final:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_private:
   case ACCC_shared:
@@ -8251,11 +8253,13 @@ static OpenACCDirectiveKind getOpenACCCaptureRegionForClause(
   case ACCC_seq_cst:
   case ACCC_depend:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_map:
+  case ACCC_create:
   case ACCC_copy:
   case ACCC_copyin:
   case ACCC_copyout:
+  case ACCC_delete:
   case ACCC_priority:
   case ACCC_grainsize:
   case ACCC_nogroup:
@@ -8456,7 +8460,7 @@ ExprResult Sema::VerifyPositiveIntegerConstantInClause(Expr *E,
 ACCClause *Sema::ActOnOpenACCSafelenClause(Expr *Len, SourceLocation StartLoc,
                                           SourceLocation LParenLoc,
                                           SourceLocation EndLoc) {
-  // OpenACC [2.8.1, simd construct, Description]
+  // OpenACC [2.8.1, vector construct, Description]
   // The parameter of the safelen clause must be a constant
   // positive integer expression.
   ExprResult Safelen = VerifyPositiveIntegerConstantInClause(Len, ACCC_safelen);
@@ -8466,17 +8470,17 @@ ACCClause *Sema::ActOnOpenACCSafelenClause(Expr *Len, SourceLocation StartLoc,
       ACCSafelenClause(Safelen.get(), StartLoc, LParenLoc, EndLoc);
 }
 
-ACCClause *Sema::ActOnOpenACCSimdlenClause(Expr *Len, SourceLocation StartLoc,
+ACCClause *Sema::ActOnOpenACCVectorlenClause(Expr *Len, SourceLocation StartLoc,
                                           SourceLocation LParenLoc,
                                           SourceLocation EndLoc) {
-  // OpenACC [2.8.1, simd construct, Description]
-  // The parameter of the simdlen clause must be a constant
+  // OpenACC [2.8.1, vector construct, Description]
+  // The parameter of the vectorlen clause must be a constant
   // positive integer expression.
-  ExprResult Simdlen = VerifyPositiveIntegerConstantInClause(Len, ACCC_simdlen);
-  if (Simdlen.isInvalid())
+  ExprResult Vectorlen = VerifyPositiveIntegerConstantInClause(Len, ACCC_vectorlen);
+  if (Vectorlen.isInvalid())
     return nullptr;
   return new (Context)
-      ACCSimdlenClause(Simdlen.get(), StartLoc, LParenLoc, EndLoc);
+      ACCVectorlenClause(Vectorlen.get(), StartLoc, LParenLoc, EndLoc);
 }
 
 ACCClause *Sema::ActOnOpenACCCollapseClause(Expr *NumForLoops,
@@ -8484,7 +8488,7 @@ ACCClause *Sema::ActOnOpenACCCollapseClause(Expr *NumForLoops,
                                            SourceLocation LParenLoc,
                                            SourceLocation EndLoc) {
   // OpenACC [2.7.1, loop construct, Description]
-  // OpenACC [2.8.1, simd construct, Description]
+  // OpenACC [2.8.1, vector construct, Description]
   // OpenACC [2.9.6, distribute construct, Description]
   // The parameter of the collapse clause must be a constant
   // positive integer expression.
@@ -8501,7 +8505,7 @@ ACCClause *Sema::ActOnOpenACCOrderedClause(SourceLocation StartLoc,
                                           SourceLocation LParenLoc,
                                           Expr *NumForLoops) {
   // OpenACC [2.7.1, loop construct, Description]
-  // OpenACC [2.8.1, simd construct, Description]
+  // OpenACC [2.8.1, vector construct, Description]
   // OpenACC [2.9.6, distribute construct, Description]
   // The parameter of the ordered clause must be a constant
   // positive integer expression if any.
@@ -8537,7 +8541,7 @@ ACCClause *Sema::ActOnOpenACCSimpleClause(
   case ACCC_final:
   case ACCC_num_threads:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_schedule:
   case ACCC_private:
@@ -8564,11 +8568,13 @@ ACCClause *Sema::ActOnOpenACCSimpleClause(
   case ACCC_depend:
   case ACCC_device:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_map:
+  case ACCC_create:
   case ACCC_copy:
   case ACCC_copyin:
   case ACCC_copyout:
+  case ACCC_delete:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -8697,7 +8703,7 @@ ACCClause *Sema::ActOnOpenACCSingleExprWithArgClause(
   case ACCC_final:
   case ACCC_num_threads:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_default:
   case ACCC_proc_bind:
@@ -8725,7 +8731,7 @@ ACCClause *Sema::ActOnOpenACCSingleExprWithArgClause(
   case ACCC_depend:
   case ACCC_device:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_map:
   case ACCC_copy:
   case ACCC_copyin:
@@ -8892,8 +8898,8 @@ ACCClause *Sema::ActOnOpenACCClause(OpenACCClauseKind Kind,
   case ACCC_threads:
     Res = ActOnOpenACCThreadsClause(StartLoc, EndLoc);
     break;
-  case ACCC_simd:
-    Res = ActOnOpenACCSIMDClause(StartLoc, EndLoc);
+  case ACCC_vector:
+    Res = ActOnOpenACCVectorClause(StartLoc, EndLoc);
     break;
   case ACCC_nogroup:
     Res = ActOnOpenACCNogroupClause(StartLoc, EndLoc);
@@ -8902,7 +8908,7 @@ ACCClause *Sema::ActOnOpenACCClause(OpenACCClauseKind Kind,
   case ACCC_final:
   case ACCC_num_threads:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_schedule:
   case ACCC_private:
@@ -8922,9 +8928,11 @@ ACCClause *Sema::ActOnOpenACCClause(OpenACCClauseKind Kind,
   case ACCC_depend:
   case ACCC_device:
   case ACCC_map:
+  case ACCC_create:
   case ACCC_copy:
   case ACCC_copyin:
   case ACCC_copyout:
+  case ACCC_delete:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -8990,9 +8998,9 @@ ACCClause *Sema::ActOnOpenACCThreadsClause(SourceLocation StartLoc,
   return new (Context) ACCThreadsClause(StartLoc, EndLoc);
 }
 
-ACCClause *Sema::ActOnOpenACCSIMDClause(SourceLocation StartLoc,
+ACCClause *Sema::ActOnOpenACCVectorClause(SourceLocation StartLoc,
                                        SourceLocation EndLoc) {
-  return new (Context) ACCSIMDClause(StartLoc, EndLoc);
+  return new (Context) ACCVectorClause(StartLoc, EndLoc);
 }
 
 ACCClause *Sema::ActOnOpenACCNogroupClause(SourceLocation StartLoc,
@@ -9059,6 +9067,11 @@ ACCClause *Sema::ActOnOpenACCVarListClause(
                                DepLinMapLoc, ColonLoc, VarList, StartLoc,
                                LParenLoc, EndLoc);
     break;
+  case ACCC_create:
+    Res = ActOnOpenACCCreateClause(MapTypeModifier, MapType, IsMapTypeImplicit,
+                               DepLinMapLoc, ColonLoc, VarList, StartLoc,
+                               LParenLoc, EndLoc);
+    break;
   case ACCC_copy:
     Res = ActOnOpenACCCopyClause(MapTypeModifier, MapType, IsMapTypeImplicit,
                                DepLinMapLoc, ColonLoc, VarList, StartLoc,
@@ -9071,6 +9084,11 @@ ACCClause *Sema::ActOnOpenACCVarListClause(
     break;
   case ACCC_copyout:
     Res = ActOnOpenACCCopyoutClause(MapTypeModifier, MapType, IsMapTypeImplicit,
+                               DepLinMapLoc, ColonLoc, VarList, StartLoc,
+                               LParenLoc, EndLoc);
+    break;
+  case ACCC_delete:
+    Res = ActOnOpenACCDeleteClause(MapTypeModifier, MapType, IsMapTypeImplicit,
                                DepLinMapLoc, ColonLoc, VarList, StartLoc,
                                LParenLoc, EndLoc);
     break;
@@ -9090,7 +9108,7 @@ ACCClause *Sema::ActOnOpenACCVarListClause(
   case ACCC_final:
   case ACCC_num_threads:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_default:
   case ACCC_proc_bind:
@@ -9107,7 +9125,7 @@ ACCClause *Sema::ActOnOpenACCVarListClause(
   case ACCC_seq_cst:
   case ACCC_device:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -9272,9 +9290,9 @@ ACCClause *Sema::ActOnOpenACCPrivateClause(ArrayRef<Expr *> VarList,
         CurrDir == ACCD_target_teams ||
         CurrDir == ACCD_target_teams_distribute ||
         CurrDir == ACCD_target_teams_distribute_parallel_loop ||
-        CurrDir == ACCD_target_teams_distribute_parallel_loop_simd ||
-        CurrDir == ACCD_target_teams_distribute_simd ||
-        CurrDir == ACCD_target_parallel_loop_simd ||
+        CurrDir == ACCD_target_teams_distribute_parallel_loop_vector ||
+        CurrDir == ACCD_target_teams_distribute_vector ||
+        CurrDir == ACCD_target_parallel_loop_vector ||
         CurrDir == ACCD_target_parallel_loop) {
       OpenACCClauseKind ConflictKind;
       if (DSAStack->checkMappableExprComponentListsForDecl(
@@ -11010,11 +11028,11 @@ static bool FinishOpenACCLinearClause(ACCLinearClause &Clause, DeclRefExpr *IV,
       continue;
     }
     auto &&Info = Stack->isLoopControlVariable(D);
-    // OpenACC [2.15.11, distribute simd Construct]
+    // OpenACC [2.15.11, distribute vector Construct]
     // A list item may not appear in a linear clause, unless it is the loop
     // iteration variable.
     if (isOpenACCDistributeDirective(Stack->getCurrentDirective()) &&
-        isOpenACCSimdDirective(Stack->getCurrentDirective()) && !Info.first) {
+        isOpenACCVectorDirective(Stack->getCurrentDirective()) && !Info.first) {
       SemaRef.Diag(ELoc,
                    diag::err_acc_linear_distribute_var_non_loop_iteration);
       Updates.push_back(nullptr);
@@ -11096,7 +11114,7 @@ ACCClause *Sema::ActOnOpenACCAlignedClause(
     QualType QType = D->getType();
     auto *VD = dyn_cast<VarDecl>(D);
 
-    // OpenACC  [2.8.1, simd construct, Restrictions]
+    // OpenACC  [2.8.1, vector construct, Restrictions]
     // The type of list items appearing in the aligned clause must be
     // array, pointer, reference to array, or reference to pointer.
     QType = QType.getNonReferenceType().getUnqualifiedType().getCanonicalType();
@@ -11113,7 +11131,7 @@ ACCClause *Sema::ActOnOpenACCAlignedClause(
       continue;
     }
 
-    // OpenACC  [2.8.1, simd construct, Restrictions]
+    // OpenACC  [2.8.1, vector construct, Restrictions]
     // A list-item cannot appear in more than one aligned clause.
     if (Expr *PrevRef = DSAStack->addUniqueAligned(D, SimpleRefExpr)) {
       Diag(ELoc, diag::err_acc_aligned_twice) << 0 << ERange;
@@ -11130,11 +11148,11 @@ ACCClause *Sema::ActOnOpenACCAlignedClause(
                        .get());
   }
 
-  // OpenACC [2.8.1, simd construct, Description]
+  // OpenACC [2.8.1, vector construct, Description]
   // The parameter of the aligned clause, alignment, must be a constant
   // positive integer expression.
   // If no optional parameter is specified, implementation-defined default
-  // alignments for SIMD instructions on the target platforms are assumed.
+  // alignments for Vector instructions on the target platforms are assumed.
   if (Alignment != nullptr) {
     ExprResult AlignResult =
         VerifyPositiveIntegerConstantInClause(Alignment, ACCC_aligned);
@@ -12133,7 +12151,7 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
       // A map-type must be specified in all map clauses and must be either
       // to or alloc.
       OpenACCDirectiveKind DKind = DSAS->getCurrentDirective();
-      if (DKind == ACCD_target_enter_data &&
+      if (DKind == ACCD_enter_data &&
           !(MapType == ACCC_MAP_to || MapType == ACCC_MAP_alloc)) {
         SemaRef.Diag(StartLoc, diag::err_acc_invalid_map_type_for_directive)
             << (IsMapTypeImplicit ? 1 : 0)
@@ -12146,7 +12164,7 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
       // OpenACC [2.10.3, Restrictions, p. 102]
       // A map-type must be specified in all map clauses and must be either
       // from, release, or delete.
-      if (DKind == ACCD_target_exit_data &&
+      if (DKind == ACCD_exit_data &&
           !(MapType == ACCC_MAP_from || MapType == ACCC_MAP_release ||
             MapType == ACCC_MAP_delete)) {
         SemaRef.Diag(StartLoc, diag::err_acc_invalid_map_type_for_directive)
@@ -12162,8 +12180,8 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
       if ((DKind == ACCD_target || DKind == ACCD_target_teams ||
            DKind == ACCD_target_teams_distribute ||
            DKind == ACCD_target_teams_distribute_parallel_loop ||
-           DKind == ACCD_target_teams_distribute_parallel_loop_simd ||
-           DKind == ACCD_target_teams_distribute_simd) && VD) {
+           DKind == ACCD_target_teams_distribute_parallel_loop_vector ||
+           DKind == ACCD_target_teams_distribute_vector) && VD) {
         auto DVar = DSAS->getTopDSA(VD, false);
         if (isOpenACCPrivate(DVar.CKind)) {
           SemaRef.Diag(ELoc, diag::err_acc_variable_in_given_clause_and_dsa)
@@ -12212,8 +12230,25 @@ Sema::ActOnOpenACCMapClause(OpenACCMapClauseKind MapTypeModifier,
                               MVLI.VarComponents, MapTypeModifier, MapType,
                               IsMapTypeImplicit, MapLoc);
 }
-// TODO acc2mp modify for specific behaviour for copy copyin copyout; this is a copy of map
+// TODO acc2mp modify for specific behaviour for create copy copyin copyout delete; this is a copy of map
 //
+ACCClause *
+Sema::ActOnOpenACCCreateClause(OpenACCMapClauseKind MapTypeModifier,
+                           OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                           SourceLocation MapLoc, SourceLocation ColonLoc,
+                           ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                           SourceLocation LParenLoc, SourceLocation EndLoc) {
+  MappableVarListInfo MVLI(VarList);
+  checkMappableExpressionList(*this, DSAStack, ACCC_copy, MVLI, StartLoc,
+                              MapType, IsMapTypeImplicit);
+
+  // We need to produce a map clause even if we don't have variables so that
+  // other diagnostics related with non-existing map clauses are accurate.
+  return ACCCreateClause::Create(Context, StartLoc, LParenLoc, EndLoc,
+                              MVLI.ProcessedVarList, MVLI.VarBaseDeclarations,
+                              MVLI.VarComponents, MapTypeModifier, MapType,
+                              IsMapTypeImplicit, MapLoc);
+}
 ACCClause *
 Sema::ActOnOpenACCCopyClause(OpenACCMapClauseKind MapTypeModifier,
                            OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
@@ -12261,6 +12296,23 @@ Sema::ActOnOpenACCCopyoutClause(OpenACCMapClauseKind MapTypeModifier,
   // We need to produce a map clause even if we don't have variables so that
   // other diagnostics related with non-existing map clauses are accurate.
   return ACCCopyoutClause::Create(Context, StartLoc, LParenLoc, EndLoc,
+                              MVLI.ProcessedVarList, MVLI.VarBaseDeclarations,
+                              MVLI.VarComponents, MapTypeModifier, MapType,
+                              IsMapTypeImplicit, MapLoc);
+}
+ACCClause *
+Sema::ActOnOpenACCDeleteClause(OpenACCMapClauseKind MapTypeModifier,
+                           OpenACCMapClauseKind MapType, bool IsMapTypeImplicit,
+                           SourceLocation MapLoc, SourceLocation ColonLoc,
+                           ArrayRef<Expr *> VarList, SourceLocation StartLoc,
+                           SourceLocation LParenLoc, SourceLocation EndLoc) {
+  MappableVarListInfo MVLI(VarList);
+  checkMappableExpressionList(*this, DSAStack, ACCC_copy, MVLI, StartLoc,
+                              MapType, IsMapTypeImplicit);
+
+  // We need to produce a map clause even if we don't have variables so that
+  // other diagnostics related with non-existing map clauses are accurate.
+  return ACCDeleteClause::Create(Context, StartLoc, LParenLoc, EndLoc,
                               MVLI.ProcessedVarList, MVLI.VarBaseDeclarations,
                               MVLI.VarComponents, MapTypeModifier, MapType,
                               IsMapTypeImplicit, MapLoc);

@@ -1798,8 +1798,8 @@ ACCClause *ACCClauseReader::readClause() {
   case ACCC_safelen:
     C = new (Context) ACCSafelenClause();
     break;
-  case ACCC_simdlen:
-    C = new (Context) ACCSimdlenClause();
+  case ACCC_vectorlen:
+    C = new (Context) ACCVectorlenClause();
     break;
   case ACCC_collapse:
     C = new (Context) ACCCollapseClause();
@@ -1843,8 +1843,8 @@ ACCClause *ACCClauseReader::readClause() {
   case ACCC_threads:
     C = new (Context) ACCThreadsClause();
     break;
-  case ACCC_simd:
-    C = new (Context) ACCSIMDClause();
+  case ACCC_vector:
+    C = new (Context) ACCVectorClause();
     break;
   case ACCC_nogroup:
     C = new (Context) ACCNogroupClause();
@@ -1897,7 +1897,16 @@ ACCClause *ACCClauseReader::readClause() {
                                   NumComponents);
     break;
   }
-  //TODO acc2mp Modify copy, copyin copyout
+  //TODO acc2mp Modify create, copy, copyin copyout, delete
+  case ACCC_create: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCCreateClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                  NumComponents);
+    break;
+  }
   case ACCC_copy: {
     unsigned NumVars = Reader->Record.readInt();
     unsigned NumDeclarations = Reader->Record.readInt();
@@ -1922,6 +1931,15 @@ ACCClause *ACCClauseReader::readClause() {
     unsigned NumLists = Reader->Record.readInt();
     unsigned NumComponents = Reader->Record.readInt();
     C = ACCCopyoutClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
+                                  NumComponents);
+    break;
+  }
+  case ACCC_delete: {
+    unsigned NumVars = Reader->Record.readInt();
+    unsigned NumDeclarations = Reader->Record.readInt();
+    unsigned NumLists = Reader->Record.readInt();
+    unsigned NumComponents = Reader->Record.readInt();
+    C = ACCDeleteClause::CreateEmpty(Context, NumVars, NumDeclarations, NumLists,
                                   NumComponents);
     break;
   }
@@ -2028,8 +2046,8 @@ void ACCClauseReader::VisitACCSafelenClause(ACCSafelenClause *C) {
   C->setLParenLoc(Reader->ReadSourceLocation());
 }
 
-void ACCClauseReader::VisitACCSimdlenClause(ACCSimdlenClause *C) {
-  C->setSimdlen(Reader->Record.readSubExpr());
+void ACCClauseReader::VisitACCVectorlenClause(ACCVectorlenClause *C) {
+  C->setVectorlen(Reader->Record.readSubExpr());
   C->setLParenLoc(Reader->ReadSourceLocation());
 }
 
@@ -2091,7 +2109,7 @@ void ACCClauseReader::VisitACCSeqCstClause(ACCSeqCstClause *) {}
 
 void ACCClauseReader::VisitACCThreadsClause(ACCThreadsClause *) {}
 
-void ACCClauseReader::VisitACCSIMDClause(ACCSIMDClause *) {}
+void ACCClauseReader::VisitACCVectorClause(ACCVectorClause *) {}
 
 void ACCClauseReader::VisitACCNogroupClause(ACCNogroupClause *) {}
 
@@ -2415,7 +2433,54 @@ void ACCClauseReader::VisitACCMapClause(ACCMapClause *C) {
   }
   C->setComponents(Components, ListSizes);
 }
-//TODO acc2mp Modify for copy, copyin, copyout
+//TODO acc2mp Modify for create, copy, copyin, copyout, delete
+void ACCClauseReader::VisitACCCreateClause(ACCCreateClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setMapTypeModifier(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapType(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
 void ACCClauseReader::VisitACCCopyClause(ACCCopyClause *C) {
   C->setLParenLoc(Reader->ReadSourceLocation());
   C->setMapTypeModifier(
@@ -2511,6 +2576,53 @@ void ACCClauseReader::VisitACCCopyinClause(ACCCopyinClause *C) {
   C->setComponents(Components, ListSizes);
 }
 void ACCClauseReader::VisitACCCopyoutClause(ACCCopyoutClause *C) {
+  C->setLParenLoc(Reader->ReadSourceLocation());
+  C->setMapTypeModifier(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapType(
+     static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
+  C->setMapLoc(Reader->ReadSourceLocation());
+  C->setColonLoc(Reader->ReadSourceLocation());
+  auto NumVars = C->varlist_size();
+  auto UniqueDecls = C->getUniqueDeclarationsNum();
+  auto TotalLists = C->getTotalComponentListNum();
+  auto TotalComponents = C->getTotalComponentsNum();
+
+  SmallVector<Expr *, 16> Vars;
+  Vars.reserve(NumVars);
+  for (unsigned i = 0; i != NumVars; ++i)
+    Vars.push_back(Reader->Record.readSubExpr());
+  C->setVarRefs(Vars);
+
+  SmallVector<ValueDecl *, 16> Decls;
+  Decls.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    Decls.push_back(Reader->Record.readDeclAs<ValueDecl>());
+  C->setUniqueDecls(Decls);
+
+  SmallVector<unsigned, 16> ListsPerDecl;
+  ListsPerDecl.reserve(UniqueDecls);
+  for (unsigned i = 0; i < UniqueDecls; ++i)
+    ListsPerDecl.push_back(Reader->Record.readInt());
+  C->setDeclNumLists(ListsPerDecl);
+
+  SmallVector<unsigned, 32> ListSizes;
+  ListSizes.reserve(TotalLists);
+  for (unsigned i = 0; i < TotalLists; ++i)
+    ListSizes.push_back(Reader->Record.readInt());
+  C->setComponentListSizes(ListSizes);
+
+  SmallVector<ACCClauseMappableExprCommon::MappableComponent, 32> Components;
+  Components.reserve(TotalComponents);
+  for (unsigned i = 0; i < TotalComponents; ++i) {
+    Expr *AssociatedExpr = Reader->Record.readSubExpr();
+    ValueDecl *AssociatedDecl = Reader->Record.readDeclAs<ValueDecl>();
+    Components.push_back(ACCClauseMappableExprCommon::MappableComponent(
+        AssociatedExpr, AssociatedDecl));
+  }
+  C->setComponents(Components, ListSizes);
+}
+void ACCClauseReader::VisitACCDeleteClause(ACCDeleteClause *C) {
   C->setLParenLoc(Reader->ReadSourceLocation());
   C->setMapTypeModifier(
      static_cast<OpenACCMapClauseKind>(Reader->Record.readInt()));
@@ -2875,7 +2987,7 @@ void ASTStmtReader::VisitACCParallelDirective(ACCParallelDirective *D) {
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCSimdDirective(ACCSimdDirective *D) {
+void ASTStmtReader::VisitACCVectorDirective(ACCVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -2884,7 +2996,7 @@ void ASTStmtReader::VisitACCLoopDirective(ACCLoopDirective *D) {
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCLoopSimdDirective(ACCLoopSimdDirective *D) {
+void ASTStmtReader::VisitACCLoopVectorDirective(ACCLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -2927,8 +3039,8 @@ void ASTStmtReader::VisitACCParallelLoopDirective(ACCParallelLoopDirective *D) {
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCParallelLoopSimdDirective(
-    ACCParallelLoopSimdDirective *D) {
+void ASTStmtReader::VisitACCParallelLoopVectorDirective(
+    ACCParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3006,21 +3118,21 @@ void ASTStmtReader::VisitACCTargetDirective(ACCTargetDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetDataDirective(ACCTargetDataDirective *D) {
+void ASTStmtReader::VisitACCDataDirective(ACCDataDirective *D) {
   VisitStmt(D);
   Record.skipInts(1);
   VisitACCExecutableDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetEnterDataDirective(
-    ACCTargetEnterDataDirective *D) {
+void ASTStmtReader::VisitACCEnterDataDirective(
+    ACCEnterDataDirective *D) {
   VisitStmt(D);
   Record.skipInts(1);
   VisitACCExecutableDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetExitDataDirective(
-    ACCTargetExitDataDirective *D) {
+void ASTStmtReader::VisitACCExitDataDirective(
+    ACCExitDataDirective *D) {
   VisitStmt(D);
   Record.skipInts(1);
   VisitACCExecutableDirective(D);
@@ -3065,7 +3177,7 @@ void ASTStmtReader::VisitACCTaskLoopDirective(ACCTaskLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTaskLoopSimdDirective(ACCTaskLoopSimdDirective *D) {
+void ASTStmtReader::VisitACCTaskLoopVectorDirective(ACCTaskLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3084,22 +3196,22 @@ void ASTStmtReader::VisitACCDistributeParallelLoopDirective(
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCDistributeParallelLoopSimdDirective(
-    ACCDistributeParallelLoopSimdDirective *D) {
+void ASTStmtReader::VisitACCDistributeParallelLoopVectorDirective(
+    ACCDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCDistributeSimdDirective(
-    ACCDistributeSimdDirective *D) {
+void ASTStmtReader::VisitACCDistributeVectorDirective(
+    ACCDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetParallelLoopSimdDirective(
-    ACCTargetParallelLoopSimdDirective *D) {
+void ASTStmtReader::VisitACCTargetParallelLoopVectorDirective(
+    ACCTargetParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetSimdDirective(ACCTargetSimdDirective *D) {
+void ASTStmtReader::VisitACCTargetVectorDirective(ACCTargetVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3108,13 +3220,13 @@ void ASTStmtReader::VisitACCTeamsDistributeDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeSimdDirective(
-    ACCTeamsDistributeSimdDirective *D) {
+void ASTStmtReader::VisitACCTeamsDistributeVectorDirective(
+    ACCTeamsDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeParallelLoopSimdDirective(
-    ACCTeamsDistributeParallelLoopSimdDirective *D) {
+void ASTStmtReader::VisitACCTeamsDistributeParallelLoopVectorDirective(
+    ACCTeamsDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3142,13 +3254,13 @@ void ASTStmtReader::VisitACCTargetTeamsDistributeParallelLoopDirective(
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
-    ACCTargetTeamsDistributeParallelLoopSimdDirective *D) {
+void ASTStmtReader::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
+    ACCTargetTeamsDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeSimdDirective(
-    ACCTargetTeamsDistributeSimdDirective *D) {
+void ASTStmtReader::VisitACCTargetTeamsDistributeVectorDirective(
+    ACCTargetTeamsDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -4906,10 +5018,10 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
                                           Empty);
       break;
 
-    case STMT_ACC_SIMD_DIRECTIVE: {
+    case STMT_ACC_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCVectorDirective::CreateEmpty(Context, NumClauses,
                                         CollapsedNum, Empty);
       break;
     }
@@ -4922,10 +5034,10 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case STMT_ACC_FOR_SIMD_DIRECTIVE: {
+    case STMT_ACC_FOR_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCLoopSimdDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+      S = ACCLoopVectorDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
                                            Empty);
       break;
     }
@@ -4961,10 +5073,10 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case STMT_ACC_PARALLEL_FOR_SIMD_DIRECTIVE: {
+    case STMT_ACC_PARALLEL_FOR_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCParallelLoopSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCParallelLoopVectorDirective::CreateEmpty(Context, NumClauses,
                                                    CollapsedNum, Empty);
       break;
     }
@@ -5017,17 +5129,17 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
 
     case STMT_ACC_TARGET_DATA_DIRECTIVE:
-      S = ACCTargetDataDirective::CreateEmpty(
+      S = ACCDataDirective::CreateEmpty(
           Context, Record[ASTStmtReader::NumStmtFields], Empty);
       break;
 
     case STMT_ACC_TARGET_ENTER_DATA_DIRECTIVE:
-      S = ACCTargetEnterDataDirective::CreateEmpty(
+      S = ACCEnterDataDirective::CreateEmpty(
           Context, Record[ASTStmtReader::NumStmtFields], Empty);
       break;
 
     case STMT_ACC_TARGET_EXIT_DATA_DIRECTIVE:
-      S = ACCTargetExitDataDirective::CreateEmpty(
+      S = ACCExitDataDirective::CreateEmpty(
           Context, Record[ASTStmtReader::NumStmtFields], Empty);
       break;
 
@@ -5071,10 +5183,10 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case STMT_ACC_TASKLOOP_SIMD_DIRECTIVE: {
+    case STMT_ACC_TASKLOOP_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTaskLoopSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCTaskLoopVectorDirective::CreateEmpty(Context, NumClauses,
                                                 CollapsedNum, Empty);
       break;
     }
@@ -5095,35 +5207,35 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case STMT_ACC_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
+    case STMT_ACC_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCDistributeParallelLoopSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCDistributeParallelLoopVectorDirective::CreateEmpty(Context, NumClauses,
                                                              CollapsedNum,
                                                              Empty);
       break;
     }
 
-    case STMT_ACC_DISTRIBUTE_SIMD_DIRECTIVE: {
+    case STMT_ACC_DISTRIBUTE_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCDistributeSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCDistributeVectorDirective::CreateEmpty(Context, NumClauses,
                                                   CollapsedNum, Empty);
       break;
     }
 
-    case STMT_ACC_TARGET_PARALLEL_FOR_SIMD_DIRECTIVE: {
+    case STMT_ACC_TARGET_PARALLEL_FOR_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetParallelLoopSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCTargetParallelLoopVectorDirective::CreateEmpty(Context, NumClauses,
                                                          CollapsedNum, Empty);
       break;
     }
 
-    case STMT_ACC_TARGET_SIMD_DIRECTIVE: {
+    case STMT_ACC_TARGET_VECTOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetSimdDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
+      S = ACCTargetVectorDirective::CreateEmpty(Context, NumClauses, CollapsedNum,
                                               Empty);
       break;
     }
@@ -5136,18 +5248,18 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case STMT_ACC_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE: {
+    case STMT_ACC_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeSimdDirective::CreateEmpty(Context, NumClauses,
+      S = ACCTeamsDistributeVectorDirective::CreateEmpty(Context, NumClauses,
                                                        CollapsedNum, Empty);
       break;
     }
 
-    case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
+    case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeParallelLoopSimdDirective::CreateEmpty(
+      S = ACCTeamsDistributeParallelLoopVectorDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
@@ -5182,18 +5294,18 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE: {
+    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeParallelLoopSimdDirective::CreateEmpty(
+      S = ACCTargetTeamsDistributeParallelLoopVectorDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
 
-    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE: {
+    case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeSimdDirective::CreateEmpty(
+      S = ACCTargetTeamsDistributeVectorDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }

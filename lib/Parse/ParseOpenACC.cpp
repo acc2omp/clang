@@ -28,7 +28,6 @@ using namespace clang;
 namespace {
 enum OpenACCDirectiveKindEx {
   ACCD_cancellation = ACCD_unknown + 1,
-  ACCD_data,
   ACCD_declare,
   ACCD_end,
   ACCD_end_declare,
@@ -82,46 +81,45 @@ static unsigned getOpenACCDirectiveKindEx(StringRef S) {
 
 static OpenACCDirectiveKind ParseOpenACCDirectiveKind(Parser &P) {
   // Array of foldings: F[i][0] F[i][1] ===> F[i][2].
-  // E.g.: ACCD_loop ACCD_simd ===> ACCD_loop_simd
+  // E.g.: ACCD_loop ACCD_vector ===> ACCD_loop_vector
   // TODO: add other combined directives in topological order.
   static const unsigned F[][3] = {
     { ACCD_cancellation, ACCD_point, ACCD_cancellation_point },
     { ACCD_declare, ACCD_reduction, ACCD_declare_reduction },
-    { ACCD_declare, ACCD_simd, ACCD_declare_simd },
+    { ACCD_declare, ACCD_vector, ACCD_declare_vector },
     { ACCD_declare, ACCD_target, ACCD_declare_target },
     { ACCD_distribute, ACCD_parallel, ACCD_distribute_parallel },
     { ACCD_distribute_parallel, ACCD_loop, ACCD_distribute_parallel_loop },
-    { ACCD_distribute_parallel_loop, ACCD_simd, 
-      ACCD_distribute_parallel_loop_simd },
-    { ACCD_distribute, ACCD_simd, ACCD_distribute_simd },
+    { ACCD_distribute_parallel_loop, ACCD_vector,
+      ACCD_distribute_parallel_loop_vector },
+    { ACCD_distribute, ACCD_vector, ACCD_distribute_vector },
     { ACCD_end, ACCD_declare, ACCD_end_declare },
     { ACCD_end_declare, ACCD_target, ACCD_end_declare_target },
-    { ACCD_target, ACCD_data, ACCD_target_data },
     { ACCD_target, ACCD_enter, ACCD_target_enter },
     { ACCD_target, ACCD_exit, ACCD_target_exit },
     { ACCD_target, ACCD_update, ACCD_target_update },
-    { ACCD_target_enter, ACCD_data, ACCD_target_enter_data },
-    { ACCD_target_exit, ACCD_data, ACCD_target_exit_data },
-    { ACCD_loop, ACCD_simd, ACCD_loop_simd },
+    { ACCD_enter, ACCD_data, ACCD_enter_data },
+    { ACCD_exit, ACCD_data, ACCD_exit_data },
+    { ACCD_loop, ACCD_vector, ACCD_loop_vector },
     { ACCD_parallel, ACCD_loop, ACCD_parallel_loop },
-    { ACCD_parallel_loop, ACCD_simd, ACCD_parallel_loop_simd },
+    { ACCD_parallel_loop, ACCD_vector, ACCD_parallel_loop_vector },
     { ACCD_parallel, ACCD_sections, ACCD_parallel_sections },
-    { ACCD_taskloop, ACCD_simd, ACCD_taskloop_simd },
+    { ACCD_taskloop, ACCD_vector, ACCD_taskloop_vector },
     { ACCD_target, ACCD_parallel, ACCD_target_parallel },
-    { ACCD_target, ACCD_simd, ACCD_target_simd },
+    { ACCD_target, ACCD_vector, ACCD_target_vector },
     { ACCD_target_parallel, ACCD_loop, ACCD_target_parallel_loop },
-    { ACCD_target_parallel_loop, ACCD_simd, ACCD_target_parallel_loop_simd },
+    { ACCD_target_parallel_loop, ACCD_vector, ACCD_target_parallel_loop_vector },
     { ACCD_teams, ACCD_distribute, ACCD_teams_distribute },
-    { ACCD_teams_distribute, ACCD_simd, ACCD_teams_distribute_simd },
+    { ACCD_teams_distribute, ACCD_vector, ACCD_teams_distribute_vector },
     { ACCD_teams_distribute, ACCD_parallel, ACCD_teams_distribute_parallel },
     { ACCD_teams_distribute_parallel, ACCD_loop, ACCD_teams_distribute_parallel_loop },
-    { ACCD_teams_distribute_parallel_loop, ACCD_simd, ACCD_teams_distribute_parallel_loop_simd },
+    { ACCD_teams_distribute_parallel_loop, ACCD_vector, ACCD_teams_distribute_parallel_loop_vector },
     { ACCD_target, ACCD_teams, ACCD_target_teams },
     { ACCD_target_teams, ACCD_distribute, ACCD_target_teams_distribute },
     { ACCD_target_teams_distribute, ACCD_parallel, ACCD_target_teams_distribute_parallel },
-    { ACCD_target_teams_distribute, ACCD_simd, ACCD_target_teams_distribute_simd },
+    { ACCD_target_teams_distribute, ACCD_vector, ACCD_target_teams_distribute_vector },
     { ACCD_target_teams_distribute_parallel, ACCD_loop, ACCD_target_teams_distribute_parallel_loop },
-    { ACCD_target_teams_distribute_parallel_loop, ACCD_simd, ACCD_target_teams_distribute_parallel_loop_simd }
+    { ACCD_target_teams_distribute_parallel_loop, ACCD_vector, ACCD_target_teams_distribute_parallel_loop_vector }
   };
   enum { CancellationPoint = 0, DeclareReduction = 1, TargetData = 2 };
   auto Tok = P.getCurToken();
@@ -448,8 +446,8 @@ void Parser::ParseOpenACCReductionInitializerForDecl(VarDecl *AccPrivParm) {
 
 namespace {
 /// RAII that recreates function context for correct parsing of clauses of
-/// 'declare simd' construct.
-/// OpenACC, 2.8.2 declare simd Construct
+/// 'declare vector' construct.
+/// OpenACC, 2.8.2 declare vector Construct
 /// The expressions appearing in the clauses of this directive are evaluated in
 /// the scope of the arguments of the function declaration or definition.
 class FNContextRAII final {
@@ -503,15 +501,15 @@ public:
 };
 } // namespace
 
-/// Parses clauses for 'declare simd' directive.
+/// Parses clauses for 'declare vector' directive.
 ///    clause:
 ///      'inbranch' | 'notinbranch'
-///      'simdlen' '(' <expr> ')'
+///      'vectorlen' '(' <expr> ')'
 ///      { 'uniform' '(' <argument_list> ')' }
 ///      { 'aligned '(' <argument_list> [ ':' <alignment> ] ')' }
 ///      { 'linear '(' <argument_list> [ ':' <step> ] ')' }
-static bool parseDeclareSimdClauses(
-    Parser &P, ACCDeclareSimdDeclAttr::BranchStateTy &BS, ExprResult &SimdLen,
+static bool parseDeclareVectorClauses(
+    Parser &P, ACCDeclareVectorDeclAttr::BranchStateTy &BS, ExprResult &VectorLen,
     SmallVectorImpl<Expr *> &Uniforms, SmallVectorImpl<Expr *> &Aligneds,
     SmallVectorImpl<Expr *> &Alignments, SmallVectorImpl<Expr *> &Linears,
     SmallVectorImpl<unsigned> &LinModifiers, SmallVectorImpl<Expr *> &Steps) {
@@ -521,30 +519,30 @@ static bool parseDeclareSimdClauses(
   while (Tok.isNot(tok::annot_pragma_openacc_end)) {
     if (Tok.isNot(tok::identifier))
       break;
-    ACCDeclareSimdDeclAttr::BranchStateTy Out;
+    ACCDeclareVectorDeclAttr::BranchStateTy Out;
     IdentifierInfo *II = Tok.getIdentifierInfo();
     StringRef ClauseName = II->getName();
     // Parse 'inranch|notinbranch' clauses.
-    if (ACCDeclareSimdDeclAttr::ConvertStrToBranchStateTy(ClauseName, Out)) {
-      if (BS != ACCDeclareSimdDeclAttr::BS_Undefined && BS != Out) {
-        P.Diag(Tok, diag::err_acc_declare_simd_inbranch_notinbranch)
+    if (ACCDeclareVectorDeclAttr::ConvertStrToBranchStateTy(ClauseName, Out)) {
+      if (BS != ACCDeclareVectorDeclAttr::BS_Undefined && BS != Out) {
+        P.Diag(Tok, diag::err_acc_declare_vector_inbranch_notinbranch)
             << ClauseName
-            << ACCDeclareSimdDeclAttr::ConvertBranchStateTyToStr(BS) << BSRange;
+            << ACCDeclareVectorDeclAttr::ConvertBranchStateTyToStr(BS) << BSRange;
         IsError = true;
       }
       BS = Out;
       BSRange = SourceRange(Tok.getLocation(), Tok.getEndLoc());
       P.ConsumeToken();
-    } else if (ClauseName.equals("simdlen")) {
-      if (SimdLen.isUsable()) {
+    } else if (ClauseName.equals("vectorlen")) {
+      if (VectorLen.isUsable()) {
         P.Diag(Tok, diag::err_acc_more_one_clause)
-            << getOpenACCDirectiveName(ACCD_declare_simd) << ClauseName << 0;
+            << getOpenACCDirectiveName(ACCD_declare_vector) << ClauseName << 0;
         IsError = true;
       }
       P.ConsumeToken();
       SourceLocation RLoc;
-      SimdLen = P.ParseOpenACCParensExpr(ClauseName, RLoc);
-      if (SimdLen.isInvalid())
+      VectorLen = P.ParseOpenACCParensExpr(ClauseName, RLoc);
+      if (VectorLen.isInvalid())
         IsError = true;
     } else {
       OpenACCClauseKind CKind = getOpenACCClauseKind(ClauseName);
@@ -558,7 +556,7 @@ static bool parseDeclareSimdClauses(
           Vars = &Linears;
 
         P.ConsumeToken();
-        if (P.ParseOpenACCVarList(ACCD_declare_simd,
+        if (P.ParseOpenACCVarList(ACCD_declare_vector,
                                  getOpenACCClauseKind(ClauseName), *Vars, Data))
           IsError = true;
         if (CKind == ACCC_aligned)
@@ -582,9 +580,9 @@ static bool parseDeclareSimdClauses(
   return IsError;
 }
 
-/// Parse clauses for '#pragma acc declare simd'.
+/// Parse clauses for '#pragma acc declare vector'.
 Parser::DeclGroupPtrTy
-Parser::ParseACCDeclareSimdClauses(Parser::DeclGroupPtrTy Ptr,
+Parser::ParseACCDeclareVectorClauses(Parser::DeclGroupPtrTy Ptr,
                                    CachedTokens &Toks, SourceLocation Loc) {
   PP.EnterToken(Tok);
   PP.EnterTokenStream(Toks, /*DisableMacroExpansion=*/true);
@@ -592,9 +590,9 @@ Parser::ParseACCDeclareSimdClauses(Parser::DeclGroupPtrTy Ptr,
   ConsumeAnyToken(/*ConsumeCodeCompletionTok=*/true);
 
   FNContextRAII FnContext(*this, Ptr);
-  ACCDeclareSimdDeclAttr::BranchStateTy BS =
-      ACCDeclareSimdDeclAttr::BS_Undefined;
-  ExprResult Simdlen;
+  ACCDeclareVectorDeclAttr::BranchStateTy BS =
+      ACCDeclareVectorDeclAttr::BS_Undefined;
+  ExprResult Vectorlen;
   SmallVector<Expr *, 4> Uniforms;
   SmallVector<Expr *, 4> Aligneds;
   SmallVector<Expr *, 4> Alignments;
@@ -602,20 +600,20 @@ Parser::ParseACCDeclareSimdClauses(Parser::DeclGroupPtrTy Ptr,
   SmallVector<unsigned, 4> LinModifiers;
   SmallVector<Expr *, 4> Steps;
   bool IsError =
-      parseDeclareSimdClauses(*this, BS, Simdlen, Uniforms, Aligneds,
+      parseDeclareVectorClauses(*this, BS, Vectorlen, Uniforms, Aligneds,
                               Alignments, Linears, LinModifiers, Steps);
   // Need to check for extra tokens.
   if (Tok.isNot(tok::annot_pragma_openacc_end)) {
     Diag(Tok, diag::warn_acc_extra_tokens_at_eol)
-        << getOpenACCDirectiveName(ACCD_declare_simd);
+        << getOpenACCDirectiveName(ACCD_declare_vector);
     while (Tok.isNot(tok::annot_pragma_openacc_end))
       ConsumeAnyToken();
   }
   // Skip the last annot_pragma_openacc_end.
   SourceLocation EndLoc = ConsumeAnnotationToken();
   if (!IsError) {
-    return Actions.ActOnOpenACCDeclareSimdDirective(
-        Ptr, BS, Simdlen.get(), Uniforms, Aligneds, Alignments, Linears,
+    return Actions.ActOnOpenACCDeclareVectorDirective(
+        Ptr, BS, Vectorlen.get(), Uniforms, Aligneds, Alignments, Linears,
         LinModifiers, Steps, SourceRange(Loc, EndLoc));
   }
   return Ptr;
@@ -631,8 +629,8 @@ Parser::ParseACCDeclareSimdClauses(Parser::DeclGroupPtrTy Ptr,
 ///        annot_pragma_openacc 'declare' 'reduction' [...]
 ///        annot_pragma_openacc_end
 ///
-///       declare-simd-directive:
-///         annot_pragma_openacc 'declare simd' {<clause> [,]}
+///       declare-vector-directive:
+///         annot_pragma_openacc 'declare vector' {<clause> [,]}
 ///         annot_pragma_openacc_end
 ///         <function declaration/definition>
 ///
@@ -680,9 +678,9 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
       return Res;
     }
     break;
-  case ACCD_declare_simd: {
+  case ACCD_declare_vector: {
     // The syntax is:
-    // { #pragma acc declare simd }
+    // { #pragma acc declare vector }
     // <function-declaration-or-definition>
     //
     ConsumeToken();
@@ -710,10 +708,10 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
       }
     }
     if (!Ptr) {
-      Diag(Loc, diag::err_acc_decl_in_declare_simd);
+      Diag(Loc, diag::err_acc_decl_in_declare_vector);
       return DeclGroupPtrTy();
     }
-    return ParseACCDeclareSimdClauses(Ptr, Toks, Loc);
+    return ParseACCDeclareVectorClauses(Ptr, Toks, Loc);
   }
   case ACCD_declare_target: {
     SourceLocation DTLoc = ConsumeAnyToken();
@@ -803,7 +801,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
     Diag(Tok, diag::err_acc_unknown_directive);
     break;
   case ACCD_parallel:
-  case ACCD_simd:
+  case ACCD_vector:
   case ACCD_task:
   case ACCD_taskyield:
   case ACCD_barrier:
@@ -811,7 +809,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_taskgroup:
   case ACCD_flush:
   case ACCD_loop:
-  case ACCD_loop_simd:
+  case ACCD_loop_vector:
   case ACCD_sections:
   case ACCD_section:
   case ACCD_single:
@@ -819,37 +817,37 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_ordered:
   case ACCD_critical:
   case ACCD_parallel_loop:
-  case ACCD_parallel_loop_simd:
+  case ACCD_parallel_loop_vector:
   case ACCD_parallel_sections:
   case ACCD_atomic:
   case ACCD_target:
   case ACCD_teams:
   case ACCD_cancellation_point:
   case ACCD_cancel:
-  case ACCD_target_data:
-  case ACCD_target_enter_data:
-  case ACCD_target_exit_data:
+  case ACCD_data:
+  case ACCD_enter_data:
+  case ACCD_exit_data:
   case ACCD_target_parallel:
   case ACCD_target_parallel_loop:
   case ACCD_taskloop:
-  case ACCD_taskloop_simd:
+  case ACCD_taskloop_vector:
   case ACCD_distribute:
   case ACCD_end_declare_target:
   case ACCD_target_update:
   case ACCD_distribute_parallel_loop:
-  case ACCD_distribute_parallel_loop_simd:
-  case ACCD_distribute_simd:
-  case ACCD_target_parallel_loop_simd:
-  case ACCD_target_simd:
+  case ACCD_distribute_parallel_loop_vector:
+  case ACCD_distribute_vector:
+  case ACCD_target_parallel_loop_vector:
+  case ACCD_target_vector:
   case ACCD_teams_distribute:
-  case ACCD_teams_distribute_simd:
-  case ACCD_teams_distribute_parallel_loop_simd:
+  case ACCD_teams_distribute_vector:
+  case ACCD_teams_distribute_parallel_loop_vector:
   case ACCD_teams_distribute_parallel_loop:
   case ACCD_target_teams:
   case ACCD_target_teams_distribute:
   case ACCD_target_teams_distribute_parallel_loop:
-  case ACCD_target_teams_distribute_parallel_loop_simd:
-  case ACCD_target_teams_distribute_simd:
+  case ACCD_target_teams_distribute_parallel_loop_vector:
+  case ACCD_target_teams_distribute_vector:
     Diag(Tok, diag::err_acc_unexpected_directive)
         << 1 << getOpenACCDirectiveName(DKind);
     break;
@@ -873,24 +871,24 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
 ///         annot_pragma_openacc_end
 ///
 ///       executable-directive:
-///         annot_pragma_openacc 'parallel' | 'simd' | 'for' | 'sections' |
+///         annot_pragma_openacc 'parallel' | 'vector' | 'for' | 'sections' |
 ///         'section' | 'single' | 'master' | 'critical' [ '(' <name> ')' ] |
 ///         'parallel for' | 'parallel sections' | 'task' | 'taskyield' |
 ///         'barrier' | 'taskwait' | 'flush' | 'ordered' | 'atomic' |
-///         'for simd' | 'parallel for simd' | 'target' | 'target data' |
-///         'taskgroup' | 'teams' | 'taskloop' | 'taskloop simd' |
+///         'for vector' | 'parallel for vector' | 'target' | 'target data' |
+///         'taskgroup' | 'teams' | 'taskloop' | 'taskloop vector' |
 ///         'distribute' | 'target enter data' | 'target exit data' |
 ///         'target parallel' | 'target parallel for' |
 ///         'target update' | 'distribute parallel for' |
-///         'distribute paralle for simd' | 'distribute simd' |
-///         'target parallel for simd' | 'target simd' |
-///         'teams distribute' | 'teams distribute simd' |
-///         'teams distribute parallel for simd' |
+///         'distribute paralle for vector' | 'distribute vector' |
+///         'target parallel for vector' | 'target vector' |
+///         'teams distribute' | 'teams distribute vector' |
+///         'teams distribute parallel for vector' |
 ///         'teams distribute parallel for' | 'target teams' |
 ///         'target teams distribute' |
 ///         'target teams distribute parallel for' |
-///         'target teams distribute parallel for simd' |
-///         'target teams distribute simd' {clause}
+///         'target teams distribute parallel for vector' |
+///         'target teams distribute vector' {clause}
 ///         annot_pragma_openacc_end
 ///
 StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
@@ -965,8 +963,8 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_taskwait:
   case ACCD_cancellation_point:
   case ACCD_cancel:
-  case ACCD_target_enter_data:
-  case ACCD_target_exit_data:
+  case ACCD_enter_data:
+  case ACCD_exit_data:
   case ACCD_target_update:
     if (Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPAnyExecutable
      || Allowed == ACK_Statements_OpenACCNonStandalone_OpenMPNonStandalone) {
@@ -977,16 +975,16 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     // Fall through for further analysis.
     LLVM_FALLTHROUGH;
   case ACCD_parallel:
-  case ACCD_simd:
+  case ACCD_vector:
   case ACCD_loop:
-  case ACCD_loop_simd:
+  case ACCD_loop_vector:
   case ACCD_sections:
   case ACCD_single:
   case ACCD_section:
   case ACCD_master:
   case ACCD_critical:
   case ACCD_parallel_loop:
-  case ACCD_parallel_loop_simd:
+  case ACCD_parallel_loop_vector:
   case ACCD_parallel_sections:
   case ACCD_task:
   case ACCD_ordered:
@@ -994,26 +992,26 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_target:
   case ACCD_teams:
   case ACCD_taskgroup:
-  case ACCD_target_data:
+  case ACCD_data:
   case ACCD_target_parallel:
   case ACCD_target_parallel_loop:
   case ACCD_taskloop:
-  case ACCD_taskloop_simd:
+  case ACCD_taskloop_vector:
   case ACCD_distribute:
   case ACCD_distribute_parallel_loop:
-  case ACCD_distribute_parallel_loop_simd:
-  case ACCD_distribute_simd:
-  case ACCD_target_parallel_loop_simd:
-  case ACCD_target_simd:
+  case ACCD_distribute_parallel_loop_vector:
+  case ACCD_distribute_vector:
+  case ACCD_target_parallel_loop_vector:
+  case ACCD_target_vector:
   case ACCD_teams_distribute:
-  case ACCD_teams_distribute_simd:
-  case ACCD_teams_distribute_parallel_loop_simd:
+  case ACCD_teams_distribute_vector:
+  case ACCD_teams_distribute_parallel_loop_vector:
   case ACCD_teams_distribute_parallel_loop:
   case ACCD_target_teams:
   case ACCD_target_teams_distribute:
   case ACCD_target_teams_distribute_parallel_loop:
-  case ACCD_target_teams_distribute_parallel_loop_simd:
-  case ACCD_target_teams_distribute_simd: {
+  case ACCD_target_teams_distribute_parallel_loop_vector:
+  case ACCD_target_teams_distribute_vector: {
     ConsumeToken();
     // Parse directive name of the 'critical' directive if any.
     if (DKind == ACCD_critical) {
@@ -1039,8 +1037,8 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
       llvm::outs() << "------------ isOpenACCLoopLikeDirective! ------------\n";
       ScopeFlags |= Scope::OpenACCLoopLikeDirectiveScope;
     }
-    if (isOpenACCSimdDirective(DKind))
-      ScopeFlags |= Scope::OpenACCSimdDirectiveScope;
+    if (isOpenACCVectorDirective(DKind))
+      ScopeFlags |= Scope::OpenACCVectorDirectiveScope;
     ParseScope ACCDirectiveScope(this, ScopeFlags);
     Actions.StartOpenACCDSABlock(DKind, DirName, Actions.getCurScope(), Loc);
 
@@ -1095,8 +1093,8 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
       // should have at least one compound statement scope within it.
       AssociatedStmt = (Sema::CompoundScopeRAII(Actions), ParseStatement());
       AssociatedStmt = Actions.ActOnOpenACCRegionEnd(AssociatedStmt, Clauses);
-    } else if (DKind == ACCD_target_update || DKind == ACCD_target_enter_data ||
-               DKind == ACCD_target_exit_data) {
+    } else if (DKind == ACCD_target_update || DKind == ACCD_enter_data ||
+               DKind == ACCD_exit_data) {
       Actions.ActOnOpenACCRegionStart(DKind, getCurScope());
       AssociatedStmt = (Sema::CompoundScopeRAII(Actions),
                         Actions.ActOnCompoundStmt(Loc, Loc, llvm::None,
@@ -1111,7 +1109,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
     ACCDirectiveScope.Exit();
     break;
   }
-  case ACCD_declare_simd:
+  case ACCD_declare_vector:
   case ACCD_declare_target:
   case ACCD_end_declare_target:
     Diag(Tok, diag::err_acc_unexpected_directive)
@@ -1201,7 +1199,7 @@ bool Parser::ParseOpenACCSimpleVarList(
 ///       schedule-clause | copyin-clause | copyprivate-clause | untied-clause |
 ///       mergeable-clause | flush-clause | read-clause | write-clause |
 ///       update-clause | capture-clause | seq_cst-clause | device-clause |
-///       simdlen-clause | threads-clause | simd-clause | num_teams-clause |
+///       vectorlen-clause | threads-clause | vector-clause | num_teams-clause |
 ///       thread_limit-clause | priority-clause | grainsize-clause |
 ///       nogroup-clause | num_tasks-clause | hint-clause | to-clause |
 ///       from-clause | is_device_ptr-clause | task_reduction-clause |
@@ -1212,6 +1210,13 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
   ACCClause *Clause = nullptr;
   bool ErrorFound = false;
   bool WrongDirective = false;
+
+
+  llvm::outs() << "\n *** &&& *** &&& => isAllowedClauseForDirective("
+     <<  getOpenACCDirectiveName(DKind) << ", "
+     <<  getOpenACCClauseName(CKind) << ") = "
+     <<  isAllowedClauseForDirective(DKind, CKind) << ";\n\n";
+
   // Check if clause is allowed for the given directive.
   if (CKind != ACCC_unknown && !isAllowedClauseForDirective(DKind, CKind)) {
     Diag(Tok, diag::err_acc_unexpected_clause) << getOpenACCClauseName(CKind)
@@ -1224,7 +1229,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
   case ACCC_final:
   case ACCC_num_threads:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_ordered:
   case ACCC_device:
@@ -1236,10 +1241,10 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
   case ACCC_hint:
     // OpenACC [2.5, Restrictions]
     //  At most one num_threads clause can appear on the directive.
-    // OpenACC [2.8.1, simd construct, Restrictions]
-    //  Only one safelen  clause can appear on a simd directive.
-    //  Only one simdlen  clause can appear on a simd directive.
-    //  Only one collapse clause can appear on a simd directive.
+    // OpenACC [2.8.1, vector construct, Restrictions]
+    //  Only one safelen  clause can appear on a vector directive.
+    //  Only one vectorlen  clause can appear on a vector directive.
+    //  Only one collapse clause can appear on a vector directive.
     // OpenACC [2.9.1, target data construct, Restrictions]
     //  At most one device clause can appear on the directive.
     // OpenACC [2.11.1, task Construct, Restrictions]
@@ -1306,7 +1311,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
   case ACCC_capture:
   case ACCC_seq_cst:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_nogroup:
     // OpenACC [2.7.1, Restrictions, p. 9]
     //  Only one ordered clause can appear on a loop directive.
@@ -1329,11 +1334,15 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
   case ACCC_in_reduction:
   case ACCC_linear:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_flush:
   case ACCC_depend:
   case ACCC_map:
+  case ACCC_create:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
+  case ACCC_delete:
   case ACCC_to:
   case ACCC_from:
   case ACCC_use_device_ptr:
@@ -1379,8 +1388,8 @@ ExprResult Parser::ParseOpenACCParensExpr(StringRef ClauseName,
 }
 
 /// \brief Parsing of OpenACC clauses with single expressions like 'final',
-/// 'collapse', 'safelen', 'num_threads', 'simdlen', 'num_teams',
-/// 'thread_limit', 'simdlen', 'priority', 'grainsize', 'num_tasks' or 'hint'.
+/// 'collapse', 'safelen', 'num_threads', 'vectorlen', 'num_teams',
+/// 'thread_limit', 'vectorlen', 'priority', 'grainsize', 'num_tasks' or 'hint'.
 ///
 ///    final-clause:
 ///      'final' '(' expression ')'
@@ -1391,8 +1400,8 @@ ExprResult Parser::ParseOpenACCParensExpr(StringRef ClauseName,
 ///    safelen-clause:
 ///      'safelen' '(' expression ')'
 ///
-///    simdlen-clause:
-///      'simdlen' '(' expression ')'
+///    vectorlen-clause:
+///      'vectorlen' '(' expression ')'
 ///
 ///    collapse-clause:
 ///      'collapse' '(' expression ')'
@@ -1479,8 +1488,8 @@ ACCClause *Parser::ParseOpenACCSimpleClause(OpenACCClauseKind Kind,
 ///    threads-clause:
 ///         'threads'
 ///
-///    simd-clause:
-///         'simd'
+///    vector-clause:
+///         'vector'
 ///
 ///    nogroup-clause:
 ///         'nogroup'
@@ -1760,6 +1769,128 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
       LinearT.consumeOpen();
       NeedRParenForLinear = true;
     }
+  } else if (Kind == ACCC_create || Kind == ACCC_copy || Kind == ACCC_copyin || Kind == ACCC_copyout || Kind == ACCC_delete) {
+    // Handle map type for map clause.
+    ColonProtectionRAIIObject ColonRAII(*this);
+
+    // TODO acc2mp The token kw_delete actually must not be treated as a special type of map, instead it should be a different clause
+    /// The map clause modifier token can be either a identifier or the C++
+    /// delete keyword.
+    auto &&IsMapClauseModifierToken = [](const Token &Tok) -> bool {
+      return Tok.isOneOf(tok::identifier, tok::kw_delete);
+    };
+
+
+    // The first identifier may be a list item, a map-type or a
+    // map-type-modifier. The map modifier can also be delete which has the same
+    // spelling of the C++ delete keyword.
+    Data.MapType =
+        IsMapClauseModifierToken(Tok)
+            ? static_cast<OpenACCMapClauseKind>(
+                  getOpenACCSimpleClauseType(Kind, PP.getSpelling(Tok)))
+            : ACCC_MAP_unknown;
+
+    OpenACCMapClauseKind clauseDefault = ACCC_MAP_unknown;
+    // In copy, copyin, copyout the type is predetermined as the switch shows
+    switch (Kind){
+        case ACCC_create:
+            clauseDefault = ACCC_MAP_alloc;
+            break;
+        case ACCC_copy:
+            clauseDefault = ACCC_MAP_tofrom;
+            break;
+        case ACCC_copyin:
+            clauseDefault = ACCC_MAP_to;
+            break;
+        case ACCC_copyout:
+            clauseDefault = ACCC_MAP_from;
+            break;
+        case ACCC_delete:
+            clauseDefault = ACCC_MAP_delete;
+            break;
+    }
+    Data.MapType = clauseDefault;
+    Data.DepLinMapLoc = Tok.getLocation();
+    bool ColonExpected = false;
+
+    // TODO acc2mp find out if maps with no explicit MAP_KIND with colon (to, from, tofrom)
+    // are all interpreted as tofrom. That's what it looks like
+    // Here is an example of "map" usage without explicit MAP_KIND
+    // Page 137
+    // https://www.openmp.org/wp-content/uploads/openmp-examples-4.5.0.pdf
+    if (IsMapClauseModifierToken(Tok)) {
+      /*
+      if (PP.LookAhead(0).is(tok::colon)) {
+        if (Data.MapType == ACCC_MAP_unknown)
+          Diag(Tok, diag::err_acc_unknown_map_type);
+        else if (Data.MapType == ACCC_MAP_always)
+          Diag(Tok, diag::err_acc_map_type_missing);
+        ConsumeToken();
+      } else */
+      if (PP.LookAhead(0).is(tok::comma)) {
+        if (IsMapClauseModifierToken(PP.LookAhead(1)) &&
+            PP.LookAhead(2).is(tok::colon)) {
+          Data.MapTypeModifier = Data.MapType;
+          if (Data.MapTypeModifier != ACCC_MAP_always) {
+            Diag(Tok, diag::err_acc_unknown_map_type_modifier);
+            Data.MapTypeModifier = ACCC_MAP_unknown;
+          } else
+            MapTypeModifierSpecified = true;
+
+          ConsumeToken();
+          ConsumeToken();
+
+          Data.MapType =
+              IsMapClauseModifierToken(Tok)
+                  ? static_cast<OpenACCMapClauseKind>(
+                        getOpenACCSimpleClauseType(Kind, PP.getSpelling(Tok)))
+                  : ACCC_MAP_unknown;
+          if (Data.MapType == ACCC_MAP_unknown ||
+              Data.MapType == ACCC_MAP_always)
+            Diag(Tok, diag::err_acc_unknown_map_type);
+          ConsumeToken();
+        } else {
+          Data.MapType = ACCC_MAP_tofrom;
+          Data.IsMapTypeImplicit = true;
+        }
+      } else if (IsMapClauseModifierToken(PP.LookAhead(0))) {
+        if (PP.LookAhead(1).is(tok::colon)) {
+          Data.MapTypeModifier = Data.MapType;
+          if (Data.MapTypeModifier != ACCC_MAP_always) {
+            Diag(Tok, diag::err_acc_unknown_map_type_modifier);
+            Data.MapTypeModifier = ACCC_MAP_unknown;
+          } else
+            MapTypeModifierSpecified = true;
+
+          ConsumeToken();
+
+          Data.MapType =
+              IsMapClauseModifierToken(Tok)
+                  ? static_cast<OpenACCMapClauseKind>(
+                        getOpenACCSimpleClauseType(Kind, PP.getSpelling(Tok)))
+                  : ACCC_MAP_unknown;
+          if (Data.MapType == ACCC_MAP_unknown ||
+              Data.MapType == ACCC_MAP_always)
+            Diag(Tok, diag::err_acc_unknown_map_type);
+          ConsumeToken();
+        } else {
+          Data.MapType = clauseDefault;
+          Data.IsMapTypeImplicit = true;
+        }
+      } else {
+        Data.MapType = clauseDefault;
+        Data.IsMapTypeImplicit = true;
+      }
+    } else {
+      Data.MapType = clauseDefault;
+      Data.IsMapTypeImplicit = true;
+    }
+
+    if (Tok.is(tok::colon))
+      Data.ColonLoc = ConsumeToken();
+    else if (ColonExpected)
+      Diag(Tok, diag::warn_pragma_expected_colon) << "copy, copyin or copyout type";
+
   } else if (Kind == ACCC_map) {
     // Handle map type for map clause.
     ColonProtectionRAIIObject ColonRAII(*this);
@@ -1778,6 +1909,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
             ? static_cast<OpenACCMapClauseKind>(
                   getOpenACCSimpleClauseType(Kind, PP.getSpelling(Tok)))
             : ACCC_MAP_unknown;
+
     Data.DepLinMapLoc = Tok.getLocation();
     bool ColonExpected = false;
 

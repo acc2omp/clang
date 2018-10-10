@@ -2003,16 +2003,16 @@ public:
   void VisitACCExecutableDirective(const ACCExecutableDirective *D);
   void VisitACCLoopLikeDirective(const ACCLoopLikeDirective *D);
   void VisitACCParallelDirective(const ACCParallelDirective *D);
-  void VisitACCSimdDirective(const ACCSimdDirective *D);
+  void VisitACCVectorDirective(const ACCVectorDirective *D);
   void VisitACCLoopDirective(const ACCLoopDirective *D);
-  void VisitACCLoopSimdDirective(const ACCLoopSimdDirective *D);
+  void VisitACCLoopVectorDirective(const ACCLoopVectorDirective *D);
   void VisitACCSectionsDirective(const ACCSectionsDirective *D);
   void VisitACCSectionDirective(const ACCSectionDirective *D);
   void VisitACCSingleDirective(const ACCSingleDirective *D);
   void VisitACCMasterDirective(const ACCMasterDirective *D);
   void VisitACCCriticalDirective(const ACCCriticalDirective *D);
   void VisitACCParallelLoopDirective(const ACCParallelLoopDirective *D);
-  void VisitACCParallelLoopSimdDirective(const ACCParallelLoopSimdDirective *D);
+  void VisitACCParallelLoopVectorDirective(const ACCParallelLoopVectorDirective *D);
   void VisitACCParallelSectionsDirective(const ACCParallelSectionsDirective *D);
   void VisitACCTaskDirective(const ACCTaskDirective *D);
   void VisitACCTaskyieldDirective(const ACCTaskyieldDirective *D);
@@ -2026,29 +2026,29 @@ public:
   void VisitACCOrderedDirective(const ACCOrderedDirective *D);
   void VisitACCAtomicDirective(const ACCAtomicDirective *D);
   void VisitACCTargetDirective(const ACCTargetDirective *D);
-  void VisitACCTargetDataDirective(const ACCTargetDataDirective *D);
-  void VisitACCTargetEnterDataDirective(const ACCTargetEnterDataDirective *D);
-  void VisitACCTargetExitDataDirective(const ACCTargetExitDataDirective *D);
+  void VisitACCDataDirective(const ACCDataDirective *D);
+  void VisitACCEnterDataDirective(const ACCEnterDataDirective *D);
+  void VisitACCExitDataDirective(const ACCExitDataDirective *D);
   void VisitACCTargetParallelDirective(const ACCTargetParallelDirective *D);
   void
   VisitACCTargetParallelLoopDirective(const ACCTargetParallelLoopDirective *D);
   void VisitACCTeamsDirective(const ACCTeamsDirective *D);
   void VisitACCTaskLoopDirective(const ACCTaskLoopDirective *D);
-  void VisitACCTaskLoopSimdDirective(const ACCTaskLoopSimdDirective *D);
+  void VisitACCTaskLoopVectorDirective(const ACCTaskLoopVectorDirective *D);
   void VisitACCDistributeDirective(const ACCDistributeDirective *D);
   void VisitACCDistributeParallelLoopDirective(
       const ACCDistributeParallelLoopDirective *D);
-  void VisitACCDistributeParallelLoopSimdDirective(
-      const ACCDistributeParallelLoopSimdDirective *D);
-  void VisitACCDistributeSimdDirective(const ACCDistributeSimdDirective *D);
-  void VisitACCTargetParallelLoopSimdDirective(
-      const ACCTargetParallelLoopSimdDirective *D);
-  void VisitACCTargetSimdDirective(const ACCTargetSimdDirective *D);
+  void VisitACCDistributeParallelLoopVectorDirective(
+      const ACCDistributeParallelLoopVectorDirective *D);
+  void VisitACCDistributeVectorDirective(const ACCDistributeVectorDirective *D);
+  void VisitACCTargetParallelLoopVectorDirective(
+      const ACCTargetParallelLoopVectorDirective *D);
+  void VisitACCTargetVectorDirective(const ACCTargetVectorDirective *D);
   void VisitACCTeamsDistributeDirective(const ACCTeamsDistributeDirective *D);
-  void VisitACCTeamsDistributeSimdDirective(
-      const ACCTeamsDistributeSimdDirective *D);
-  void VisitACCTeamsDistributeParallelLoopSimdDirective(
-      const ACCTeamsDistributeParallelLoopSimdDirective *D);
+  void VisitACCTeamsDistributeVectorDirective(
+      const ACCTeamsDistributeVectorDirective *D);
+  void VisitACCTeamsDistributeParallelLoopVectorDirective(
+      const ACCTeamsDistributeParallelLoopVectorDirective *D);
   void VisitACCTeamsDistributeParallelLoopDirective(
       const ACCTeamsDistributeParallelLoopDirective *D);
   void VisitACCTargetTeamsDirective(const ACCTargetTeamsDirective *D);
@@ -2056,10 +2056,10 @@ public:
       const ACCTargetTeamsDistributeDirective *D);
   void VisitACCTargetTeamsDistributeParallelLoopDirective(
       const ACCTargetTeamsDistributeParallelLoopDirective *D);
-  void VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
-      const ACCTargetTeamsDistributeParallelLoopSimdDirective *D);
-  void VisitACCTargetTeamsDistributeSimdDirective(
-      const ACCTargetTeamsDistributeSimdDirective *D);
+  void VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
+      const ACCTargetTeamsDistributeParallelLoopVectorDirective *D);
+  void VisitACCTargetTeamsDistributeVectorDirective(
+      const ACCTargetTeamsDistributeVectorDirective *D);
   // -- MYHEADER --
   // -- MYHEADER --
   void VisitOMPExecutableDirective(const OMPExecutableDirective *D);
@@ -2227,8 +2227,8 @@ void ACCClauseEnqueue::VisitACCSafelenClause(const ACCSafelenClause *C) {
   Visitor->AddStmt(C->getSafelen());
 }
 
-void ACCClauseEnqueue::VisitACCSimdlenClause(const ACCSimdlenClause *C) {
-  Visitor->AddStmt(C->getSimdlen());
+void ACCClauseEnqueue::VisitACCVectorlenClause(const ACCVectorlenClause *C) {
+  Visitor->AddStmt(C->getVectorlen());
 }
 
 void ACCClauseEnqueue::VisitACCCollapseClause(const ACCCollapseClause *C) {
@@ -2266,7 +2266,7 @@ void ACCClauseEnqueue::VisitACCSeqCstClause(const ACCSeqCstClause *) {}
 
 void ACCClauseEnqueue::VisitACCThreadsClause(const ACCThreadsClause *) {}
 
-void ACCClauseEnqueue::VisitACCSIMDClause(const ACCSIMDClause *) {}
+void ACCClauseEnqueue::VisitACCVectorClause(const ACCVectorClause *) {}
 
 void ACCClauseEnqueue::VisitACCNogroupClause(const ACCNogroupClause *) {}
 
@@ -2452,7 +2452,10 @@ void ACCClauseEnqueue::VisitACCDependClause(const ACCDependClause *C) {
 void ACCClauseEnqueue::VisitACCMapClause(const ACCMapClause *C) {
   VisitACCClauseList(C);
 }
-// TODO acc2mp Modify copy copyin copyout
+// TODO acc2mp Modify create copy copyin copyout delete
+void ACCClauseEnqueue::VisitACCCreateClause(const ACCCreateClause *C) {
+  VisitACCClauseList(C);
+}
 void ACCClauseEnqueue::VisitACCCopyClause(const ACCCopyClause *C) {
   VisitACCClauseList(C);
 }
@@ -2460,6 +2463,9 @@ void ACCClauseEnqueue::VisitACCCopyinClause(const ACCCopyinClause *C) {
   VisitACCClauseList(C);
 }
 void ACCClauseEnqueue::VisitACCCopyoutClause(const ACCCopyoutClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseEnqueue::VisitACCDeleteClause(const ACCDeleteClause *C) {
   VisitACCClauseList(C);
 }
 void ACCClauseEnqueue::VisitACCDistScheduleClause(
@@ -3101,7 +3107,7 @@ void EnqueueVisitor::VisitACCParallelDirective(const ACCParallelDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
-void EnqueueVisitor::VisitACCSimdDirective(const ACCSimdDirective *D) {
+void EnqueueVisitor::VisitACCVectorDirective(const ACCVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3109,7 +3115,7 @@ void EnqueueVisitor::VisitACCLoopDirective(const ACCLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCLoopSimdDirective(const ACCLoopSimdDirective *D) {
+void EnqueueVisitor::VisitACCLoopVectorDirective(const ACCLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3139,8 +3145,8 @@ EnqueueVisitor::VisitACCParallelLoopDirective(const ACCParallelLoopDirective *D)
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCParallelLoopSimdDirective(
-    const ACCParallelLoopSimdDirective *D) {
+void EnqueueVisitor::VisitACCParallelLoopVectorDirective(
+    const ACCParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3189,18 +3195,18 @@ void EnqueueVisitor::VisitACCTargetDirective(const ACCTargetDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetDataDirective(const 
-                                                 ACCTargetDataDirective *D) {
+void EnqueueVisitor::VisitACCDataDirective(const 
+                                                 ACCDataDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetEnterDataDirective(
-    const ACCTargetEnterDataDirective *D) {
+void EnqueueVisitor::VisitACCEnterDataDirective(
+    const ACCEnterDataDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetExitDataDirective(
-    const ACCTargetExitDataDirective *D) {
+void EnqueueVisitor::VisitACCExitDataDirective(
+    const ACCExitDataDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
@@ -3231,8 +3237,8 @@ void EnqueueVisitor::VisitACCTaskLoopDirective(const ACCTaskLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTaskLoopSimdDirective(
-    const ACCTaskLoopSimdDirective *D) {
+void EnqueueVisitor::VisitACCTaskLoopVectorDirective(
+    const ACCTaskLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3246,23 +3252,23 @@ void EnqueueVisitor::VisitACCDistributeParallelLoopDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCDistributeParallelLoopSimdDirective(
-    const ACCDistributeParallelLoopSimdDirective *D) {
+void EnqueueVisitor::VisitACCDistributeParallelLoopVectorDirective(
+    const ACCDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCDistributeSimdDirective(
-    const ACCDistributeSimdDirective *D) {
+void EnqueueVisitor::VisitACCDistributeVectorDirective(
+    const ACCDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetParallelLoopSimdDirective(
-    const ACCTargetParallelLoopSimdDirective *D) {
+void EnqueueVisitor::VisitACCTargetParallelLoopVectorDirective(
+    const ACCTargetParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetSimdDirective(
-    const ACCTargetSimdDirective *D) {
+void EnqueueVisitor::VisitACCTargetVectorDirective(
+    const ACCTargetVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3271,13 +3277,13 @@ void EnqueueVisitor::VisitACCTeamsDistributeDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTeamsDistributeSimdDirective(
-    const ACCTeamsDistributeSimdDirective *D) {
+void EnqueueVisitor::VisitACCTeamsDistributeVectorDirective(
+    const ACCTeamsDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTeamsDistributeParallelLoopSimdDirective(
-    const ACCTeamsDistributeParallelLoopSimdDirective *D) {
+void EnqueueVisitor::VisitACCTeamsDistributeParallelLoopVectorDirective(
+    const ACCTeamsDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -3301,13 +3307,13 @@ void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelLoopDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
-    const ACCTargetTeamsDistributeParallelLoopSimdDirective *D) {
+void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
+    const ACCTargetTeamsDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetTeamsDistributeSimdDirective(
-    const ACCTargetTeamsDistributeSimdDirective *D) {
+void EnqueueVisitor::VisitACCTargetTeamsDistributeVectorDirective(
+    const ACCTargetTeamsDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -5926,12 +5932,12 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
   // -- MYHEADER -- 
   case CXCursor_ACCParallelDirective:
     return cxstring::createRef("ACCParallelDirective");
-  case CXCursor_ACCSimdDirective:
-    return cxstring::createRef("ACCSimdDirective");
+  case CXCursor_ACCVectorDirective:
+    return cxstring::createRef("ACCVectorDirective");
   case CXCursor_ACCLoopDirective:
     return cxstring::createRef("ACCLoopDirective");
-  case CXCursor_ACCLoopSimdDirective:
-    return cxstring::createRef("ACCLoopSimdDirective");
+  case CXCursor_ACCLoopVectorDirective:
+    return cxstring::createRef("ACCLoopVectorDirective");
   case CXCursor_ACCSectionsDirective:
     return cxstring::createRef("ACCSectionsDirective");
   case CXCursor_ACCSectionDirective:
@@ -5944,8 +5950,8 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCCriticalDirective");
   case CXCursor_ACCParallelLoopDirective:
     return cxstring::createRef("ACCParallelLoopDirective");
-  case CXCursor_ACCParallelLoopSimdDirective:
-    return cxstring::createRef("ACCParallelLoopSimdDirective");
+  case CXCursor_ACCParallelLoopVectorDirective:
+    return cxstring::createRef("ACCParallelLoopVectorDirective");
   case CXCursor_ACCParallelSectionsDirective:
     return cxstring::createRef("ACCParallelSectionsDirective");
   case CXCursor_ACCTaskDirective:
@@ -5966,12 +5972,12 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCAtomicDirective");
   case CXCursor_ACCTargetDirective:
     return cxstring::createRef("ACCTargetDirective");
-  case CXCursor_ACCTargetDataDirective:
-    return cxstring::createRef("ACCTargetDataDirective");
-  case CXCursor_ACCTargetEnterDataDirective:
-    return cxstring::createRef("ACCTargetEnterDataDirective");
-  case CXCursor_ACCTargetExitDataDirective:
-    return cxstring::createRef("ACCTargetExitDataDirective");
+  case CXCursor_ACCDataDirective:
+    return cxstring::createRef("ACCDataDirective");
+  case CXCursor_ACCEnterDataDirective:
+    return cxstring::createRef("ACCEnterDataDirective");
+  case CXCursor_ACCExitDataDirective:
+    return cxstring::createRef("ACCExitDataDirective");
   case CXCursor_ACCTargetParallelDirective:
     return cxstring::createRef("ACCTargetParallelDirective");
   case CXCursor_ACCTargetParallelLoopDirective:
@@ -5986,26 +5992,26 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCCancelDirective");
   case CXCursor_ACCTaskLoopDirective:
     return cxstring::createRef("ACCTaskLoopDirective");
-  case CXCursor_ACCTaskLoopSimdDirective:
-    return cxstring::createRef("ACCTaskLoopSimdDirective");
+  case CXCursor_ACCTaskLoopVectorDirective:
+    return cxstring::createRef("ACCTaskLoopVectorDirective");
   case CXCursor_ACCDistributeDirective:
     return cxstring::createRef("ACCDistributeDirective");
   case CXCursor_ACCDistributeParallelLoopDirective:
     return cxstring::createRef("ACCDistributeParallelLoopDirective");
-  case CXCursor_ACCDistributeParallelLoopSimdDirective:
-    return cxstring::createRef("ACCDistributeParallelLoopSimdDirective");
-  case CXCursor_ACCDistributeSimdDirective:
-    return cxstring::createRef("ACCDistributeSimdDirective");
-  case CXCursor_ACCTargetParallelLoopSimdDirective:
-    return cxstring::createRef("ACCTargetParallelLoopSimdDirective");
-  case CXCursor_ACCTargetSimdDirective:
-    return cxstring::createRef("ACCTargetSimdDirective");
+  case CXCursor_ACCDistributeParallelLoopVectorDirective:
+    return cxstring::createRef("ACCDistributeParallelLoopVectorDirective");
+  case CXCursor_ACCDistributeVectorDirective:
+    return cxstring::createRef("ACCDistributeVectorDirective");
+  case CXCursor_ACCTargetParallelLoopVectorDirective:
+    return cxstring::createRef("ACCTargetParallelLoopVectorDirective");
+  case CXCursor_ACCTargetVectorDirective:
+    return cxstring::createRef("ACCTargetVectorDirective");
   case CXCursor_ACCTeamsDistributeDirective:
     return cxstring::createRef("ACCTeamsDistributeDirective");
-  case CXCursor_ACCTeamsDistributeSimdDirective:
-    return cxstring::createRef("ACCTeamsDistributeSimdDirective");
-  case CXCursor_ACCTeamsDistributeParallelLoopSimdDirective:
-    return cxstring::createRef("ACCTeamsDistributeParallelLoopSimdDirective");
+  case CXCursor_ACCTeamsDistributeVectorDirective:
+    return cxstring::createRef("ACCTeamsDistributeVectorDirective");
+  case CXCursor_ACCTeamsDistributeParallelLoopVectorDirective:
+    return cxstring::createRef("ACCTeamsDistributeParallelLoopVectorDirective");
   case CXCursor_ACCTeamsDistributeParallelLoopDirective:
     return cxstring::createRef("ACCTeamsDistributeParallelLoopDirective");
   case CXCursor_ACCTargetTeamsDirective:
@@ -6014,11 +6020,11 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCTargetTeamsDistributeDirective");
   case CXCursor_ACCTargetTeamsDistributeParallelLoopDirective:
     return cxstring::createRef("ACCTargetTeamsDistributeParallelLoopDirective");
-  case CXCursor_ACCTargetTeamsDistributeParallelLoopSimdDirective:
+  case CXCursor_ACCTargetTeamsDistributeParallelLoopVectorDirective:
     return cxstring::createRef(
-        "ACCTargetTeamsDistributeParallelLoopSimdDirective");
-  case CXCursor_ACCTargetTeamsDistributeSimdDirective:
-    return cxstring::createRef("ACCTargetTeamsDistributeSimdDirective");
+        "ACCTargetTeamsDistributeParallelLoopVectorDirective");
+  case CXCursor_ACCTargetTeamsDistributeVectorDirective:
+    return cxstring::createRef("ACCTargetTeamsDistributeVectorDirective");
   // -- MYHEADER -- 
   // -- MYHEADER -- 
   case CXCursor_OMPParallelDirective:

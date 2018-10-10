@@ -5518,8 +5518,8 @@ def err_sizeof_alignof_incomplete_type : Error<
 def err_sizeof_alignof_function_type : Error<
   "invalid application of '%select{sizeof|alignof|vec_step|__builtin_omp_required_simd_align}0' to a "
   "function type">;
-def err_openacc_default_simd_align_expr : Error<
-  "invalid application of '__builtin_acc_required_simd_align' to an expression, only type is allowed">;
+def err_openacc_default_vector_align_expr : Error<
+  "invalid application of '__builtin_acc_required_vector_align' to an expression, only type is allowed">;
 def err_openmp_default_simd_align_expr : Error<
   "invalid application of '__builtin_omp_required_simd_align' to an expression, only type is allowed">;
 def err_sizeof_alignof_typeof_bitfield : Error<
@@ -8760,8 +8760,8 @@ def err_acc_loop_diff_cxx : Error<
   "upper and lower loop bounds">;
 def err_acc_loop_cannot_use_stmt : Error<
   "'%0' statement cannot be used in OpenACC for loop">;
-def err_acc_simd_region_cannot_use_stmt : Error<
-  "'%0' statement cannot be used in OpenACC simd region">;
+def err_acc_vector_region_cannot_use_stmt : Error<
+  "'%0' statement cannot be used in OpenACC vector region">;
 def warn_acc_loop_64_bit_var : Warning<
   "OpenACC loop iteration variable cannot have more than 64 bits size and will be narrowed">,
   InGroup<OpenACCLoopForm>;
@@ -8798,8 +8798,8 @@ def err_acc_prohibited_region : Error<
   "; perhaps you forget to enclose 'acc %3' directive into a for or a parallel for region with 'ordered' clause?|"
   "; perhaps you forget to enclose 'acc %3' directive into a target region?|"
   "; perhaps you forget to enclose 'acc %3' directive into a teams region?}2">;
-def err_acc_prohibited_region_simd : Error<
-  "OpenACC constructs may not be nested inside a simd region">;
+def err_acc_prohibited_region_vector : Error<
+  "OpenACC constructs may not be nested inside a vector region">;
 def err_acc_prohibited_region_atomic : Error<
   "OpenACC constructs may not be nested inside an atomic region">;
 def err_acc_prohibited_region_critical_same_name : Error<
@@ -8861,10 +8861,10 @@ def err_acc_single_copyprivate_with_nowait : Error<
   "the 'copyprivate' clause must not be used with the 'nowait' clause">;
 def note_acc_nowait_clause_here : Note<
   "'nowait' clause is here">;
-def err_acc_single_decl_in_declare_simd : Error<
-  "single declaration is expected after 'declare simd' directive">;
+def err_acc_single_decl_in_declare_vector : Error<
+  "single declaration is expected after 'declare vector' directive">;
 def err_acc_function_expected : Error<
-  "'#pragma acc declare simd' can only be applied to functions">;
+  "'#pragma acc declare vector' can only be applied to functions">;
 def err_acc_wrong_cancel_region : Error<
   "one of 'for', 'parallel', 'sections' or 'taskgroup' is expected">;
 def err_acc_parent_cancel_region_nowait : Error<
@@ -8895,8 +8895,8 @@ def err_acc_wrong_linear_modifier : Error<
   "expected %select{'val' modifier|one of 'ref', val' or 'uval' modifiers}0">;
 def err_acc_wrong_linear_modifier_non_reference : Error<
   "variable of non-reference type %0 can be used only with 'val' modifier, but used with '%1'">;
-def err_acc_wrong_simdlen_safelen_values : Error<
-  "the value of 'simdlen' parameter must be less than or equal to the value of the 'safelen' parameter">;
+def err_acc_wrong_vectorlen_safelen_values : Error<
+  "the value of 'vectorlen' parameter must be less than or equal to the value of the 'safelen' parameter">;
 def err_acc_wrong_if_directive_name_modifier : Error<
   "directive name modifier '%0' is not allowed for '#pragma acc %1'">;
 def err_acc_no_more_if_clause : Error<
@@ -8937,7 +8937,7 @@ def note_acc_critical_hint_here : Note<
   "%select{|previous }0'hint' clause with value '%1'">;
 def note_acc_critical_no_hint : Note<
   "%select{|previous }0directive with no 'hint' clause specified">;
-def err_acc_depend_clause_thread_simd : Error<
+def err_acc_depend_clause_thread_vector : Error<
   "'depend' clauses cannot be mixed with '%0' clause">;
 def err_acc_depend_sink_expected_loop_iteration : Error<
   "expected%select{| %1}0 loop iteration variable">;
@@ -8955,7 +8955,7 @@ def err_acc_schedule_nonmonotonic_static : Error<
   "'nonmonotonic' modifier can only be specified with 'dynamic' or 'guided' schedule kind">;
 def err_acc_schedule_nonmonotonic_ordered : Error<
   "'schedule' clause with 'nonmonotonic' modifier cannot be specified if an 'ordered' clause is specified">;
-def err_acc_ordered_simd : Error<
+def err_acc_ordered_vector : Error<
   "'ordered' clause with a parameter can not be specified in '#pragma acc %0' directive">;
 def err_acc_variable_in_given_clause_and_dsa : Error<
   "%0 variable cannot be in a %1 clause in '#pragma acc %2' directive">;
@@ -8971,8 +8971,8 @@ def err_acc_usedeviceptr_not_a_pointer : Error<
   "expected pointer or reference to pointer in 'use_device_ptr' clause">;
 def err_acc_argument_type_isdeviceptr : Error <
   "expected pointer, array, reference to pointer, or reference to array in 'is_device_ptr clause'">;
-def warn_acc_nesting_simd : Warning<
-  "OpenACC only allows an ordered construct with the simd clause nested in a simd construct">,
+def warn_acc_nesting_vector : Warning<
+  "OpenACC only allows an ordered construct with the vector clause nested in a vector construct">,
   InGroup<SourceUsesOpenACC>;
 def err_acc_orphaned_device_directive : Error<
   "orphaned 'acc %0' directives are prohibited"

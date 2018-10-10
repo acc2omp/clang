@@ -433,9 +433,9 @@ void ACCClauseProfiler::VisitACCSafelenClause(const ACCSafelenClause *C) {
     Profiler->VisitStmt(C->getSafelen());
 }
 
-void ACCClauseProfiler::VisitACCSimdlenClause(const ACCSimdlenClause *C) {
-  if (C->getSimdlen())
-    Profiler->VisitStmt(C->getSimdlen());
+void ACCClauseProfiler::VisitACCVectorlenClause(const ACCVectorlenClause *C) {
+  if (C->getVectorlen())
+    Profiler->VisitStmt(C->getVectorlen());
 }
 
 void ACCClauseProfiler::VisitACCCollapseClause(const ACCCollapseClause *C) {
@@ -476,7 +476,7 @@ void ACCClauseProfiler::VisitACCSeqCstClause(const ACCSeqCstClause *) {}
 
 void ACCClauseProfiler::VisitACCThreadsClause(const ACCThreadsClause *) {}
 
-void ACCClauseProfiler::VisitACCSIMDClause(const ACCSIMDClause *) {}
+void ACCClauseProfiler::VisitACCVectorClause(const ACCVectorClause *) {}
 
 void ACCClauseProfiler::VisitACCNogroupClause(const ACCNogroupClause *) {}
 
@@ -677,6 +677,9 @@ void ACCClauseProfiler::VisitACCDeviceClause(const ACCDeviceClause *C) {
 void ACCClauseProfiler::VisitACCMapClause(const ACCMapClause *C) {
   VisitACCClauseList(C);
 }
+void ACCClauseProfiler::VisitACCCreateClause(const ACCCreateClause *C) {
+  VisitACCClauseList(C);
+}
 void ACCClauseProfiler::VisitACCCopyClause(const ACCCopyClause *C) {
   VisitACCClauseList(C);
 }
@@ -684,6 +687,9 @@ void ACCClauseProfiler::VisitACCCopyinClause(const ACCCopyinClause *C) {
   VisitACCClauseList(C);
 }
 void ACCClauseProfiler::VisitACCCopyoutClause(const ACCCopyoutClause *C) {
+  VisitACCClauseList(C);
+}
+void ACCClauseProfiler::VisitACCDeleteClause(const ACCDeleteClause *C) {
   VisitACCClauseList(C);
 }
 void ACCClauseProfiler::VisitACCNumTeamsClause(const ACCNumTeamsClause *C) {
@@ -748,7 +754,7 @@ void StmtProfiler::VisitACCParallelDirective(const ACCParallelDirective *S) {
   VisitACCExecutableDirective(S);
 }
 
-void StmtProfiler::VisitACCSimdDirective(const ACCSimdDirective *S) {
+void StmtProfiler::VisitACCVectorDirective(const ACCVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
@@ -756,7 +762,7 @@ void StmtProfiler::VisitACCLoopDirective(const ACCLoopDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCLoopSimdDirective(const ACCLoopSimdDirective *S) {
+void StmtProfiler::VisitACCLoopVectorDirective(const ACCLoopVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
@@ -786,8 +792,8 @@ StmtProfiler::VisitACCParallelLoopDirective(const ACCParallelLoopDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCParallelLoopSimdDirective(
-    const ACCParallelLoopSimdDirective *S) {
+void StmtProfiler::VisitACCParallelLoopVectorDirective(
+    const ACCParallelLoopVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
@@ -834,17 +840,17 @@ void StmtProfiler::VisitACCTargetDirective(const ACCTargetDirective *S) {
   VisitACCExecutableDirective(S);
 }
 
-void StmtProfiler::VisitACCTargetDataDirective(const ACCTargetDataDirective *S) {
+void StmtProfiler::VisitACCDataDirective(const ACCDataDirective *S) {
   VisitACCExecutableDirective(S);
 }
 
-void StmtProfiler::VisitACCTargetEnterDataDirective(
-    const ACCTargetEnterDataDirective *S) {
+void StmtProfiler::VisitACCEnterDataDirective(
+    const ACCEnterDataDirective *S) {
   VisitACCExecutableDirective(S);
 }
 
-void StmtProfiler::VisitACCTargetExitDataDirective(
-    const ACCTargetExitDataDirective *S) {
+void StmtProfiler::VisitACCExitDataDirective(
+    const ACCExitDataDirective *S) {
   VisitACCExecutableDirective(S);
 }
 
@@ -875,8 +881,8 @@ void StmtProfiler::VisitACCTaskLoopDirective(const ACCTaskLoopDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCTaskLoopSimdDirective(
-    const ACCTaskLoopSimdDirective *S) {
+void StmtProfiler::VisitACCTaskLoopVectorDirective(
+    const ACCTaskLoopVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
@@ -904,23 +910,23 @@ void StmtProfiler::VisitACCDistributeParallelLoopDirective(
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCDistributeParallelLoopSimdDirective(
-    const ACCDistributeParallelLoopSimdDirective *S) {
+void StmtProfiler::VisitACCDistributeParallelLoopVectorDirective(
+    const ACCDistributeParallelLoopVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCDistributeSimdDirective(
-    const ACCDistributeSimdDirective *S) {
+void StmtProfiler::VisitACCDistributeVectorDirective(
+    const ACCDistributeVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCTargetParallelLoopSimdDirective(
-    const ACCTargetParallelLoopSimdDirective *S) {
+void StmtProfiler::VisitACCTargetParallelLoopVectorDirective(
+    const ACCTargetParallelLoopVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCTargetSimdDirective(
-    const ACCTargetSimdDirective *S) {
+void StmtProfiler::VisitACCTargetVectorDirective(
+    const ACCTargetVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
@@ -929,13 +935,13 @@ void StmtProfiler::VisitACCTeamsDistributeDirective(
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCTeamsDistributeSimdDirective(
-    const ACCTeamsDistributeSimdDirective *S) {
+void StmtProfiler::VisitACCTeamsDistributeVectorDirective(
+    const ACCTeamsDistributeVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCTeamsDistributeParallelLoopSimdDirective(
-    const ACCTeamsDistributeParallelLoopSimdDirective *S) {
+void StmtProfiler::VisitACCTeamsDistributeParallelLoopVectorDirective(
+    const ACCTeamsDistributeParallelLoopVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
@@ -959,13 +965,13 @@ void StmtProfiler::VisitACCTargetTeamsDistributeParallelLoopDirective(
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCTargetTeamsDistributeParallelLoopSimdDirective(
-    const ACCTargetTeamsDistributeParallelLoopSimdDirective *S) {
+void StmtProfiler::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
+    const ACCTargetTeamsDistributeParallelLoopVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 
-void StmtProfiler::VisitACCTargetTeamsDistributeSimdDirective(
-    const ACCTargetTeamsDistributeSimdDirective *S) {
+void StmtProfiler::VisitACCTargetTeamsDistributeVectorDirective(
+    const ACCTargetTeamsDistributeVectorDirective *S) {
   VisitACCLoopLikeDirective(S);
 }
 

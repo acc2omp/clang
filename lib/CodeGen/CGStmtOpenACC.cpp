@@ -143,7 +143,7 @@ public:
   }
 };
 
-class ACCSimdLexicalScope : public CodeGenFunction::LexicalScope {
+class ACCVectorLexicalScope : public CodeGenFunction::LexicalScope {
   CodeGenFunction::ACCPrivateScope InlinedShareds;
 
   static bool isCapturedVar(CodeGenFunction &CGF, const VarDecl *VD) {
@@ -154,7 +154,7 @@ class ACCSimdLexicalScope : public CodeGenFunction::LexicalScope {
   }
 
 public:
-  ACCSimdLexicalScope(CodeGenFunction &CGF, const ACCExecutableDirective &S)
+  ACCVectorLexicalScope(CodeGenFunction &CGF, const ACCExecutableDirective &S)
       : CodeGenFunction::LexicalScope(CGF, S.getSourceRange()),
         InlinedShareds(CGF) {
     for (const auto *C : S.clauses()) {
@@ -178,7 +178,7 @@ public:
         }
       }
     }
-    if (!isOpenACCSimdDirective(S.getDirectiveKind()))
+    if (!isOpenACCVectorDirective(S.getDirectiveKind()))
       CGF.EmitACCPrivateClause(S, InlinedShareds);
     if (const auto *TG = dyn_cast<ACCTaskgroupDirective>(&S)) {
       if (const Expr *E = TG->getReductionRef())
@@ -741,7 +741,7 @@ bool CodeGenFunction::EmitACCFirstprivateClause(const ACCExecutableDirective &D,
   llvm::SmallVector<OpenACCDirectiveKind, 4> CaptureRegions;
   getOpenACCCaptureRegions(CaptureRegions, D.getDirectiveKind());
   // Force emission of the firstprivate copy if the directive does not emit
-  // outlined function, like acc for, acc simd, acc distribute etc.
+  // outlined function, like acc for, acc vector, acc distribute etc.
   bool MustEmitFirstprivateCopy =
       CaptureRegions.size() == 1 && CaptureRegions.back() == ACCD_unknown;
   for (const auto *C : D.getClausesOfKind<ACCFirstprivateClause>()) {
@@ -923,11 +923,11 @@ bool CodeGenFunction::EmitACCLastprivateClauseInit(
   if (!HaveInsertPoint())
     return false;
   bool HasAtLeastOneLastprivate = false;
-  llvm::DenseSet<const VarDecl *> SIMDLCVs;
-  if (isOpenACCSimdDirective(D.getDirectiveKind())) {
+  llvm::DenseSet<const VarDecl *> VectorLCVs;
+  if (isOpenACCVectorDirective(D.getDirectiveKind())) {
     auto *LoopDirective = cast<ACCLoopLikeDirective>(&D);
     for (auto *C : LoopDirective->counters()) {
-      SIMDLCVs.insert(
+      VectorLCVs.insert(
           cast<VarDecl>(cast<DeclRefExpr>(C)->getDecl())->getCanonicalDecl());
     }
   }
@@ -935,7 +935,7 @@ bool CodeGenFunction::EmitACCLastprivateClauseInit(
   for (const auto *C : D.getClausesOfKind<ACCLastprivateClause>()) {
     HasAtLeastOneLastprivate = true;
     if (isOpenACCTaskLoopDirective(D.getDirectiveKind()) &&
-        !getLangOpts().OpenACCSimd)
+        !getLangOpts().OpenACCVector)
       break;
     auto IRef = C->varlist_begin();
     auto IDestRef = C->destination_exprs().begin();
@@ -958,7 +958,7 @@ bool CodeGenFunction::EmitACCLastprivateClauseInit(
         // Check if the variable is also a firstprivate: in this case IInit is
         // not generated. Initialization of this variable will happen in codegen
         // for 'firstprivate' clause.
-        if (IInit && !SIMDLCVs.count(OrigVD->getCanonicalDecl())) {
+        if (IInit && !VectorLCVs.count(OrigVD->getCanonicalDecl())) {
           auto *VD = cast<VarDecl>(cast<DeclRefExpr>(IInit)->getDecl());
           bool IsRegistered = PrivateScope.addPrivate(OrigVD, [&]() -> Address {
             // Emit private VarDecl with copy init.
@@ -1172,8 +1172,8 @@ void CodeGenFunction::EmitACCReductionClauseFinal(
   if (HasAtLeastOneReduction) {
     bool WithNowait = D.getSingleClause<ACCNowaitClause>() ||
                       isOpenACCParallelDirective(D.getDirectiveKind()) ||
-                      ReductionKind == ACCD_simd;
-    bool SimpleReduction = ReductionKind == ACCD_simd;
+                      ReductionKind == ACCD_vector;
+    bool SimpleReduction = ReductionKind == ACCD_vector;
     // Emit nowait reduction if nowait clause is present or directive is a
     // parallel directive (it always has implicit barrier).
     CGM.getOpenACCRuntime().emitReduction(
@@ -1452,10 +1452,10 @@ static void emitAlignedClause(CodeGenFunction &CGF,
       if (Alignment == 0) {
         // OpenACC [2.8.1, Description]
         // If no optional parameter is specified, implementation-defined default
-        // alignments for SIMD instructions on the target platforms are assumed.
+        // alignments for Vector instructions on the target platforms are assumed.
         Alignment =
             CGF.getContext()
-                .toCharUnitsFromBits(CGF.getContext().getOpenACCDefaultSimdAlign(
+                .toCharUnitsFromBits(CGF.getContext().getOpenACCDefaultVectorAlign(
                     E->getType()->getPointeeType()))
                 .getQuantity();
       }
@@ -1523,11 +1523,11 @@ void CodeGenFunction::EmitACCLinearClause(
     const ACCLoopLikeDirective &D, CodeGenFunction::ACCPrivateScope &PrivateScope) {
   if (!HaveInsertPoint())
     return;
-  llvm::DenseSet<const VarDecl *> SIMDLCVs;
-  if (isOpenACCSimdDirective(D.getDirectiveKind())) {
+  llvm::DenseSet<const VarDecl *> VectorLCVs;
+  if (isOpenACCVectorDirective(D.getDirectiveKind())) {
     auto *LoopDirective = cast<ACCLoopLikeDirective>(&D);
     for (auto *C : LoopDirective->counters()) {
-      SIMDLCVs.insert(
+      VectorLCVs.insert(
           cast<VarDecl>(cast<DeclRefExpr>(C)->getDecl())->getCanonicalDecl());
     }
   }
@@ -1537,7 +1537,7 @@ void CodeGenFunction::EmitACCLinearClause(
       auto *VD = cast<VarDecl>(cast<DeclRefExpr>(E)->getDecl());
       auto *PrivateVD =
           cast<VarDecl>(cast<DeclRefExpr>(*CurPrivate)->getDecl());
-      if (!SIMDLCVs.count(VD->getCanonicalDecl())) {
+      if (!VectorLCVs.count(VD->getCanonicalDecl())) {
         bool IsRegistered = PrivateScope.addPrivate(VD, [&]() -> Address {
           // Emit private VarDecl with copy init.
           EmitVarDecl(*PrivateVD);
@@ -1553,13 +1553,13 @@ void CodeGenFunction::EmitACCLinearClause(
   }
 }
 
-static void emitSimdlenSafelenClause(CodeGenFunction &CGF,
+static void emitVectorlenSafelenClause(CodeGenFunction &CGF,
                                      const ACCExecutableDirective &D,
                                      bool IsMonotonic) {
   if (!CGF.HaveInsertPoint())
     return;
-  if (const auto *C = D.getSingleClause<ACCSimdlenClause>()) {
-    RValue Len = CGF.EmitAnyExpr(C->getSimdlen(), AggValueSlot::ignored(),
+  if (const auto *C = D.getSingleClause<ACCVectorlenClause>()) {
+    RValue Len = CGF.EmitAnyExpr(C->getVectorlen(), AggValueSlot::ignored(),
                                  /*ignoreResult=*/true);
     llvm::ConstantInt *Val = cast<llvm::ConstantInt>(Len.getScalarVal());
     CGF.LoopStack.setVectorizeWidth(Val->getZExtValue());
@@ -1580,15 +1580,15 @@ static void emitSimdlenSafelenClause(CodeGenFunction &CGF,
   }
 }
 
-void CodeGenFunction::EmitACCSimdInit(const ACCLoopLikeDirective &D,
+void CodeGenFunction::EmitACCVectorInit(const ACCLoopLikeDirective &D,
                                       bool IsMonotonic) {
   // Walk clauses and process safelen/lastprivate.
   LoopStack.setParallel(!IsMonotonic);
   LoopStack.setVectorizeEnable(true);
-  emitSimdlenSafelenClause(*this, D, IsMonotonic);
+  emitVectorlenSafelenClause(*this, D, IsMonotonic);
 }
 
-void CodeGenFunction::EmitACCSimdFinal(
+void CodeGenFunction::EmitACCVectorFinal(
     const ACCLoopLikeDirective &D,
     const llvm::function_ref<llvm::Value *(CodeGenFunction &)> &CondGen) {
   if (!HaveInsertPoint())
@@ -1649,11 +1649,11 @@ static LValue EmitACCHelperVar(CodeGenFunction &CGF,
   return CGF.EmitLValue(Helper);
 }
 
-static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopLikeDirective &S,
+static void emitACCVectorRegion(CodeGenFunction &CGF, const ACCLoopLikeDirective &S,
                               ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
-  assert(isOpenACCSimdDirective(S.getDirectiveKind()) &&
-         "Expected simd directive");
+  assert(isOpenACCVectorDirective(S.getDirectiveKind()) &&
+         "Expected vector directive");
   ACCLoopScope PreInitScope(CGF, S);
   // if (PreCond) {
   //   for (IV in 0..LastIteration) BODY;
@@ -1676,8 +1676,8 @@ static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopLikeDirective &
     if (!CondConstant)
       return;
   } else {
-    auto *ThenBlock = CGF.createBasicBlock("simd.if.then");
-    ContBlock = CGF.createBasicBlock("simd.if.end");
+    auto *ThenBlock = CGF.createBasicBlock("vector.if.then");
+    ContBlock = CGF.createBasicBlock("vector.if.end");
     emitPreCond(CGF, S, S.getPreCond(), ThenBlock, ContBlock,
                 CGF.getProfileCount(&S));
     CGF.EmitBlock(ThenBlock);
@@ -1699,7 +1699,7 @@ static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopLikeDirective &
     CGF.EmitIgnoredExpr(S.getCalcLastIteration());
   }
 
-  CGF.EmitACCSimdInit(S);
+  CGF.EmitACCVectorInit(S);
 
   emitAlignedClause(CGF, S);
   (void)CGF.EmitACCLinearClauseInit(S);
@@ -1718,12 +1718,12 @@ static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopLikeDirective &
                            CGF.EmitStopPoint(&S);
                          },
                          [](CodeGenFunction &) {});
-    CGF.EmitACCSimdFinal(
+    CGF.EmitACCVectorFinal(
         S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
     // Emit final copy of the lastprivate variables at the end of loops.
     if (HasLastprivateClause)
       CGF.EmitACCLastprivateClauseFinal(S, /*NoFinals=*/true);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_simd);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_vector);
     emitPostUpdateForReductionClause(
         CGF, S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
   }
@@ -1736,12 +1736,12 @@ static void emitACCSimdRegion(CodeGenFunction &CGF, const ACCLoopLikeDirective &
   }
 }
 
-void CodeGenFunction::EmitACCSimdDirective(const ACCSimdDirective &S) {
+void CodeGenFunction::EmitACCVectorDirective(const ACCVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitACCSimdRegion(CGF, S, Action);
+    emitACCVectorRegion(CGF, S, Action);
   };
   ACCLexicalScope Scope(*this, S, ACCD_unknown);
-  CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_simd, CodeGen);
+  CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_vector, CodeGen);
 }
 
 void CodeGenFunction::EmitACCOuterLoop(
@@ -1806,10 +1806,10 @@ void CodeGenFunction::EmitACCOuterLoop(
 
   // Generate !llvm.loop.parallel metadata for loads and stores for loops
   // with dynamic/guided scheduling and without ordered clause.
-  if (!isOpenACCSimdDirective(S.getDirectiveKind()))
+  if (!isOpenACCVectorDirective(S.getDirectiveKind()))
     LoopStack.setParallel(!IsMonotonic);
   else
-    EmitACCSimdInit(S, IsMonotonic);
+    EmitACCVectorInit(S, IsMonotonic);
 
   SourceLocation Loc = S.getLocStart();
 
@@ -2103,7 +2103,7 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
   auto &&CGInlinedWorksharingLoop = [&S](CodeGenFunction &CGF,
                                          ACCPrePostActionTy &) {
     bool HasCancel = false;
-    if (!isOpenACCSimdDirective(S.getDirectiveKind())) {
+    if (!isOpenACCVectorDirective(S.getDirectiveKind())) {
       if (const auto *D = dyn_cast<ACCTeamsDistributeParallelLoopDirective>(&S))
         HasCancel = D->hasCancel();
       else if (const auto *D = dyn_cast<ACCDistributeParallelLoopDirective>(&S))
@@ -2121,7 +2121,7 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
 
   emitCommonACCParallelDirective(
       CGF, S,
-      isOpenACCSimdDirective(S.getDirectiveKind()) ? ACCD_loop_simd : ACCD_loop,
+      isOpenACCVectorDirective(S.getDirectiveKind()) ? ACCD_loop_vector : ACCD_loop,
       CGInlinedWorksharingLoop,
       emitDistributeParallelForDistributeInnerBoundParams);
 }
@@ -2136,8 +2136,8 @@ void CodeGenFunction::EmitACCDistributeParallelLoopDirective(
   CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_distribute, CodeGen);
 }
 
-void CodeGenFunction::EmitACCDistributeParallelLoopSimdDirective(
-    const ACCDistributeParallelLoopSimdDirective &S) {
+void CodeGenFunction::EmitACCDistributeParallelLoopVectorDirective(
+    const ACCDistributeParallelLoopVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -2146,20 +2146,20 @@ void CodeGenFunction::EmitACCDistributeParallelLoopSimdDirective(
   CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_distribute, CodeGen);
 }
 
-void CodeGenFunction::EmitACCDistributeSimdDirective(
-    const ACCDistributeSimdDirective &S) {
+void CodeGenFunction::EmitACCDistributeVectorDirective(
+    const ACCDistributeVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
   ACCLexicalScope Scope(*this, S, ACCD_unknown);
-  CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_simd, CodeGen);
+  CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_vector, CodeGen);
 }
 
-void CodeGenFunction::EmitACCTargetSimdDeviceFunction(
-    CodeGenModule &CGM, StringRef ParentName, const ACCTargetSimdDirective &S) {
+void CodeGenFunction::EmitACCTargetVectorDeviceFunction(
+    CodeGenModule &CGM, StringRef ParentName, const ACCTargetVectorDirective &S) {
   // Emit SPMD target parallel for region as a standalone region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitACCSimdRegion(CGF, S, Action);
+    emitACCVectorRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
   llvm::Constant *Addr;
@@ -2169,10 +2169,10 @@ void CodeGenFunction::EmitACCTargetSimdDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetSimdDirective(
-    const ACCTargetSimdDirective &S) {
+void CodeGenFunction::EmitACCTargetVectorDirective(
+    const ACCTargetVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitACCSimdRegion(CGF, S, Action);
+    emitACCVectorRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
@@ -2293,8 +2293,8 @@ bool CodeGenFunction::EmitACCWorksharingLoop(
       if (RT.isStaticNonchunked(ScheduleKind.Schedule,
                                 /* Chunked */ Chunk != nullptr) &&
           !Ordered) {
-        if (isOpenACCSimdDirective(S.getDirectiveKind()))
-          EmitACCSimdInit(S, /*IsMonotonic=*/true);
+        if (isOpenACCVectorDirective(S.getDirectiveKind()))
+          EmitACCVectorInit(S, /*IsMonotonic=*/true);
         // OpenACC [2.7.1, Loop Construct, Description, table 2-1]
         // When no chunk_size is specified, the iteration space is divided into
         // chunks that are approximately equal in size, and at most one chunk is
@@ -2340,16 +2340,16 @@ bool CodeGenFunction::EmitACCWorksharingLoop(
         EmitACCForOuterLoop(ScheduleKind, IsMonotonic, S, LoopScope, Ordered,
                             LoopArguments, CGDispatchBounds);
       }
-      if (isOpenACCSimdDirective(S.getDirectiveKind())) {
-        EmitACCSimdFinal(S,
+      if (isOpenACCVectorDirective(S.getDirectiveKind())) {
+        EmitACCVectorFinal(S,
                          [&](CodeGenFunction &CGF) -> llvm::Value * {
                            return CGF.Builder.CreateIsNotNull(
                                CGF.EmitLoadOfScalar(IL, S.getLocStart()));
                          });
       }
       EmitACCReductionClauseFinal(
-          S, /*ReductionKind=*/isOpenACCSimdDirective(S.getDirectiveKind())
-                 ? /*Parallel and Simd*/ ACCD_parallel_loop_simd
+          S, /*ReductionKind=*/isOpenACCVectorDirective(S.getDirectiveKind())
+                 ? /*Parallel and Vector*/ ACCD_parallel_loop_vector
                  : /*Parallel only*/ ACCD_parallel);
       // Emit post-update of the reduction variables if IsLastIter != 0.
       emitPostUpdateForReductionClause(
@@ -2360,7 +2360,7 @@ bool CodeGenFunction::EmitACCWorksharingLoop(
       // Emit final copy of the lastprivate variables if IsLastIter != 0.
       if (HasLastprivateClause)
         EmitACCLastprivateClauseFinal(
-            S, isOpenACCSimdDirective(S.getDirectiveKind()),
+            S, isOpenACCVectorDirective(S.getDirectiveKind()),
             Builder.CreateIsNotNull(EmitLoadOfScalar(IL, S.getLocStart())));
     }
     EmitACCLinearClauseFinal(S, [&](CodeGenFunction &CGF) -> llvm::Value * {
@@ -2426,7 +2426,7 @@ void CodeGenFunction::EmitACCLoopDirective(const ACCLoopDirective &S) {
   }
 }
 
-void CodeGenFunction::EmitACCLoopSimdDirective(const ACCLoopSimdDirective &S) {
+void CodeGenFunction::EmitACCLoopVectorDirective(const ACCLoopVectorDirective &S) {
   bool HasLastprivates = false;
   auto &&CodeGen = [&S, &HasLastprivates](CodeGenFunction &CGF,
                                           ACCPrePostActionTy &) {
@@ -2436,7 +2436,7 @@ void CodeGenFunction::EmitACCLoopSimdDirective(const ACCLoopSimdDirective &S) {
   };
   {
     ACCLexicalScope Scope(*this, S, ACCD_unknown);
-    CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_simd, CodeGen);
+    CGM.getOpenACCRuntime().emitInlinedDirective(*this, ACCD_vector, CodeGen);
   }
 
   // Emit an implicit barrier at the end.
@@ -2693,15 +2693,15 @@ void CodeGenFunction::EmitACCParallelLoopDirective(
                                  emitEmptyBoundParameters);
 }
 
-void CodeGenFunction::EmitACCParallelLoopSimdDirective(
-    const ACCParallelLoopSimdDirective &S) {
+void CodeGenFunction::EmitACCParallelLoopVectorDirective(
+    const ACCParallelLoopVectorDirective &S) {
   // Emit directive as a combined directive that consists of two implicit
   // directives: 'parallel' with 'for' directive.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };
-  emitCommonACCParallelDirective(*this, S, ACCD_simd, CodeGen,
+  emitCommonACCParallelDirective(*this, S, ACCD_vector, CodeGen,
                                  emitEmptyBoundParameters);
 }
 
@@ -3003,7 +3003,7 @@ createImplicitFirstprivateForType(ASTContext &C, ACCTaskDataTy &Data,
 
 void CodeGenFunction::EmitACCTargetTaskBasedDirective(
     const ACCExecutableDirective &S, const ACCRegionCodeGenTy &BodyGen,
-    ACCTargetDataInfo &InputInfo) {
+    ACCDataInfo &InputInfo) {
   // Emit outlined function for task construct.
   auto CS = S.getCapturedStmt(ACCD_task);
   auto CapturedStruct = GenerateCapturedStmtArgument(*CS);
@@ -3277,7 +3277,7 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
             /*ForceSimpleCall=*/true);
       }
       EmitACCPrivateClause(S, LoopScope);
-      if (isOpenACCSimdDirective(S.getDirectiveKind()) &&
+      if (isOpenACCVectorDirective(S.getDirectiveKind()) &&
           !isOpenACCParallelDirective(S.getDirectiveKind()) &&
           !isOpenACCTeamsDirective(S.getDirectiveKind()))
         EmitACCReductionClauseInit(S, LoopScope);
@@ -3310,8 +3310,8 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
       // league. The size of the chunks is unspecified in this case.
       if (RT.isStaticNonchunked(ScheduleKind,
                                 /* Chunked */ Chunk != nullptr)) {
-        if (isOpenACCSimdDirective(S.getDirectiveKind()))
-          EmitACCSimdInit(S, /*IsMonotonic=*/true);
+        if (isOpenACCVectorDirective(S.getDirectiveKind()))
+          EmitACCVectorInit(S, /*IsMonotonic=*/true);
         CGOpenACCRuntime::StaticRTInput StaticInit(
             IVSize, IVSigned, /* Ordered = */ false, IL.getAddress(),
             LB.getAddress(), UB.getAddress(), ST.getAddress());
@@ -3353,20 +3353,20 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
         EmitACCDistributeOuterLoop(ScheduleKind, S, LoopScope, LoopArguments,
                                    CodeGenLoop);
       }
-      if (isOpenACCSimdDirective(S.getDirectiveKind())) {
-        EmitACCSimdFinal(S, [&](CodeGenFunction &CGF) -> llvm::Value * {
+      if (isOpenACCVectorDirective(S.getDirectiveKind())) {
+        EmitACCVectorFinal(S, [&](CodeGenFunction &CGF) -> llvm::Value * {
           return CGF.Builder.CreateIsNotNull(
               CGF.EmitLoadOfScalar(IL, S.getLocStart()));
         });
       }
       OpenACCDirectiveKind ReductionKind = ACCD_unknown;
       if (isOpenACCParallelDirective(S.getDirectiveKind()) &&
-          isOpenACCSimdDirective(S.getDirectiveKind())) {
-        ReductionKind = ACCD_parallel_loop_simd;
+          isOpenACCVectorDirective(S.getDirectiveKind())) {
+        ReductionKind = ACCD_parallel_loop_vector;
       } else if (isOpenACCParallelDirective(S.getDirectiveKind())) {
         ReductionKind = ACCD_parallel_loop;
-      } else if (isOpenACCSimdDirective(S.getDirectiveKind())) {
-        ReductionKind = ACCD_simd;
+      } else if (isOpenACCVectorDirective(S.getDirectiveKind())) {
+        ReductionKind = ACCD_vector;
       } else if (!isOpenACCTeamsDirective(S.getDirectiveKind()) &&
                  S.hasClausesOfKind<ACCReductionClause>()) {
         llvm_unreachable(
@@ -3423,7 +3423,7 @@ void CodeGenFunction::EmitACCOrderedDirective(const ACCOrderedDirective &S) {
       CGM.getOpenACCRuntime().emitDoacrossOrdered(*this, DC);
     return;
   }
-  auto *C = S.getSingleClause<ACCSIMDClause>();
+  auto *C = S.getSingleClause<ACCVectorClause>();
   auto &&CodeGen = [&S, C, this](CodeGenFunction &CGF,
                                  ACCPrePostActionTy &Action) {
     const CapturedStmt *CS = S.getInnermostCapturedStmt();
@@ -3831,14 +3831,13 @@ static void EmitACCAtomicExpr(CodeGenFunction &CGF, OpenACCClauseKind Kind,
   case ACCC_task_reduction:
   case ACCC_in_reduction:
   case ACCC_safelen:
-  case ACCC_simdlen:
+  case ACCC_vectorlen:
   case ACCC_collapse:
   case ACCC_default:
   case ACCC_seq_cst:
   case ACCC_shared:
   case ACCC_linear:
   case ACCC_aligned:
-  case ACCC_copyin:
   case ACCC_copyprivate:
   case ACCC_flush:
   case ACCC_proc_bind:
@@ -3851,8 +3850,11 @@ static void EmitACCAtomicExpr(CodeGenFunction &CGF, OpenACCClauseKind Kind,
   case ACCC_mergeable:
   case ACCC_device:
   case ACCC_threads:
-  case ACCC_simd:
+  case ACCC_vector:
   case ACCC_map:
+  case ACCC_copy:
+  case ACCC_copyin:
+  case ACCC_copyout:
   case ACCC_num_teams:
   case ACCC_thread_limit:
   case ACCC_priority:
@@ -4122,9 +4124,9 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeDirective(
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
 
-static void emitTargetTeamsDistributeSimdRegion(
+static void emitTargetTeamsDistributeVectorRegion(
     CodeGenFunction &CGF, ACCPrePostActionTy &Action,
-    const ACCTargetTeamsDistributeSimdDirective &S) {
+    const ACCTargetTeamsDistributeVectorDirective &S) {
   Action.Enter(CGF);
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
@@ -4140,16 +4142,16 @@ static void emitTargetTeamsDistributeSimdRegion(
                                                     CodeGenDistribute);
     CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
   };
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_simd, CodeGen);
+  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_vector, CodeGen);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeSimdDeviceFunction(
+void CodeGenFunction::EmitACCTargetTeamsDistributeVectorDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeSimdDirective &S) {
+    const ACCTargetTeamsDistributeVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitTargetTeamsDistributeSimdRegion(CGF, Action, S);
+    emitTargetTeamsDistributeVectorRegion(CGF, Action, S);
   };
   llvm::Function *Fn;
   llvm::Constant *Addr;
@@ -4159,10 +4161,10 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeSimdDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeSimdDirective(
-    const ACCTargetTeamsDistributeSimdDirective &S) {
+void CodeGenFunction::EmitACCTargetTeamsDistributeVectorDirective(
+    const ACCTargetTeamsDistributeVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitTargetTeamsDistributeSimdRegion(CGF, Action, S);
+    emitTargetTeamsDistributeVectorRegion(CGF, Action, S);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
@@ -4189,8 +4191,8 @@ void CodeGenFunction::EmitACCTeamsDistributeDirective(
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeSimdDirective(
-    const ACCTeamsDistributeSimdDirective &S) {
+void CodeGenFunction::EmitACCTeamsDistributeVectorDirective(
+    const ACCTeamsDistributeVectorDirective &S) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
@@ -4201,11 +4203,11 @@ void CodeGenFunction::EmitACCTeamsDistributeSimdDirective(
     ACCPrivateScope PrivateScope(CGF);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
-    CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_simd,
+    CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_vector,
                                                     CodeGenDistribute);
     CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_simd, CodeGen);
+  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_vector, CodeGen);
   emitPostUpdateForReductionClause(*this, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
@@ -4232,8 +4234,8 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelLoopDirective(
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeParallelLoopSimdDirective(
-    const ACCTeamsDistributeParallelLoopSimdDirective &S) {
+void CodeGenFunction::EmitACCTeamsDistributeParallelLoopVectorDirective(
+    const ACCTeamsDistributeParallelLoopVectorDirective &S) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -4303,9 +4305,9 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopDirective(
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
 
-static void emitTargetTeamsDistributeParallelForSimdRegion(
+static void emitTargetTeamsDistributeParallelForVectorRegion(
     CodeGenFunction &CGF,
-    const ACCTargetTeamsDistributeParallelLoopSimdDirective &S,
+    const ACCTargetTeamsDistributeParallelLoopVectorDirective &S,
     ACCPrePostActionTy &Action) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
@@ -4323,19 +4325,19 @@ static void emitTargetTeamsDistributeParallelForSimdRegion(
     CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
   };
 
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_loop_simd,
+  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_loop_vector,
                               CodeGenTeams);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
+void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForVectorDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeParallelLoopSimdDirective &S) {
-  // Emit SPMD target teams distribute parallel for simd region as a standalone
+    const ACCTargetTeamsDistributeParallelLoopVectorDirective &S) {
+  // Emit SPMD target teams distribute parallel for vector region as a standalone
   // region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitTargetTeamsDistributeParallelForSimdRegion(CGF, S, Action);
+    emitTargetTeamsDistributeParallelForVectorRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
   llvm::Constant *Addr;
@@ -4345,10 +4347,10 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForSimdDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopSimdDirective(
-    const ACCTargetTeamsDistributeParallelLoopSimdDirective &S) {
+void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopVectorDirective(
+    const ACCTargetTeamsDistributeParallelLoopVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitTargetTeamsDistributeParallelForSimdRegion(CGF, S, Action);
+    emitTargetTeamsDistributeParallelForVectorRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
@@ -4449,8 +4451,8 @@ void CodeGenFunction::EmitACCUseDevicePtrClause(
 }
 
 // Generate the instructions for '#pragma acc target data' directive.
-void CodeGenFunction::EmitACCTargetDataDirective(
-    const ACCTargetDataDirective &S) {
+void CodeGenFunction::EmitACCDataDirective(
+    const ACCDataDirective &S) {
   CGOpenACCRuntime::TargetDataInfo Info(/*RequiresDevicePointerInfo=*/true);
 
   // Create a pre/post action to signal the privatization of the device pointer.
@@ -4506,7 +4508,7 @@ void CodeGenFunction::EmitACCTargetDataDirective(
     // we don't use an inline scope as changes in the references inside the
     // region are expected to be visible outside, so we do not privative them.
     ACCLexicalScope Scope(CGF, S);
-    CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_target_data,
+    CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_data,
                                                     PrivRCG);
   };
 
@@ -4537,8 +4539,8 @@ void CodeGenFunction::EmitACCTargetDataDirective(
                                              Info);
 }
 
-void CodeGenFunction::EmitACCTargetEnterDataDirective(
-    const ACCTargetEnterDataDirective &S) {
+void CodeGenFunction::EmitACCEnterDataDirective(
+    const ACCEnterDataDirective &S) {
   // If we don't have target devices, don't bother emitting the data mapping
   // code.
   if (CGM.getLangOpts().ACCTargetTriples.empty())
@@ -4558,8 +4560,8 @@ void CodeGenFunction::EmitACCTargetEnterDataDirective(
   CGM.getOpenACCRuntime().emitTargetDataStandAloneCall(*this, S, IfCond, Device);
 }
 
-void CodeGenFunction::EmitACCTargetExitDataDirective(
-    const ACCTargetExitDataDirective &S) {
+void CodeGenFunction::EmitACCExitDataDirective(
+    const ACCExitDataDirective &S) {
   // If we don't have target devices, don't bother emitting the data mapping
   // code.
   if (CGM.getLangOpts().ACCTargetTriples.empty())
@@ -4663,8 +4665,8 @@ void CodeGenFunction::EmitACCTargetParallelLoopDirective(
 }
 
 static void
-emitTargetParallelForSimdRegion(CodeGenFunction &CGF,
-                                const ACCTargetParallelLoopSimdDirective &S,
+emitTargetParallelForVectorRegion(CodeGenFunction &CGF,
+                                const ACCTargetParallelLoopVectorDirective &S,
                                 ACCPrePostActionTy &Action) {
   Action.Enter(CGF);
   // Emit directive as a combined directive that consists of two implicit
@@ -4673,16 +4675,16 @@ emitTargetParallelForSimdRegion(CodeGenFunction &CGF,
     CGF.EmitACCWorksharingLoop(S, S.getEnsureUpperBound(), emitForLoopBounds,
                                emitDispatchForLoopBounds);
   };
-  emitCommonACCParallelDirective(CGF, S, ACCD_simd, CodeGen,
+  emitCommonACCParallelDirective(CGF, S, ACCD_vector, CodeGen,
                                  emitEmptyBoundParameters);
 }
 
-void CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
+void CodeGenFunction::EmitACCTargetParallelForVectorDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetParallelLoopSimdDirective &S) {
+    const ACCTargetParallelLoopVectorDirective &S) {
   // Emit SPMD target parallel for region as a standalone region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitTargetParallelForSimdRegion(CGF, S, Action);
+    emitTargetParallelForVectorRegion(CGF, S, Action);
   };
   llvm::Function *Fn;
   llvm::Constant *Addr;
@@ -4692,10 +4694,10 @@ void CodeGenFunction::EmitACCTargetParallelForSimdDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetParallelLoopSimdDirective(
-    const ACCTargetParallelLoopSimdDirective &S) {
+void CodeGenFunction::EmitACCTargetParallelLoopVectorDirective(
+    const ACCTargetParallelLoopVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    emitTargetParallelForSimdRegion(CGF, S, Action);
+    emitTargetParallelForVectorRegion(CGF, S, Action);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
@@ -4765,8 +4767,8 @@ void CodeGenFunction::EmitACCTaskLoopBasedDirective(const ACCLoopLikeDirective &
       CGF.incrementProfileCounter(&S);
     }
 
-    if (isOpenACCSimdDirective(S.getDirectiveKind()))
-      CGF.EmitACCSimdInit(S);
+    if (isOpenACCVectorDirective(S.getDirectiveKind()))
+      CGF.EmitACCVectorInit(S);
 
     ACCPrivateScope LoopScope(CGF);
     // Emit helper vars inits.
@@ -4816,7 +4818,7 @@ void CodeGenFunction::EmitACCTaskLoopBasedDirective(const ACCLoopLikeDirective &
     // Emit final copy of the lastprivate variables if IsLastIter != 0.
     if (HasLastprivateClause) {
       CGF.EmitACCLastprivateClauseFinal(
-          S, isOpenACCSimdDirective(S.getDirectiveKind()),
+          S, isOpenACCVectorDirective(S.getDirectiveKind()),
           CGF.Builder.CreateIsNotNull(CGF.EmitLoadOfScalar(
               CGF.GetAddrOfLocalVar(*LIP), /*Volatile=*/false,
               (*LIP)->getType(), S.getLocStart())));
@@ -4853,8 +4855,8 @@ void CodeGenFunction::EmitACCTaskLoopDirective(const ACCTaskLoopDirective &S) {
   EmitACCTaskLoopBasedDirective(S);
 }
 
-void CodeGenFunction::EmitACCTaskLoopSimdDirective(
-    const ACCTaskLoopSimdDirective &S) {
+void CodeGenFunction::EmitACCTaskLoopVectorDirective(
+    const ACCTaskLoopVectorDirective &S) {
   EmitACCTaskLoopBasedDirective(S);
 }
 
@@ -4885,8 +4887,8 @@ void CodeGenFunction::EmitSimpleACCExecutableDirective(
   if (!D.hasAssociatedStmt() || !D.getAssociatedStmt())
     return;
   auto &&CodeGen = [&D](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
-    if (isOpenACCSimdDirective(D.getDirectiveKind())) {
-      emitACCSimdRegion(CGF, cast<ACCLoopLikeDirective>(D), Action);
+    if (isOpenACCVectorDirective(D.getDirectiveKind())) {
+      emitACCVectorRegion(CGF, cast<ACCLoopLikeDirective>(D), Action);
     } else {
       if (const auto *LD = dyn_cast<ACCLoopLikeDirective>(&D)) {
         for (const auto *E : LD->counters()) {
@@ -4901,10 +4903,10 @@ void CodeGenFunction::EmitSimpleACCExecutableDirective(
       CGF.EmitStmt(D.getInnermostCapturedStmt()->getCapturedStmt());
     }
   };
-  ACCSimdLexicalScope Scope(*this, D);
+  ACCVectorLexicalScope Scope(*this, D);
   CGM.getOpenACCRuntime().emitInlinedDirective(
       *this,
-      isOpenACCSimdDirective(D.getDirectiveKind()) ? ACCD_simd
+      isOpenACCVectorDirective(D.getDirectiveKind()) ? ACCD_vector
                                                   : D.getDirectiveKind(),
       CodeGen);
 }

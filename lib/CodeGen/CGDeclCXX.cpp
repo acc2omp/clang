@@ -174,7 +174,7 @@ void CodeGenFunction::EmitCXXGlobalVarDeclInit(const VarDecl &D,
   ConstantAddress DeclAddr(DeclPtr, getContext().getDeclAlign(&D));
 
   if (!T->isReferenceType()) {
-    if (getLangOpts().OpenACC && !getLangOpts().OpenACCSimd &&
+    if (getLangOpts().OpenACC && !getLangOpts().OpenACCVector &&
         D.hasAttr<ACCThreadPrivateDeclAttr>()) {
       (void)CGM.getOpenACCRuntime().emitThreadPrivateVarDefinition(
           &D, DeclAddr, D.getAttr<ACCThreadPrivateDeclAttr>()->getLocation(),

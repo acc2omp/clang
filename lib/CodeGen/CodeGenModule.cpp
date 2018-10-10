@@ -206,8 +206,8 @@ void CodeGenModule::createOpenACCRuntime() {
   switch (getTriple().getArch()) {
   case llvm::Triple::nvptx:
   default:
-    if (LangOpts.OpenACCSimd)
-      OpenACCRuntime.reset(new CGOpenACCSIMDRuntime(*this));
+    if (LangOpts.OpenACCVector)
+      OpenACCRuntime.reset(new CGOpenACCVectorRuntime(*this));
     else
       OpenACCRuntime.reset(new CGOpenACCRuntime(*this));
     break;
@@ -1484,8 +1484,8 @@ void CodeGenModule::SetFunctionAttributes(GlobalDecl GD, llvm::Function *F,
   if (!CodeGenOpts.SanitizeCfiCrossDso)
     CreateFunctionTypeMetadata(FD, F);
 
-  if (getLangOpts().OpenACC && FD->hasAttr<ACCDeclareSimdDeclAttr>())
-    getOpenACCRuntime().emitDeclareSimdFunction(FD, F);
+  if (getLangOpts().OpenACC && FD->hasAttr<ACCDeclareVectorDeclAttr>())
+    getOpenACCRuntime().emitDeclareVectorFunction(FD, F);
 
   if (getLangOpts().OpenMP && FD->hasAttr<OMPDeclareSimdDeclAttr>())
     getOpenMPRuntime().emitDeclareSimdFunction(FD, F);
@@ -4866,7 +4866,7 @@ llvm::Constant *CodeGenModule::GetAddrOfRTTIDescriptor(QualType Ty,
 }
 void CodeGenModule::EmitACCThreadPrivateDecl(const ACCThreadPrivateDecl *D) {
   // Do not emit threadprivates in simd-only mode.
-  if (LangOpts.OpenACC && LangOpts.OpenACCSimd)
+  if (LangOpts.OpenACC && LangOpts.OpenACCVector)
     return;
   for (auto RefExpr : D->varlists()) {
     auto *VD = cast<VarDecl>(cast<DeclRefExpr>(RefExpr)->getDecl());

@@ -79,17 +79,17 @@ ACCParallelDirective *ACCParallelDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCParallelDirective(NumClauses);
 }
 
-ACCSimdDirective *
-ACCSimdDirective::Create(const ASTContext &C, SourceLocation StartLoc,
+ACCVectorDirective *
+ACCVectorDirective::Create(const ASTContext &C, SourceLocation StartLoc,
                          SourceLocation EndLoc, unsigned CollapsedNum,
                          ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
                          const HelperExprs &Exprs) {
-  unsigned Size = llvm::alignTo(sizeof(ACCSimdDirective), alignof(ACCClause *));
+  unsigned Size = llvm::alignTo(sizeof(ACCVectorDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_simd));
-  ACCSimdDirective *Dir = new (Mem)
-      ACCSimdDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_vector));
+  ACCVectorDirective *Dir = new (Mem)
+      ACCVectorDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   Dir->setIterationVariable(Exprs.IterationVarRef);
@@ -108,15 +108,15 @@ ACCSimdDirective::Create(const ASTContext &C, SourceLocation StartLoc,
   return Dir;
 }
 
-ACCSimdDirective *ACCSimdDirective::CreateEmpty(const ASTContext &C,
+ACCVectorDirective *ACCVectorDirective::CreateEmpty(const ASTContext &C,
                                                 unsigned NumClauses,
                                                 unsigned CollapsedNum,
                                                 EmptyShell) {
-  unsigned Size = llvm::alignTo(sizeof(ACCSimdDirective), alignof(ACCClause *));
+  unsigned Size = llvm::alignTo(sizeof(ACCVectorDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_simd));
-  return new (Mem) ACCSimdDirective(CollapsedNum, NumClauses);
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_vector));
+  return new (Mem) ACCVectorDirective(CollapsedNum, NumClauses);
 }
 
 ACCLoopDirective *
@@ -168,18 +168,18 @@ ACCLoopDirective *ACCLoopDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCLoopSimdDirective *
-ACCLoopSimdDirective::Create(const ASTContext &C, SourceLocation StartLoc,
+ACCLoopVectorDirective *
+ACCLoopVectorDirective::Create(const ASTContext &C, SourceLocation StartLoc,
                             SourceLocation EndLoc, unsigned CollapsedNum,
                             ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
                             const HelperExprs &Exprs) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCLoopSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCLoopVectorDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop_simd));
-  ACCLoopSimdDirective *Dir = new (Mem)
-      ACCLoopSimdDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop_vector));
+  ACCLoopVectorDirective *Dir = new (Mem)
+      ACCLoopVectorDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   Dir->setIterationVariable(Exprs.IterationVarRef);
@@ -206,16 +206,16 @@ ACCLoopSimdDirective::Create(const ASTContext &C, SourceLocation StartLoc,
   return Dir;
 }
 
-ACCLoopSimdDirective *ACCLoopSimdDirective::CreateEmpty(const ASTContext &C,
+ACCLoopVectorDirective *ACCLoopVectorDirective::CreateEmpty(const ASTContext &C,
                                                       unsigned NumClauses,
                                                       unsigned CollapsedNum,
                                                       EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCLoopSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCLoopVectorDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
-                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop_simd));
-  return new (Mem) ACCLoopSimdDirective(CollapsedNum, NumClauses);
+                 sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_loop_vector));
+  return new (Mem) ACCLoopVectorDirective(CollapsedNum, NumClauses);
 }
 
 ACCSectionsDirective *ACCSectionsDirective::Create(
@@ -382,16 +382,16 @@ ACCParallelLoopDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
   return new (Mem) ACCParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCParallelLoopSimdDirective *ACCParallelLoopSimdDirective::Create(
+ACCParallelLoopVectorDirective *ACCParallelLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCParallelLoopSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCParallelLoopVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_loop_simd));
-  ACCParallelLoopSimdDirective *Dir = new (Mem) ACCParallelLoopSimdDirective(
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_loop_vector));
+  ACCParallelLoopVectorDirective *Dir = new (Mem) ACCParallelLoopVectorDirective(
       StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -419,16 +419,16 @@ ACCParallelLoopSimdDirective *ACCParallelLoopSimdDirective::Create(
   return Dir;
 }
 
-ACCParallelLoopSimdDirective *
-ACCParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
+ACCParallelLoopVectorDirective *
+ACCParallelLoopVectorDirective::CreateEmpty(const ASTContext &C,
                                          unsigned NumClauses,
                                          unsigned CollapsedNum, EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCParallelLoopSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCParallelLoopVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_loop_simd));
-  return new (Mem) ACCParallelLoopSimdDirective(CollapsedNum, NumClauses);
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_parallel_loop_vector));
+  return new (Mem) ACCParallelLoopVectorDirective(CollapsedNum, NumClauses);
 }
 
 ACCParallelSectionsDirective *ACCParallelSectionsDirective::Create(
@@ -772,70 +772,70 @@ ACCTargetParallelLoopDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCTargetParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCTargetDataDirective *ACCTargetDataDirective::Create(
+ACCDataDirective *ACCDataDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt) {
   void *Mem = C.Allocate(
-      llvm::alignTo(sizeof(ACCTargetDataDirective), alignof(ACCClause *)) +
+      llvm::alignTo(sizeof(ACCDataDirective), alignof(ACCClause *)) +
       sizeof(ACCClause *) * Clauses.size() + sizeof(Stmt *));
-  ACCTargetDataDirective *Dir =
-      new (Mem) ACCTargetDataDirective(StartLoc, EndLoc, Clauses.size());
+  ACCDataDirective *Dir =
+      new (Mem) ACCDataDirective(StartLoc, EndLoc, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   return Dir;
 }
 
-ACCTargetDataDirective *ACCTargetDataDirective::CreateEmpty(const ASTContext &C,
+ACCDataDirective *ACCDataDirective::CreateEmpty(const ASTContext &C,
                                                             unsigned N,
                                                             EmptyShell) {
   void *Mem = C.Allocate(
-      llvm::alignTo(sizeof(ACCTargetDataDirective), alignof(ACCClause *)) +
+      llvm::alignTo(sizeof(ACCDataDirective), alignof(ACCClause *)) +
       sizeof(ACCClause *) * N + sizeof(Stmt *));
-  return new (Mem) ACCTargetDataDirective(N);
+  return new (Mem) ACCDataDirective(N);
 }
 
-ACCTargetEnterDataDirective *ACCTargetEnterDataDirective::Create(
+ACCEnterDataDirective *ACCEnterDataDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt) {
   void *Mem = C.Allocate(
-      llvm::alignTo(sizeof(ACCTargetEnterDataDirective), alignof(ACCClause *)) +
+      llvm::alignTo(sizeof(ACCEnterDataDirective), alignof(ACCClause *)) +
       sizeof(ACCClause *) * Clauses.size() + sizeof(Stmt *));
-  ACCTargetEnterDataDirective *Dir =
-      new (Mem) ACCTargetEnterDataDirective(StartLoc, EndLoc, Clauses.size());
+  ACCEnterDataDirective *Dir =
+      new (Mem) ACCEnterDataDirective(StartLoc, EndLoc, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   return Dir;
 }
 
-ACCTargetEnterDataDirective *
-ACCTargetEnterDataDirective::CreateEmpty(const ASTContext &C, unsigned N,
+ACCEnterDataDirective *
+ACCEnterDataDirective::CreateEmpty(const ASTContext &C, unsigned N,
                                          EmptyShell) {
   void *Mem = C.Allocate(
-      llvm::alignTo(sizeof(ACCTargetEnterDataDirective), alignof(ACCClause *)) +
+      llvm::alignTo(sizeof(ACCEnterDataDirective), alignof(ACCClause *)) +
       sizeof(ACCClause *) * N + sizeof(Stmt *));
-  return new (Mem) ACCTargetEnterDataDirective(N);
+  return new (Mem) ACCEnterDataDirective(N);
 }
 
-ACCTargetExitDataDirective *ACCTargetExitDataDirective::Create(
+ACCExitDataDirective *ACCExitDataDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt) {
   void *Mem = C.Allocate(
-      llvm::alignTo(sizeof(ACCTargetExitDataDirective), alignof(ACCClause *)) +
+      llvm::alignTo(sizeof(ACCExitDataDirective), alignof(ACCClause *)) +
       sizeof(ACCClause *) * Clauses.size() + sizeof(Stmt *));
-  ACCTargetExitDataDirective *Dir =
-      new (Mem) ACCTargetExitDataDirective(StartLoc, EndLoc, Clauses.size());
+  ACCExitDataDirective *Dir =
+      new (Mem) ACCExitDataDirective(StartLoc, EndLoc, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   return Dir;
 }
 
-ACCTargetExitDataDirective *
-ACCTargetExitDataDirective::CreateEmpty(const ASTContext &C, unsigned N,
+ACCExitDataDirective *
+ACCExitDataDirective::CreateEmpty(const ASTContext &C, unsigned N,
                                         EmptyShell) {
   void *Mem = C.Allocate(
-      llvm::alignTo(sizeof(ACCTargetExitDataDirective), alignof(ACCClause *)) +
+      llvm::alignTo(sizeof(ACCExitDataDirective), alignof(ACCClause *)) +
       sizeof(ACCClause *) * N + sizeof(Stmt *));
-  return new (Mem) ACCTargetExitDataDirective(N);
+  return new (Mem) ACCExitDataDirective(N);
 }
 
 ACCTeamsDirective *ACCTeamsDirective::Create(const ASTContext &C,
@@ -913,17 +913,17 @@ ACCTaskLoopDirective *ACCTaskLoopDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCTaskLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCTaskLoopSimdDirective *ACCTaskLoopSimdDirective::Create(
+ACCTaskLoopVectorDirective *ACCTaskLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTaskLoopSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCTaskLoopVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                          sizeof(Stmt *) *
-                             numLoopChildren(CollapsedNum, ACCD_taskloop_simd));
-  ACCTaskLoopSimdDirective *Dir = new (Mem)
-      ACCTaskLoopSimdDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
+                             numLoopChildren(CollapsedNum, ACCD_taskloop_vector));
+  ACCTaskLoopVectorDirective *Dir = new (Mem)
+      ACCTaskLoopVectorDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   Dir->setIterationVariable(Exprs.IterationVarRef);
@@ -950,15 +950,15 @@ ACCTaskLoopSimdDirective *ACCTaskLoopSimdDirective::Create(
   return Dir;
 }
 
-ACCTaskLoopSimdDirective *
-ACCTaskLoopSimdDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
+ACCTaskLoopVectorDirective *
+ACCTaskLoopVectorDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
                                       unsigned CollapsedNum, EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTaskLoopSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCTaskLoopVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                          sizeof(Stmt *) *
-                             numLoopChildren(CollapsedNum, ACCD_taskloop_simd));
-  return new (Mem) ACCTaskLoopSimdDirective(CollapsedNum, NumClauses);
+                             numLoopChildren(CollapsedNum, ACCD_taskloop_vector));
+  return new (Mem) ACCTaskLoopVectorDirective(CollapsedNum, NumClauses);
 }
 
 ACCDistributeDirective *ACCDistributeDirective::Create(
@@ -1098,19 +1098,19 @@ ACCDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCDistributeParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCDistributeParallelLoopSimdDirective *
-ACCDistributeParallelLoopSimdDirective::Create(
+ACCDistributeParallelLoopVectorDirective *
+ACCDistributeParallelLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  unsigned Size = llvm::alignTo(sizeof(ACCDistributeParallelLoopSimdDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCDistributeParallelLoopVectorDirective),
                                 alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop_simd));
-  ACCDistributeParallelLoopSimdDirective *Dir = new (Mem)
-      ACCDistributeParallelLoopSimdDirective(StartLoc, EndLoc, CollapsedNum,
+          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop_vector));
+  ACCDistributeParallelLoopVectorDirective *Dir = new (Mem)
+      ACCDistributeParallelLoopVectorDirective(StartLoc, EndLoc, CollapsedNum,
                                             Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1149,32 +1149,32 @@ ACCDistributeParallelLoopSimdDirective::Create(
   return Dir;
 }
 
-ACCDistributeParallelLoopSimdDirective *
-ACCDistributeParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
+ACCDistributeParallelLoopVectorDirective *
+ACCDistributeParallelLoopVectorDirective::CreateEmpty(const ASTContext &C,
                                                    unsigned NumClauses,
                                                    unsigned CollapsedNum,
                                                    EmptyShell) {
-  unsigned Size = llvm::alignTo(sizeof(ACCDistributeParallelLoopSimdDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCDistributeParallelLoopVectorDirective),
                                 alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop_simd));
+          numLoopChildren(CollapsedNum, ACCD_distribute_parallel_loop_vector));
   return new (Mem)
-      ACCDistributeParallelLoopSimdDirective(CollapsedNum, NumClauses);
+      ACCDistributeParallelLoopVectorDirective(CollapsedNum, NumClauses);
 }
 
-ACCDistributeSimdDirective *ACCDistributeSimdDirective::Create(
+ACCDistributeVectorDirective *ACCDistributeVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCDistributeSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCDistributeVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_simd));
-  ACCDistributeSimdDirective *Dir = new (Mem) ACCDistributeSimdDirective(
+          numLoopChildren(CollapsedNum, ACCD_distribute_vector));
+  ACCDistributeVectorDirective *Dir = new (Mem) ACCDistributeVectorDirective(
       StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1202,31 +1202,31 @@ ACCDistributeSimdDirective *ACCDistributeSimdDirective::Create(
   return Dir;
 }
 
-ACCDistributeSimdDirective *
-ACCDistributeSimdDirective::CreateEmpty(const ASTContext &C,
+ACCDistributeVectorDirective *
+ACCDistributeVectorDirective::CreateEmpty(const ASTContext &C,
                                         unsigned NumClauses,
                                         unsigned CollapsedNum, EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCDistributeSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCDistributeVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_distribute_simd));
-  return new (Mem) ACCDistributeSimdDirective(CollapsedNum, NumClauses);
+          numLoopChildren(CollapsedNum, ACCD_distribute_vector));
+  return new (Mem) ACCDistributeVectorDirective(CollapsedNum, NumClauses);
 }
 
-ACCTargetParallelLoopSimdDirective *ACCTargetParallelLoopSimdDirective::Create(
+ACCTargetParallelLoopVectorDirective *ACCTargetParallelLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  unsigned Size = llvm::alignTo(sizeof(ACCTargetParallelLoopSimdDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCTargetParallelLoopVectorDirective),
                                 alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) * 
-          numLoopChildren(CollapsedNum, ACCD_target_parallel_loop_simd));
-  ACCTargetParallelLoopSimdDirective *Dir = 
-      new (Mem) ACCTargetParallelLoopSimdDirective(StartLoc, EndLoc,
+          numLoopChildren(CollapsedNum, ACCD_target_parallel_loop_vector));
+  ACCTargetParallelLoopVectorDirective *Dir = 
+      new (Mem) ACCTargetParallelLoopVectorDirective(StartLoc, EndLoc,
                                                   CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1254,32 +1254,32 @@ ACCTargetParallelLoopSimdDirective *ACCTargetParallelLoopSimdDirective::Create(
   return Dir;
 }
 
-ACCTargetParallelLoopSimdDirective *
-ACCTargetParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
+ACCTargetParallelLoopVectorDirective *
+ACCTargetParallelLoopVectorDirective::CreateEmpty(const ASTContext &C,
                                                unsigned NumClauses,
                                                unsigned CollapsedNum,
                                                EmptyShell) {
-  unsigned Size = llvm::alignTo(sizeof(ACCTargetParallelLoopSimdDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCTargetParallelLoopVectorDirective),
                                 alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) * 
-          numLoopChildren(CollapsedNum, ACCD_target_parallel_loop_simd));
-  return new (Mem) ACCTargetParallelLoopSimdDirective(CollapsedNum, NumClauses);
+          numLoopChildren(CollapsedNum, ACCD_target_parallel_loop_vector));
+  return new (Mem) ACCTargetParallelLoopVectorDirective(CollapsedNum, NumClauses);
 }
 
-ACCTargetSimdDirective *
-ACCTargetSimdDirective::Create(const ASTContext &C, SourceLocation StartLoc, 
+ACCTargetVectorDirective *
+ACCTargetVectorDirective::Create(const ASTContext &C, SourceLocation StartLoc, 
                                SourceLocation EndLoc, unsigned CollapsedNum,
                                ArrayRef<ACCClause *> Clauses,
                                Stmt *AssociatedStmt, const HelperExprs &Exprs) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTargetSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCTargetVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                          sizeof(Stmt *) * 
-                             numLoopChildren(CollapsedNum, ACCD_target_simd));
-  ACCTargetSimdDirective *Dir = new (Mem)
-      ACCTargetSimdDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
+                             numLoopChildren(CollapsedNum, ACCD_target_vector));
+  ACCTargetVectorDirective *Dir = new (Mem)
+      ACCTargetVectorDirective(StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   Dir->setIterationVariable(Exprs.IterationVarRef);
@@ -1298,15 +1298,15 @@ ACCTargetSimdDirective::Create(const ASTContext &C, SourceLocation StartLoc,
   return Dir;
 }
 
-ACCTargetSimdDirective *
-ACCTargetSimdDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
+ACCTargetVectorDirective *
+ACCTargetVectorDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
                                     unsigned CollapsedNum, EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTargetSimdDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCTargetVectorDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                          sizeof(Stmt *) * 
-                             numLoopChildren(CollapsedNum, ACCD_target_simd));
-  return new (Mem) ACCTargetSimdDirective(CollapsedNum, NumClauses);
+                             numLoopChildren(CollapsedNum, ACCD_target_vector));
+  return new (Mem) ACCTargetVectorDirective(CollapsedNum, NumClauses);
 }
 
 ACCTeamsDistributeDirective *ACCTeamsDistributeDirective::Create(
@@ -1358,18 +1358,18 @@ ACCTeamsDistributeDirective::CreateEmpty(const ASTContext &C,
   return new (Mem) ACCTeamsDistributeDirective(CollapsedNum, NumClauses);
 }
 
-ACCTeamsDistributeSimdDirective *ACCTeamsDistributeSimdDirective::Create(
+ACCTeamsDistributeVectorDirective *ACCTeamsDistributeVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  unsigned Size = llvm::alignTo(sizeof(ACCTeamsDistributeSimdDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCTeamsDistributeVectorDirective),
                                 alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                  sizeof(Stmt *) *
-                     numLoopChildren(CollapsedNum, ACCD_teams_distribute_simd));
-  ACCTeamsDistributeSimdDirective *Dir =
-      new (Mem) ACCTeamsDistributeSimdDirective(StartLoc, EndLoc, CollapsedNum,
+                     numLoopChildren(CollapsedNum, ACCD_teams_distribute_vector));
+  ACCTeamsDistributeVectorDirective *Dir =
+      new (Mem) ACCTeamsDistributeVectorDirective(StartLoc, EndLoc, CollapsedNum,
                                                 Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1397,32 +1397,32 @@ ACCTeamsDistributeSimdDirective *ACCTeamsDistributeSimdDirective::Create(
   return Dir;
 }
 
-ACCTeamsDistributeSimdDirective *ACCTeamsDistributeSimdDirective::CreateEmpty(
+ACCTeamsDistributeVectorDirective *ACCTeamsDistributeVectorDirective::CreateEmpty(
     const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
     EmptyShell) {
-  unsigned Size = llvm::alignTo(sizeof(ACCTeamsDistributeSimdDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCTeamsDistributeVectorDirective),
                                 alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                  sizeof(Stmt *) *
-                     numLoopChildren(CollapsedNum, ACCD_teams_distribute_simd));
-  return new (Mem) ACCTeamsDistributeSimdDirective(CollapsedNum, NumClauses);
+                     numLoopChildren(CollapsedNum, ACCD_teams_distribute_vector));
+  return new (Mem) ACCTeamsDistributeVectorDirective(CollapsedNum, NumClauses);
 }
 
-ACCTeamsDistributeParallelLoopSimdDirective *
-ACCTeamsDistributeParallelLoopSimdDirective::Create(
+ACCTeamsDistributeParallelLoopVectorDirective *
+ACCTeamsDistributeParallelLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopSimdDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopVectorDirective),
                             alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                  sizeof(Stmt *) *
                      numLoopChildren(CollapsedNum,
-                                     ACCD_teams_distribute_parallel_loop_simd));
-  ACCTeamsDistributeParallelLoopSimdDirective *Dir = new (Mem)
-      ACCTeamsDistributeParallelLoopSimdDirective(StartLoc, EndLoc, CollapsedNum,
+                                     ACCD_teams_distribute_parallel_loop_vector));
+  ACCTeamsDistributeParallelLoopVectorDirective *Dir = new (Mem)
+      ACCTeamsDistributeParallelLoopVectorDirective(StartLoc, EndLoc, CollapsedNum,
                                                  Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1461,20 +1461,20 @@ ACCTeamsDistributeParallelLoopSimdDirective::Create(
   return Dir;
 }
 
-ACCTeamsDistributeParallelLoopSimdDirective *
-ACCTeamsDistributeParallelLoopSimdDirective::CreateEmpty(const ASTContext &C,
+ACCTeamsDistributeParallelLoopVectorDirective *
+ACCTeamsDistributeParallelLoopVectorDirective::CreateEmpty(const ASTContext &C,
                                                         unsigned NumClauses,
                                                         unsigned CollapsedNum,
                                                         EmptyShell) {
-  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopSimdDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopVectorDirective),
                             alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                  sizeof(Stmt *) *
                      numLoopChildren(CollapsedNum,
-                                     ACCD_teams_distribute_parallel_loop_simd));
+                                     ACCD_teams_distribute_parallel_loop_vector));
   return new (Mem)
-      ACCTeamsDistributeParallelLoopSimdDirective(CollapsedNum, NumClauses);
+      ACCTeamsDistributeParallelLoopVectorDirective(CollapsedNum, NumClauses);
 }
 
 ACCTeamsDistributeParallelLoopDirective *
@@ -1692,21 +1692,21 @@ ACCTargetTeamsDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
       ACCTargetTeamsDistributeParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCTargetTeamsDistributeParallelLoopSimdDirective *
-ACCTargetTeamsDistributeParallelLoopSimdDirective::Create(
+ACCTargetTeamsDistributeParallelLoopVectorDirective *
+ACCTargetTeamsDistributeParallelLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopSimdDirective),
+      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopVectorDirective),
                     alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_loop_simd));
-  ACCTargetTeamsDistributeParallelLoopSimdDirective *Dir =
-      new (Mem) ACCTargetTeamsDistributeParallelLoopSimdDirective(
+                          ACCD_target_teams_distribute_parallel_loop_vector));
+  ACCTargetTeamsDistributeParallelLoopVectorDirective *Dir =
+      new (Mem) ACCTargetTeamsDistributeParallelLoopVectorDirective(
            StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1745,35 +1745,35 @@ ACCTargetTeamsDistributeParallelLoopSimdDirective::Create(
   return Dir;
 }
 
-ACCTargetTeamsDistributeParallelLoopSimdDirective *
-ACCTargetTeamsDistributeParallelLoopSimdDirective::CreateEmpty(
+ACCTargetTeamsDistributeParallelLoopVectorDirective *
+ACCTargetTeamsDistributeParallelLoopVectorDirective::CreateEmpty(
     const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
     EmptyShell) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopSimdDirective),
+      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopVectorDirective),
                     alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_loop_simd));
-  return new (Mem) ACCTargetTeamsDistributeParallelLoopSimdDirective(
+                          ACCD_target_teams_distribute_parallel_loop_vector));
+  return new (Mem) ACCTargetTeamsDistributeParallelLoopVectorDirective(
       CollapsedNum, NumClauses);
 }
 
-ACCTargetTeamsDistributeSimdDirective *
-ACCTargetTeamsDistributeSimdDirective::Create(
+ACCTargetTeamsDistributeVectorDirective *
+ACCTargetTeamsDistributeVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeSimdDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeVectorDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_target_teams_distribute_simd));
-  ACCTargetTeamsDistributeSimdDirective *Dir = new (Mem)
-      ACCTargetTeamsDistributeSimdDirective(StartLoc, EndLoc, CollapsedNum,
+          numLoopChildren(CollapsedNum, ACCD_target_teams_distribute_vector));
+  ACCTargetTeamsDistributeVectorDirective *Dir = new (Mem)
+      ACCTargetTeamsDistributeVectorDirective(StartLoc, EndLoc, CollapsedNum,
                                             Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1801,17 +1801,17 @@ ACCTargetTeamsDistributeSimdDirective::Create(
   return Dir;
 }
 
-ACCTargetTeamsDistributeSimdDirective *
-ACCTargetTeamsDistributeSimdDirective::CreateEmpty(const ASTContext &C,
+ACCTargetTeamsDistributeVectorDirective *
+ACCTargetTeamsDistributeVectorDirective::CreateEmpty(const ASTContext &C,
                                                    unsigned NumClauses,
                                                    unsigned CollapsedNum,
                                                    EmptyShell) {
-  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeSimdDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeVectorDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_target_teams_distribute_simd));
+          numLoopChildren(CollapsedNum, ACCD_target_teams_distribute_vector));
   return new (Mem)
-      ACCTargetTeamsDistributeSimdDirective(CollapsedNum, NumClauses);
+      ACCTargetTeamsDistributeVectorDirective(CollapsedNum, NumClauses);
 }

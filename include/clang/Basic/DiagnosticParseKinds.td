@@ -1083,15 +1083,15 @@ def err_acc_expected_identifier_for_critical : Error<
   "expected identifier specifying the name of the 'acc critical' directive">;
 def err_acc_expected_reduction_identifier : Error<
   "expected identifier or one of the following operators: '+', '-', '*', '&', '|', '^', '&&', or '||'">;
-def err_acc_decl_in_declare_simd : Error<
-  "function declaration is expected after 'declare simd' directive">;
+def err_acc_decl_in_declare_vector : Error<
+  "function declaration is expected after 'declare vector' directive">;
 def err_acc_unknown_map_type : Error<
   "incorrect map type, expected one of 'to', 'from', 'tofrom', 'alloc', 'release', or 'delete'">;
 def err_acc_unknown_map_type_modifier : Error<
   "incorrect map type modifier, expected 'always'">;
 def err_acc_map_type_missing : Error<
   "missing map type">;
-def err_acc_declare_simd_inbranch_notinbranch : Error<
+def err_acc_declare_vector_inbranch_notinbranch : Error<
   "unexpected '%0' clause, '%1' is specified already">;
 def err_acc_expected_end_declare_target : Error<
   "expected '#pragma acc end declare target'">;

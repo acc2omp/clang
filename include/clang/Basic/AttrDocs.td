@@ -2687,24 +2687,24 @@ arguments, with arbitrary offsets.
   }];
 }
 
-def ACCDeclareSimdDocs : Documentation {
+def ACCDeclareVectorDocs : Documentation {
   let Category = DocCatFunction;
-  let Heading = "#pragma acc declare simd";
+  let Heading = "#pragma acc declare vector";
   let Content = [{
-The `declare simd` construct can be applied to a function to enable the creation
-of one or more versions that can process multiple arguments using SIMD
-instructions from a single invocation in a SIMD loop. The `declare simd`
-directive is a declarative directive. There may be multiple `declare simd`
-directives for a function. The use of a `declare simd` construct on a function
-enables the creation of SIMD versions of the associated function that can be
-used to process multiple arguments from a single invocation from a SIMD loop
+The `declare vector` construct can be applied to a function to enable the creation
+of one or more versions that can process multiple arguments using Vector
+instructions from a single invocation in a Vector loop. The `declare vector`
+directive is a declarative directive. There may be multiple `declare vector`
+directives for a function. The use of a `declare vector` construct on a function
+enables the creation of Vector versions of the associated function that can be
+used to process multiple arguments from a single invocation from a Vector loop
 concurrently.
-The syntax of the `declare simd` construct is as follows:
+The syntax of the `declare vector` construct is as follows:
 
   .. code-block:: c
 
-  #pragma acc declare simd [clause[[,] clause] ...] new-line
-  [#pragma acc declare simd [clause[[,] clause] ...] new-line]
+  #pragma acc declare vector [clause[[,] clause] ...] new-line
+  [#pragma acc declare vector [clause[[,] clause] ...] new-line]
   [...]
   function definition or declaration
 
@@ -2712,7 +2712,7 @@ where clause is one of the following:
 
   .. code-block:: c
 
-  simdlen(length)
+  vectorlen(length)
   linear(argument-list[:constant-linear-step])
   aligned(argument-list[:alignment])
   uniform(argument-list)

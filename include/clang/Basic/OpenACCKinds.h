@@ -142,73 +142,73 @@ bool isAllowedClauseForDirective(OpenACCDirectiveKind DKind,
 /// \brief Checks if the specified directive is a directive with an associated
 /// loop construct.
 /// \param DKind Specified directive.
-/// \return true - the directive is a loop-associated directive like 'omp simd'
-/// or 'omp for' directive, otherwise - false.
+/// \return true - the directive is a loop-associated directive like 'acc simd'
+/// or 'acc for' directive, otherwise - false.
 bool isOpenACCLoopLikeDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a worksharing directive.
 /// \param DKind Specified directive.
-/// \return true - the directive is a worksharing directive like 'omp for',
+/// \return true - the directive is a worksharing directive like 'acc for',
 /// otherwise - false.
 bool isOpenACCWorksharingDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a taskloop directive.
 /// \param DKind Specified directive.
-/// \return true - the directive is a worksharing directive like 'omp taskloop',
+/// \return true - the directive is a worksharing directive like 'acc taskloop',
 /// otherwise - false.
 bool isOpenACCTaskLoopDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a parallel-kind directive.
 /// \param DKind Specified directive.
-/// \return true - the directive is a parallel-like directive like 'omp
+/// \return true - the directive is a parallel-like directive like 'acc
 /// parallel', otherwise - false.
 bool isOpenACCParallelDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a target code offload directive.
 /// \param DKind Specified directive.
 /// \return true - the directive is a target code offload directive like
-/// 'omp target', 'omp target parallel', 'omp target xxx'
+/// 'acc target', 'acc target parallel', 'acc target xxx'
 /// otherwise - false.
 bool isOpenACCTargetExecutionDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a target data offload directive.
 /// \param DKind Specified directive.
 /// \return true - the directive is a target data offload directive like
-/// 'omp target data', 'omp target update', 'omp target enter data',
-/// 'omp target exit data'
+/// 'acc target data', 'acc target update', 'acc target enter data',
+/// 'acc target exit data'
 /// otherwise - false.
-bool isOpenACCTargetDataManagementDirective(OpenACCDirectiveKind DKind);
+bool isOpenACCDataManagementDirective(OpenACCDirectiveKind DKind);
 
 /// Checks if the specified composite/combined directive constitutes a teams
 /// directive in the outermost nest.  For example
-/// 'omp teams distribute' or 'omp teams distribute parallel for'.
+/// 'acc teams distribute' or 'acc teams distribute parallel for'.
 /// \param DKind Specified directive.
 /// \return true - the directive has teams on the outermost nest, otherwise -
 /// false.
 bool isOpenACCNestingTeamsDirective(OpenACCDirectiveKind DKind);
 
 /// Checks if the specified directive is a teams-kind directive.  For example,
-/// 'omp teams distribute' or 'omp target teams'.
+/// 'acc teams distribute' or 'acc target teams'.
 /// \param DKind Specified directive.
 /// \return true - the directive is a teams-like directive, otherwise - false.
 bool isOpenACCTeamsDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a simd directive.
 /// \param DKind Specified directive.
-/// \return true - the directive is a simd directive like 'omp simd',
+/// \return true - the directive is a simd directive like 'acc simd',
 /// otherwise - false.
-bool isOpenACCSimdDirective(OpenACCDirectiveKind DKind);
+bool isOpenACCVectorDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a distribute directive.
 /// \param DKind Specified directive.
-/// \return true - the directive is a distribute-directive like 'omp
+/// \return true - the directive is a distribute-directive like 'acc
 /// distribute',
 /// otherwise - false.
 bool isOpenACCDistributeDirective(OpenACCDirectiveKind DKind);
 
 /// Checks if the specified composite/combined directive constitutes a
 /// distribute directive in the outermost nest.  For example,
-/// 'omp distribute parallel for' or 'omp distribute'.
+/// 'acc distribute parallel for' or 'acc distribute'.
 /// \param DKind Specified directive.
 /// \return true - the directive has distribute on the outermost nest.
 /// otherwise - false.

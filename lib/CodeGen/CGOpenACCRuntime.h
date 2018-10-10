@@ -1325,7 +1325,7 @@ public:
   /// \param FD Function marked as 'declare simd'.
   /// \param Fn LLVM function that must be marked with 'declare simd'
   /// attributes.
-  virtual void emitDeclareSimdFunction(const FunctionDecl *FD,
+  virtual void emitDeclareVectorFunction(const FunctionDecl *FD,
                                        llvm::Function *Fn);
 
   /// Emit initialization for doacross loop nesting support.
@@ -1364,10 +1364,10 @@ public:
 };
 
 /// Class supports emissionof SIMD-only code.
-class CGOpenACCSIMDRuntime final : public CGOpenACCRuntime {
+class CGOpenACCVectorRuntime final : public CGOpenACCRuntime {
 public:
-  explicit CGOpenACCSIMDRuntime(CodeGenModule &CGM) : CGOpenACCRuntime(CGM) {}
-  ~CGOpenACCSIMDRuntime() override {}
+  explicit CGOpenACCVectorRuntime(CodeGenModule &CGM) : CGOpenACCRuntime(CGM) {}
+  ~CGOpenACCVectorRuntime() override {}
 
   /// \brief Emits outlined function for the specified OpenACC parallel directive
   /// \a D. This outlined function has type void(*)(kmp_int32 *ThreadID,

@@ -273,9 +273,9 @@ instantiateDependentModeAttr(Sema &S,
 }
 
 /// Instantiation of 'declare simd' attribute and its arguments.
-static void instantiateACCDeclareSimdDeclAttr(
+static void instantiateACCDeclareVectorDeclAttr(
     Sema &S, const MultiLevelTemplateArgumentList &TemplateArgs,
-    const ACCDeclareSimdDeclAttr &Attr, Decl *New) {
+    const ACCDeclareVectorDeclAttr &Attr, Decl *New) {
   // Allow 'this' in clauses with varlists.
   if (auto *FTD = dyn_cast<FunctionTemplateDecl>(New))
     New = FTD->getTemplatedDecl();
@@ -300,7 +300,7 @@ static void instantiateACCDeclareSimdDeclAttr(
   };
 
   ExprResult Simdlen;
-  if (auto *E = Attr.getSimdlen())
+  if (auto *E = Attr.getVectorlen())
     Simdlen = Subst(E);
 
   if (Attr.uniforms_size() > 0) {
@@ -338,7 +338,7 @@ static void instantiateACCDeclareSimdDeclAttr(
     ++SI;
   }
   LinModifiers.append(Attr.modifiers_begin(), Attr.modifiers_end());
-  (void)S.ActOnOpenACCDeclareSimdDirective(
+  (void)S.ActOnOpenACCDeclareVectorDirective(
       S.ConvertDeclToDeclGroup(New), Attr.getBranchState(), Simdlen.get(),
       Uniforms, Aligneds, Alignments, Linears, LinModifiers, Steps,
       Attr.getRange());
@@ -490,8 +490,8 @@ void Sema::InstantiateAttrs(const MultiLevelTemplateArgumentList &TemplateArgs,
       continue;
     }
 
-    if (const auto *ACCAttr = dyn_cast<ACCDeclareSimdDeclAttr>(TmplAttr)) {
-      instantiateACCDeclareSimdDeclAttr(*this, TemplateArgs, *ACCAttr, New);
+    if (const auto *ACCAttr = dyn_cast<ACCDeclareVectorDeclAttr>(TmplAttr)) {
+      instantiateACCDeclareVectorDeclAttr(*this, TemplateArgs, *ACCAttr, New);
       continue;
     }
 

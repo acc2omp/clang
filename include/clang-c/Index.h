@@ -2320,7 +2320,7 @@ enum CXCursorKind {
 
   /** \brief OpenACC SIMD directive.
    */
-  CXCursor_ACCSimdDirective              = 234,
+  CXCursor_ACCVectorDirective              = 234,
 
   /** \brief OpenACC for directive.
    */
@@ -2388,11 +2388,11 @@ enum CXCursorKind {
 
   /** \brief OpenACC for SIMD directive.
    */
-  CXCursor_ACCLoopSimdDirective           = 251,
+  CXCursor_ACCLoopVectorDirective           = 251,
 
   /** \brief OpenACC parallel for SIMD directive.
    */
-  CXCursor_ACCParallelLoopSimdDirective   = 252,
+  CXCursor_ACCParallelLoopVectorDirective   = 252,
 
   /** \brief OpenACC target directive.
    */
@@ -2416,7 +2416,7 @@ enum CXCursorKind {
 
   /** \brief OpenACC target data directive.
    */
-  CXCursor_ACCTargetDataDirective        = 258,
+  CXCursor_ACCDataDirective        = 258,
 
   /** \brief OpenACC taskloop directive.
    */
@@ -2424,7 +2424,7 @@ enum CXCursorKind {
 
   /** \brief OpenACC taskloop simd directive.
    */
-  CXCursor_ACCTaskLoopSimdDirective      = 260,
+  CXCursor_ACCTaskLoopVectorDirective      = 260,
 
   /** \brief OpenACC distribute directive.
    */
@@ -2432,11 +2432,11 @@ enum CXCursorKind {
 
   /** \brief OpenACC target enter data directive.
    */
-  CXCursor_ACCTargetEnterDataDirective   = 262,
+  CXCursor_ACCEnterDataDirective   = 262,
 
   /** \brief OpenACC target exit data directive.
    */
-  CXCursor_ACCTargetExitDataDirective    = 263,
+  CXCursor_ACCExitDataDirective    = 263,
 
   /** \brief OpenACC target parallel directive.
    */
@@ -2456,19 +2456,19 @@ enum CXCursorKind {
 
   /** \brief OpenACC distribute parallel for simd directive.
    */
-  CXCursor_ACCDistributeParallelLoopSimdDirective = 268,
+  CXCursor_ACCDistributeParallelLoopVectorDirective = 268,
 
   /** \brief OpenACC distribute simd directive.
    */
-  CXCursor_ACCDistributeSimdDirective = 269,
+  CXCursor_ACCDistributeVectorDirective = 269,
 
   /** \brief OpenACC target parallel for simd directive.
    */
-  CXCursor_ACCTargetParallelLoopSimdDirective = 270,
+  CXCursor_ACCTargetParallelLoopVectorDirective = 270,
 
   /** \brief OpenACC target simd directive.
    */
-  CXCursor_ACCTargetSimdDirective = 271,
+  CXCursor_ACCTargetVectorDirective = 271,
 
   /** \brief OpenACC teams distribute directive.
    */
@@ -2476,11 +2476,11 @@ enum CXCursorKind {
 
   /** \brief OpenACC teams distribute simd directive.
    */
-  CXCursor_ACCTeamsDistributeSimdDirective = 273,
+  CXCursor_ACCTeamsDistributeVectorDirective = 273,
 
   /** \brief OpenACC teams distribute parallel for simd directive.
    */
-  CXCursor_ACCTeamsDistributeParallelLoopSimdDirective = 274,
+  CXCursor_ACCTeamsDistributeParallelLoopVectorDirective = 274,
 
   /** \brief OpenACC teams distribute parallel for directive.
    */
@@ -2500,11 +2500,11 @@ enum CXCursorKind {
 
   /** \brief OpenACC target teams distribute parallel for simd directive.
    */
-  CXCursor_ACCTargetTeamsDistributeParallelLoopSimdDirective = 279,
+  CXCursor_ACCTargetTeamsDistributeParallelLoopVectorDirective = 279,
 
   /** \brief OpenACC target teams distribute simd directive.
    */
-  CXCursor_ACCTargetTeamsDistributeSimdDirective = 280,
+  CXCursor_ACCTargetTeamsDistributeVectorDirective = 280,
 
   /* -- MYHEADER -- */ 
 

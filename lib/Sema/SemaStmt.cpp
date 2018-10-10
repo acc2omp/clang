@@ -3839,8 +3839,8 @@ StmtResult Sema::ActOnCXXTryBlock(SourceLocation TryLoc, Stmt *TryBlock,
     CUDADiagIfDeviceCode(TryLoc, diag::err_cuda_device_exceptions)
         << "try" << CurrentCUDATarget();
 
-  if (getCurScope() && getCurScope()->isOpenACCSimdDirectiveScope())
-    Diag(TryLoc, diag::err_acc_simd_region_cannot_use_stmt) << "try";
+  if (getCurScope() && getCurScope()->isOpenACCVectorDirectiveScope())
+    Diag(TryLoc, diag::err_acc_vector_region_cannot_use_stmt) << "try";
 
   if (getCurScope() && getCurScope()->isOpenMPSimdDirectiveScope())
     Diag(TryLoc, diag::err_omp_simd_region_cannot_use_stmt) << "try";

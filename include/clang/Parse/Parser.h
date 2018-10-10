@@ -2762,7 +2762,7 @@ public:
   //===--------------------------------------------------------------------===//
   // OpenACC: Directives and clauses.
   /// Parse clauses for '#pragma acc declare simd'.
-  DeclGroupPtrTy ParseACCDeclareSimdClauses(DeclGroupPtrTy Ptr,
+  DeclGroupPtrTy ParseACCDeclareVectorClauses(DeclGroupPtrTy Ptr,
                                             CachedTokens &Toks,
                                             SourceLocation Loc);
   /// \brief Parses declarative OpenACC directives.

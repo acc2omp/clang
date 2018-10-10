@@ -6237,6 +6237,7 @@ private:
                           OpenMPMapClauseKind MapTypeModifier, bool AddPtrFlag,
                           bool AddIsTargetParamFlag) const {
     uint64_t Bits = 0u;
+    llvm::outs() << " -------------- OPENMP:: getMapTypeBits :: MapType is " << MapType << "\n";
     switch (MapType) {
     case OMPC_MAP_alloc:
     case OMPC_MAP_release:

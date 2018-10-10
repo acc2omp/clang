@@ -1896,7 +1896,7 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
 ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
   assert(Tok.isOneOf(tok::kw_sizeof, tok::kw___alignof, tok::kw_alignof,
                      tok::kw__Alignof, tok::kw_vec_step,
-                     tok::kw___builtin_acc_required_simd_align,
+                     tok::kw___builtin_acc_required_vector_align,
                      tok::kw___builtin_omp_required_simd_align) &&
          "Not a sizeof/alignof/vec_step expression!");
   Token OpTok = Tok;
@@ -1970,8 +1970,8 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
   else if (OpTok.is(tok::kw_vec_step))
     ExprKind = UETT_VecStep;
   // TODO acc2mp investigate if this is necessary
-  else if (OpTok.is(tok::kw___builtin_acc_required_simd_align))
-    ExprKind = UETT_OpenACCRequiredSimdAlign;
+  else if (OpTok.is(tok::kw___builtin_acc_required_vector_align))
+    ExprKind = UETT_OpenACCRequiredVectorAlign;
   else if (OpTok.is(tok::kw___builtin_omp_required_simd_align))
     ExprKind = UETT_OpenMPRequiredSimdAlign;
 

@@ -111,7 +111,7 @@ public:
     /// \brief This is the scope of some OpenACC simd directive.
     /// For example, it is used for 'acc simd', 'acc for simd'.
     /// This flag is propagated to children scopes.
-    OpenACCSimdDirectiveScope = 0x20000,
+    OpenACCVectorDirectiveScope = 0x20000,
 
     /// \brief This is the scope of OpenMP executable directive.
     OpenMPDirectiveScope = 0x40000,
@@ -429,8 +429,8 @@ public:
 
   /// \brief Determine whether this scope is (or is nested into) some OpenACC
   /// loop simd directive scope (for example, 'acc simd', 'acc for simd').
-  bool isOpenACCSimdDirectiveScope() const {
-    return getFlags() & Scope::OpenACCSimdDirectiveScope;
+  bool isOpenACCVectorDirectiveScope() const {
+    return getFlags() & Scope::OpenACCVectorDirectiveScope;
   }
 
   /// \brief Determine whether this scope is a loop having OpenACC loop

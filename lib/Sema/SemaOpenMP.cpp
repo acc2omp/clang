@@ -5518,14 +5518,14 @@ StmtResult Sema::ActOnOpenMPParallelForDirective(
   if (!AStmt)
     return StmtError();
 
-  llvm::outs() << "!!!!!!!!!!!! AssociatedStmt: {";
-  AStmt->dumpColor();
-  llvm::outs() << "}!!!!!!!!!!!!!!!\n";
+  /* llvm::outs() << "!!!!!!!!!!!! AssociatedStmt: {"; */
+  /* AStmt->dumpColor(); */
+  /* llvm::outs() << "}!!!!!!!!!!!!!!!\n"; */
 
   CapturedStmt *CS = cast<CapturedStmt>(AStmt);
-  llvm::outs() << "!!!!!!!!!!!! CapturedStmt: {";
-  CS->getCapturedStmt()->dumpColor();
-  llvm::outs() << "}!!!!!!!!!!!!!!!\n";
+  /* llvm::outs() << "!!!!!!!!!!!! CapturedStmt: {"; */
+  /* CS->getCapturedStmt()->dumpColor(); */
+  /* llvm::outs() << "}!!!!!!!!!!!!!!!\n"; */
   // 1.2.2 OpenMP Language Terminology
   // Structured block - An executable statement with a single entry at the
   // top and a single exit at the bottom.
