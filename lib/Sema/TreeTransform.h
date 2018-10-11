@@ -1894,10 +1894,10 @@ public:
   ///
   /// By default, performs semantic analysis to build the new statement.
   /// Subclasses may override this routine to provide different behavior.
-  ACCClause *RebuildACCNumTeamsClause(Expr *NumTeams, SourceLocation StartLoc,
+  ACCClause *RebuildACCNumGangClause(Expr *NumTeams, SourceLocation StartLoc,
                                       SourceLocation LParenLoc,
                                       SourceLocation EndLoc) {
-    return getSema().ActOnOpenACCNumTeamsClause(NumTeams, StartLoc, LParenLoc, 
+    return getSema().ActOnOpenACCNumGangClause(NumTeams, StartLoc, LParenLoc, 
                                                EndLoc);
   }
 
@@ -8552,9 +8552,9 @@ StmtResult TreeTransform<Derived>::TransformACCTargetUpdateDirective(
 
 template <typename Derived>
 StmtResult
-TreeTransform<Derived>::TransformACCTeamsDirective(ACCTeamsDirective *D) {
+TreeTransform<Derived>::TransformACCGangDirective(ACCGangDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_teams, DirName, nullptr,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_gang, DirName, nullptr,
                                              D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8674,10 +8674,10 @@ StmtResult TreeTransform<Derived>::TransformACCTargetVectorDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeDirective(
-    ACCTeamsDistributeDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCGangDistributeDirective(
+    ACCGangDistributeDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_teams_distribute, DirName,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_gang_distribute, DirName,
                                              nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8685,32 +8685,32 @@ StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeVectorDirective(
-    ACCTeamsDistributeVectorDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCGangDistributeVectorDirective(
+    ACCGangDistributeVectorDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_teams_distribute_vector, DirName, nullptr, D->getLocStart());
+      ACCD_gang_distribute_vector, DirName, nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
   return Res;
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelLoopVectorDirective(
-    ACCTeamsDistributeParallelLoopVectorDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCGangDistributeParallelLoopVectorDirective(
+    ACCGangDistributeParallelLoopVectorDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_teams_distribute_parallel_loop_vector, DirName, nullptr, D->getLocStart());
+      ACCD_gang_distribute_parallel_loop_vector, DirName, nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
   return Res;
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelLoopDirective(
-    ACCTeamsDistributeParallelLoopDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCGangDistributeParallelLoopDirective(
+    ACCGangDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_teams_distribute_parallel_loop,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_gang_distribute_parallel_loop,
       DirName, nullptr, D->getLocStart());
   StmtResult Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8718,10 +8718,10 @@ StmtResult TreeTransform<Derived>::TransformACCTeamsDistributeParallelLoopDirect
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTargetTeamsDirective(
-    ACCTargetTeamsDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCTargetGangDirective(
+    ACCTargetGangDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_teams, DirName,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_gang, DirName,
                                              nullptr, D->getLocStart());
   auto Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8729,10 +8729,10 @@ StmtResult TreeTransform<Derived>::TransformACCTargetTeamsDirective(
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformACCTargetTeamsDistributeDirective(
-    ACCTargetTeamsDistributeDirective *D) {
+StmtResult TreeTransform<Derived>::TransformACCTargetGangDistributeDirective(
+    ACCTargetGangDistributeDirective *D) {
   DeclarationNameInfo DirName;
-  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_teams_distribute,
+  getDerived().getSema().StartOpenACCDSABlock(ACCD_target_gang_distribute,
       DirName, nullptr, D->getLocStart());
   auto Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8741,11 +8741,11 @@ StmtResult TreeTransform<Derived>::TransformACCTargetTeamsDistributeDirective(
 
 template <typename Derived>
 StmtResult
-TreeTransform<Derived>::TransformACCTargetTeamsDistributeParallelLoopDirective(
-    ACCTargetTeamsDistributeParallelLoopDirective *D) {
+TreeTransform<Derived>::TransformACCTargetGangDistributeParallelLoopDirective(
+    ACCTargetGangDistributeParallelLoopDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_target_teams_distribute_parallel_loop, DirName, nullptr,
+      ACCD_target_gang_distribute_parallel_loop, DirName, nullptr,
       D->getLocStart());
   auto Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8754,11 +8754,11 @@ TreeTransform<Derived>::TransformACCTargetTeamsDistributeParallelLoopDirective(
 
 template <typename Derived>
 StmtResult TreeTransform<Derived>::
-    TransformACCTargetTeamsDistributeParallelLoopVectorDirective(
-        ACCTargetTeamsDistributeParallelLoopVectorDirective *D) {
+    TransformACCTargetGangDistributeParallelLoopVectorDirective(
+        ACCTargetGangDistributeParallelLoopVectorDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_target_teams_distribute_parallel_loop_vector, DirName, nullptr,
+      ACCD_target_gang_distribute_parallel_loop_vector, DirName, nullptr,
       D->getLocStart());
   auto Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
@@ -8767,11 +8767,11 @@ StmtResult TreeTransform<Derived>::
 
 template <typename Derived>
 StmtResult
-TreeTransform<Derived>::TransformACCTargetTeamsDistributeVectorDirective(
-    ACCTargetTeamsDistributeVectorDirective *D) {
+TreeTransform<Derived>::TransformACCTargetGangDistributeVectorDirective(
+    ACCTargetGangDistributeVectorDirective *D) {
   DeclarationNameInfo DirName;
   getDerived().getSema().StartOpenACCDSABlock(
-      ACCD_target_teams_distribute_vector, DirName, nullptr, D->getLocStart());
+      ACCD_target_gang_distribute_vector, DirName, nullptr, D->getLocStart());
   auto Res = getDerived().TransformACCExecutableDirective(D);
   getDerived().getSema().EndOpenACCDSABlock(Res.get());
   return Res;
@@ -9340,11 +9340,11 @@ ACCClause *TreeTransform<Derived>::TransformACCDeleteClause(ACCDeleteClause *C) 
 
 template <typename Derived>
 ACCClause *
-TreeTransform<Derived>::TransformACCNumTeamsClause(ACCNumTeamsClause *C) {
+TreeTransform<Derived>::TransformACCNumGangClause(ACCNumGangClause *C) {
   ExprResult E = getDerived().TransformExpr(C->getNumTeams());
   if (E.isInvalid())
     return nullptr;
-  return getDerived().RebuildACCNumTeamsClause(
+  return getDerived().RebuildACCNumGangClause(
       E.get(), C->getLocStart(), C->getLParenLoc(), C->getLocEnd());
 }
 

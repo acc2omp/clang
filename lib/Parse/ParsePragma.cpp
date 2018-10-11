@@ -2153,11 +2153,6 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   llvm::outs()<<"Generating tokens for OPENACC annotation:\n";
 
   while (Tok.isNot(tok::eod) && Tok.isNot(tok::eof)) {
-    IdentifierInfo* myIdInfo = Tok.getIdentifierInfo();
-    llvm::outs() << "IdentifierInfo = (" << myIdInfo << ")\n";
-    if(myIdInfo != 0){
-        llvm::outs() << "     ->getNameStart() = [" << myIdInfo->getNameStart() << "]\n";
-    }
     Pragma.push_back(Tok);
     PP.Lex(Tok);
 
@@ -2180,6 +2175,40 @@ PragmaOpenACCHandler::HandlePragma(Preprocessor &PP,
   Tok.setLocation(EodLoc);
   Pragma.push_back(Tok);
 
+  // TODO acc2mp generate token 'vectorlen' for every 'vector' token followed by 'l_paren'
+  /* SmallVector<Token, 16> FixedPragma; */
+  /* for(auto pragma_it = Pragma.begin(); pragma_it != Pragma.end(); pragma_it++){ */
+  /*   IdentifierInfo* myIdInfo = (*pragma_it).getIdentifierInfo(); */
+  /*   llvm::outs() << "<Pragma> IdentifierInfo = (" << myIdInfo << ")\n"; */
+
+  /*   FixedPragma.push_back(*pragma_it); */
+
+  /*   if(myIdInfo != 0){ */
+  /*       llvm::outs() << "     ->getNameStart() = [" << myIdInfo->getNameStart() << "]\n"; */
+
+  /*       if(myIdInfo->getName().equals("vector")){ */
+  /*           llvm::outs() << "I just found a vector :D\n"; */
+
+  /*           if((*(pragma_it+1)).getKind() == tok::l_paren){ */
+  /*               Token myTok = new Token(*pragma); */
+  /*               myTok.set */
+  /*               //myTok.startToken(); */
+  /*               //myTok.setKind(tok::identifier); */
+  /*               //myTok.setLocation((*pragma_it).getLocation()); */
+  /*               //myTok.setRawIdentifierData("vectorlen"); */
+  /*               FixedPragma.push_back(myTok); */
+  /*           } */
+  /*       } */
+  /*   } */
+
+  /* } */
+  /* for(auto pragma_it = FixedPragma.begin(); pragma_it != FixedPragma.end(); pragma_it++){ */
+  /*   IdentifierInfo* myIdInfo = (*pragma_it).getIdentifierInfo(); */
+  /*   llvm::outs() << "<FixedPragma> IdentifierInfo = (" << myIdInfo << ")\n"; */
+  /*   if(myIdInfo != 0){ */
+  /*       llvm::outs() << "     ->getNameStart() = [" << myIdInfo->getNameStart() << "]\n"; */
+  /*   } */
+  /* } */
   auto Toks = llvm::make_unique<Token[]>(Pragma.size());
   std::copy(Pragma.begin(), Pragma.end(), Toks.get());
   PP.EnterTokenStream(std::move(Toks), Pragma.size(),

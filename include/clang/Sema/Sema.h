@@ -8876,7 +8876,7 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// \brief Called on well-formed '\#pragma acc teams' after parsing of the
   /// associated statement.
-  StmtResult ActOnOpenACCTeamsDirective(ArrayRef<ACCClause *> Clauses,
+  StmtResult ActOnOpenACCGangDirective(ArrayRef<ACCClause *> Clauses,
                                        Stmt *AStmt, SourceLocation StartLoc,
                                        SourceLocation EndLoc);
   /// \brief Called on well-formed '\#pragma acc cancellation point'.
@@ -8944,55 +8944,55 @@ public:
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute' after parsing of
   /// the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeDirective(
+  StmtResult ActOnOpenACCGangDistributeDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute simd' after parsing
   /// of the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeVectorDirective(
+  StmtResult ActOnOpenACCGangDistributeVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute parallel for simd'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeParallelLoopVectorDirective(
+  StmtResult ActOnOpenACCGangDistributeParallelLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc teams distribute parallel for'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCTeamsDistributeParallelLoopDirective(
+  StmtResult ActOnOpenACCGangDistributeParallelLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams' after parsing of the
   /// associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDirective(ArrayRef<ACCClause *> Clauses,
+  StmtResult ActOnOpenACCTargetGangDirective(ArrayRef<ACCClause *> Clauses,
                                              Stmt *AStmt,
                                              SourceLocation StartLoc,
                                              SourceLocation EndLoc);
   /// Called on well-formed '\#pragma acc target teams distribute' after parsing
   /// of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeDirective(
+  StmtResult ActOnOpenACCTargetGangDistributeDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams distribute parallel for'
   /// after parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeParallelLoopDirective(
+  StmtResult ActOnOpenACCTargetGangDistributeParallelLoopDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams distribute parallel for
   /// simd' after parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeParallelLoopVectorDirective(
+  StmtResult ActOnOpenACCTargetGangDistributeParallelLoopVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
   /// Called on well-formed '\#pragma acc target teams distribute simd' after
   /// parsing of the associated statement.
-  StmtResult ActOnOpenACCTargetTeamsDistributeVectorDirective(
+  StmtResult ActOnOpenACCTargetGangDistributeVectorDirective(
       ArrayRef<ACCClause *> Clauses, Stmt *AStmt, SourceLocation StartLoc,
       SourceLocation EndLoc,
       llvm::DenseMap<ValueDecl *, Expr *> &VarsWithImplicitDSA);
@@ -9265,7 +9265,7 @@ public:
                        SourceLocation LParenLoc, SourceLocation EndLoc);
 
   /// \brief Called on well-formed 'num_teams' clause.
-  ACCClause *ActOnOpenACCNumTeamsClause(Expr *NumTeams, SourceLocation StartLoc,
+  ACCClause *ActOnOpenACCNumGangClause(Expr *NumTeams, SourceLocation StartLoc,
                                        SourceLocation LParenLoc,
                                        SourceLocation EndLoc);
   /// \brief Called on well-formed 'thread_limit' clause.

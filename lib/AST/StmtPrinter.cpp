@@ -739,7 +739,7 @@ void ACCClausePrinter::VisitACCDeviceClause(ACCDeviceClause *Node) {
   OS << ")";
 }
 
-void ACCClausePrinter::VisitACCNumTeamsClause(ACCNumTeamsClause *Node) {
+void ACCClausePrinter::VisitACCNumGangClause(ACCNumGangClause *Node) {
   OS << "num_teams(";
   Node->getNumTeams()->printPretty(OS, nullptr, Policy, 0);
   OS << ")";
@@ -1267,7 +1267,7 @@ void StmtPrinter::VisitACCTargetParallelLoopDirective(
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDirective(ACCTeamsDirective *Node) {
+void StmtPrinter::VisitACCGangDirective(ACCGangDirective *Node) {
   Indent() << "#pragma acc teams";
   PrintACCExecutableDirective(Node);
 }
@@ -1336,55 +1336,55 @@ void StmtPrinter::VisitACCTargetVectorDirective(ACCTargetVectorDirective *Node) 
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeDirective(
-    ACCTeamsDistributeDirective *Node) {
+void StmtPrinter::VisitACCGangDistributeDirective(
+    ACCGangDistributeDirective *Node) {
   Indent() << "#pragma acc teams distribute";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeVectorDirective(
-    ACCTeamsDistributeVectorDirective *Node) {
+void StmtPrinter::VisitACCGangDistributeVectorDirective(
+    ACCGangDistributeVectorDirective *Node) {
   Indent() << "#pragma acc teams distribute simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeParallelLoopVectorDirective(
-    ACCTeamsDistributeParallelLoopVectorDirective *Node) {
+void StmtPrinter::VisitACCGangDistributeParallelLoopVectorDirective(
+    ACCGangDistributeParallelLoopVectorDirective *Node) {
   Indent() << "#pragma acc teams distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTeamsDistributeParallelLoopDirective(
-    ACCTeamsDistributeParallelLoopDirective *Node) {
+void StmtPrinter::VisitACCGangDistributeParallelLoopDirective(
+    ACCGangDistributeParallelLoopDirective *Node) {
   Indent() << "#pragma acc teams distribute parallel for";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *Node) {
+void StmtPrinter::VisitACCTargetGangDirective(ACCTargetGangDirective *Node) {
   Indent() << "#pragma acc target teams";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeDirective(
-    ACCTargetTeamsDistributeDirective *Node) {
+void StmtPrinter::VisitACCTargetGangDistributeDirective(
+    ACCTargetGangDistributeDirective *Node) {
   Indent() << "#pragma acc target teams distribute";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeParallelLoopDirective(
-    ACCTargetTeamsDistributeParallelLoopDirective *Node) {
+void StmtPrinter::VisitACCTargetGangDistributeParallelLoopDirective(
+    ACCTargetGangDistributeParallelLoopDirective *Node) {
   Indent() << "#pragma acc target teams distribute parallel for";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
-    ACCTargetTeamsDistributeParallelLoopVectorDirective *Node) {
+void StmtPrinter::VisitACCTargetGangDistributeParallelLoopVectorDirective(
+    ACCTargetGangDistributeParallelLoopVectorDirective *Node) {
   Indent() << "#pragma acc target teams distribute parallel for simd";
   PrintACCExecutableDirective(Node);
 }
 
-void StmtPrinter::VisitACCTargetTeamsDistributeVectorDirective(
-    ACCTargetTeamsDistributeVectorDirective *Node) {
+void StmtPrinter::VisitACCTargetGangDistributeVectorDirective(
+    ACCTargetGangDistributeVectorDirective *Node) {
   Indent() << "#pragma acc target teams distribute simd";
   PrintACCExecutableDirective(Node);
 }

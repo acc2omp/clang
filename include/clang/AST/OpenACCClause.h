@@ -4666,7 +4666,7 @@ public:
 /// \endcode
 /// In this example directive '#pragma acc teams' has clause 'num_teams'
 /// with single expression 'n'.
-class ACCNumTeamsClause : public ACCClause, public ACCClauseWithPreInit {
+class ACCNumGangClause : public ACCClause, public ACCClauseWithPreInit {
   friend class ACCClauseReader;
 
   /// \brief Location of '('.
@@ -4690,17 +4690,17 @@ public:
   /// \param StartLoc Starting location of the clause.
   /// \param LParenLoc Location of '('.
   /// \param EndLoc Ending location of the clause.
-  ACCNumTeamsClause(Expr *E, Stmt *HelperE, OpenACCDirectiveKind CaptureRegion,
+  ACCNumGangClause(Expr *E, Stmt *HelperE, OpenACCDirectiveKind CaptureRegion,
                     SourceLocation StartLoc, SourceLocation LParenLoc,
                     SourceLocation EndLoc)
-      : ACCClause(ACCC_num_teams, StartLoc, EndLoc), ACCClauseWithPreInit(this),
+      : ACCClause(ACCC_num_gangs, StartLoc, EndLoc), ACCClauseWithPreInit(this),
         LParenLoc(LParenLoc), NumTeams(E) {
     setPreInitStmt(HelperE, CaptureRegion);
   }
 
   /// \brief Build an empty clause.
-  ACCNumTeamsClause()
-      : ACCClause(ACCC_num_teams, SourceLocation(), SourceLocation()),
+  ACCNumGangClause()
+      : ACCClause(ACCC_num_gangs, SourceLocation(), SourceLocation()),
         ACCClauseWithPreInit(this) {}
 
   /// \brief Sets the location of '('.
@@ -4718,7 +4718,7 @@ public:
   child_range children() { return child_range(&NumTeams, &NumTeams + 1); }
 
   static bool classof(const ACCClause *T) {
-    return T->getClauseKind() == ACCC_num_teams;
+    return T->getClauseKind() == ACCC_num_gangs;
   }
 };
 

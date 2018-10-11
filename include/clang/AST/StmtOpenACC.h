@@ -977,17 +977,17 @@ public:
            T->getStmtClass() == ACCDistributeVectorDirectiveClass ||
            T->getStmtClass() == ACCTargetParallelLoopVectorDirectiveClass ||
            T->getStmtClass() == ACCTargetVectorDirectiveClass ||
-           T->getStmtClass() == ACCTeamsDistributeDirectiveClass ||
-           T->getStmtClass() == ACCTeamsDistributeVectorDirectiveClass ||
+           T->getStmtClass() == ACCGangDistributeDirectiveClass ||
+           T->getStmtClass() == ACCGangDistributeVectorDirectiveClass ||
            T->getStmtClass() ==
-               ACCTeamsDistributeParallelLoopVectorDirectiveClass ||
-           T->getStmtClass() == ACCTeamsDistributeParallelLoopDirectiveClass ||
+               ACCGangDistributeParallelLoopVectorDirectiveClass ||
+           T->getStmtClass() == ACCGangDistributeParallelLoopDirectiveClass ||
            T->getStmtClass() ==
-               ACCTargetTeamsDistributeParallelLoopDirectiveClass ||
+               ACCTargetGangDistributeParallelLoopDirectiveClass ||
            T->getStmtClass() ==
-               ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass ||
-           T->getStmtClass() == ACCTargetTeamsDistributeDirectiveClass ||
-           T->getStmtClass() == ACCTargetTeamsDistributeVectorDirectiveClass;
+               ACCTargetGangDistributeParallelLoopVectorDirectiveClass ||
+           T->getStmtClass() == ACCTargetGangDistributeDirectiveClass ||
+           T->getStmtClass() == ACCTargetGangDistributeVectorDirectiveClass;
   }
 };
 
@@ -2624,7 +2624,7 @@ public:
 /// In this example directive '#pragma acc teams' has clause 'if' with
 /// condition 'a'.
 ///
-class ACCTeamsDirective : public ACCExecutableDirective {
+class ACCGangDirective : public ACCExecutableDirective {
   friend class ASTStmtReader;
   /// \brief Build directive with the given start and end location.
   ///
@@ -2632,17 +2632,17 @@ class ACCTeamsDirective : public ACCExecutableDirective {
   /// \param EndLoc Ending location of the directive.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTeamsDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCGangDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                     unsigned NumClauses)
-      : ACCExecutableDirective(this, ACCTeamsDirectiveClass, ACCD_teams,
+      : ACCExecutableDirective(this, ACCGangDirectiveClass, ACCD_gang,
                                StartLoc, EndLoc, NumClauses, 1) {}
 
   /// \brief Build an empty directive.
   ///
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTeamsDirective(unsigned NumClauses)
-      : ACCExecutableDirective(this, ACCTeamsDirectiveClass, ACCD_teams,
+  explicit ACCGangDirective(unsigned NumClauses)
+      : ACCExecutableDirective(this, ACCGangDirectiveClass, ACCD_gang,
                                SourceLocation(), SourceLocation(), NumClauses,
                                1) {}
 
@@ -2655,7 +2655,7 @@ public:
   /// \param Clauses List of clauses.
   /// \param AssociatedStmt Statement, associated with the directive.
   ///
-  static ACCTeamsDirective *Create(const ASTContext &C, SourceLocation StartLoc,
+  static ACCGangDirective *Create(const ASTContext &C, SourceLocation StartLoc,
                                    SourceLocation EndLoc,
                                    ArrayRef<ACCClause *> Clauses,
                                    Stmt *AssociatedStmt);
@@ -2666,11 +2666,11 @@ public:
   /// \param C AST context.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTeamsDirective *CreateEmpty(const ASTContext &C,
+  static ACCGangDirective *CreateEmpty(const ASTContext &C,
                                         unsigned NumClauses, EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTeamsDirectiveClass;
+    return T->getStmtClass() == ACCGangDirectiveClass;
   }
 };
 
@@ -3413,7 +3413,7 @@ public:
 /// In this example directive '#pragma acc teams distribute' has clauses
 /// 'private' with the variables 'a' and 'b'
 ///
-class ACCTeamsDistributeDirective final : public ACCLoopLikeDirective {
+class ACCGangDistributeDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3423,10 +3423,10 @@ class ACCTeamsDistributeDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTeamsDistributeDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCGangDistributeDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                               unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeDirectiveClass, 
-                         ACCD_teams_distribute, StartLoc, EndLoc, 
+      : ACCLoopLikeDirective(this, ACCGangDistributeDirectiveClass, 
+                         ACCD_gang_distribute, StartLoc, EndLoc, 
                          CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3434,10 +3434,10 @@ class ACCTeamsDistributeDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTeamsDistributeDirective(unsigned CollapsedNum,
+  explicit ACCGangDistributeDirective(unsigned CollapsedNum,
                                        unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeDirectiveClass,
-                         ACCD_teams_distribute, SourceLocation(),
+      : ACCLoopLikeDirective(this, ACCGangDistributeDirectiveClass,
+                         ACCD_gang_distribute, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
@@ -3451,7 +3451,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTeamsDistributeDirective *
+  static ACCGangDistributeDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3462,13 +3462,13 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTeamsDistributeDirective *CreateEmpty(const ASTContext &C,
+  static ACCGangDistributeDirective *CreateEmpty(const ASTContext &C,
                                                   unsigned NumClauses,
                                                   unsigned CollapsedNum,
                                                   EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTeamsDistributeDirectiveClass;
+    return T->getStmtClass() == ACCGangDistributeDirectiveClass;
   }
 };
 
@@ -3481,7 +3481,7 @@ public:
 /// In this example directive '#pragma acc teams distribute simd'
 /// has clause 'private' with the variables 'a' and 'b'
 ///
-class ACCTeamsDistributeVectorDirective final : public ACCLoopLikeDirective {
+class ACCGangDistributeVectorDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3491,11 +3491,11 @@ class ACCTeamsDistributeVectorDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTeamsDistributeVectorDirective(SourceLocation StartLoc,
+  ACCGangDistributeVectorDirective(SourceLocation StartLoc,
                                   SourceLocation EndLoc, unsigned CollapsedNum,
                                   unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeVectorDirectiveClass,
-                         ACCD_teams_distribute_vector, StartLoc, EndLoc,
+      : ACCLoopLikeDirective(this, ACCGangDistributeVectorDirectiveClass,
+                         ACCD_gang_distribute_vector, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3503,10 +3503,10 @@ class ACCTeamsDistributeVectorDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTeamsDistributeVectorDirective(unsigned CollapsedNum,
+  explicit ACCGangDistributeVectorDirective(unsigned CollapsedNum,
                                            unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeVectorDirectiveClass,
-                         ACCD_teams_distribute_vector, SourceLocation(),
+      : ACCLoopLikeDirective(this, ACCGangDistributeVectorDirectiveClass,
+                         ACCD_gang_distribute_vector, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
@@ -3520,7 +3520,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTeamsDistributeVectorDirective *
+  static ACCGangDistributeVectorDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3532,13 +3532,13 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTeamsDistributeVectorDirective *CreateEmpty(const ASTContext &C,
+  static ACCGangDistributeVectorDirective *CreateEmpty(const ASTContext &C,
                                                       unsigned NumClauses,
                                                       unsigned CollapsedNum,
                                                       EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTeamsDistributeVectorDirectiveClass;
+    return T->getStmtClass() == ACCGangDistributeVectorDirectiveClass;
   }
 };
 
@@ -3551,7 +3551,7 @@ public:
 /// In this example directive '#pragma acc teams distribute parallel loop simd'
 /// has clause 'private' with the variables 'x'
 ///
-class ACCTeamsDistributeParallelLoopVectorDirective final
+class ACCGangDistributeParallelLoopVectorDirective final
     : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
@@ -3562,12 +3562,12 @@ class ACCTeamsDistributeParallelLoopVectorDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTeamsDistributeParallelLoopVectorDirective(SourceLocation StartLoc,
+  ACCGangDistributeParallelLoopVectorDirective(SourceLocation StartLoc,
                                              SourceLocation EndLoc,
                                              unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopVectorDirectiveClass,
-                         ACCD_teams_distribute_parallel_loop_vector, StartLoc, 
+      : ACCLoopLikeDirective(this, ACCGangDistributeParallelLoopVectorDirectiveClass,
+                         ACCD_gang_distribute_parallel_loop_vector, StartLoc, 
                          EndLoc, CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3575,10 +3575,10 @@ class ACCTeamsDistributeParallelLoopVectorDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTeamsDistributeParallelLoopVectorDirective(unsigned CollapsedNum,
+  explicit ACCGangDistributeParallelLoopVectorDirective(unsigned CollapsedNum,
                                                       unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopVectorDirectiveClass,
-                         ACCD_teams_distribute_parallel_loop_vector, 
+      : ACCLoopLikeDirective(this, ACCGangDistributeParallelLoopVectorDirectiveClass,
+                         ACCD_gang_distribute_parallel_loop_vector, 
                          SourceLocation(), SourceLocation(), CollapsedNum,
                          NumClauses) {}
 
@@ -3593,7 +3593,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTeamsDistributeParallelLoopVectorDirective *
+  static ACCGangDistributeParallelLoopVectorDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3604,12 +3604,12 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTeamsDistributeParallelLoopVectorDirective *
+  static ACCGangDistributeParallelLoopVectorDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTeamsDistributeParallelLoopVectorDirectiveClass;
+    return T->getStmtClass() == ACCGangDistributeParallelLoopVectorDirectiveClass;
   }
 };
 
@@ -3622,7 +3622,7 @@ public:
 /// In this example directive '#pragma acc teams distribute parallel loop'
 /// has clause 'private' with the variables 'x'
 ///
-class ACCTeamsDistributeParallelLoopDirective final : public ACCLoopLikeDirective {
+class ACCGangDistributeParallelLoopDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
   bool HasCancel = false;
@@ -3634,12 +3634,12 @@ class ACCTeamsDistributeParallelLoopDirective final : public ACCLoopLikeDirectiv
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTeamsDistributeParallelLoopDirective(SourceLocation StartLoc,
+  ACCGangDistributeParallelLoopDirective(SourceLocation StartLoc,
                                          SourceLocation EndLoc,
                                          unsigned CollapsedNum,
                                          unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopDirectiveClass,
-                         ACCD_teams_distribute_parallel_loop, StartLoc, EndLoc,
+      : ACCLoopLikeDirective(this, ACCGangDistributeParallelLoopDirectiveClass,
+                         ACCD_gang_distribute_parallel_loop, StartLoc, EndLoc,
                          CollapsedNum, NumClauses), HasCancel(false) {}
 
   /// Build an empty directive.
@@ -3647,10 +3647,10 @@ class ACCTeamsDistributeParallelLoopDirective final : public ACCLoopLikeDirectiv
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTeamsDistributeParallelLoopDirective(unsigned CollapsedNum,
+  explicit ACCGangDistributeParallelLoopDirective(unsigned CollapsedNum,
                                                   unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTeamsDistributeParallelLoopDirectiveClass,
-                         ACCD_teams_distribute_parallel_loop, SourceLocation(),
+      : ACCLoopLikeDirective(this, ACCGangDistributeParallelLoopDirectiveClass,
+                         ACCD_gang_distribute_parallel_loop, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3669,7 +3669,7 @@ public:
   /// \param Exprs Helper expressions for CodeGen.
   /// \param HasCancel true if this directive has inner cancel directive.
   ///
-  static ACCTeamsDistributeParallelLoopDirective *
+  static ACCGangDistributeParallelLoopDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs, bool HasCancel);
@@ -3680,7 +3680,7 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTeamsDistributeParallelLoopDirective *
+  static ACCGangDistributeParallelLoopDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
@@ -3688,7 +3688,7 @@ public:
   bool hasCancel() const { return HasCancel; }
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTeamsDistributeParallelLoopDirectiveClass;
+    return T->getStmtClass() == ACCGangDistributeParallelLoopDirectiveClass;
   }
 };
 
@@ -3700,7 +3700,7 @@ public:
 /// In this example directive '#pragma acc target teams' has clause 'if' with
 /// condition 'a>0'.
 ///
-class ACCTargetTeamsDirective final : public ACCExecutableDirective {
+class ACCTargetGangDirective final : public ACCExecutableDirective {
   friend class ASTStmtReader;
   /// Build directive with the given start and end location.
   ///
@@ -3708,19 +3708,19 @@ class ACCTargetTeamsDirective final : public ACCExecutableDirective {
   /// \param EndLoc Ending location of the directive.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetTeamsDirective(SourceLocation StartLoc, SourceLocation EndLoc,
+  ACCTargetGangDirective(SourceLocation StartLoc, SourceLocation EndLoc,
                           unsigned NumClauses)
-      : ACCExecutableDirective(this, ACCTargetTeamsDirectiveClass,
-                               ACCD_target_teams, StartLoc, EndLoc, NumClauses,
+      : ACCExecutableDirective(this, ACCTargetGangDirectiveClass,
+                               ACCD_target_gang, StartLoc, EndLoc, NumClauses,
                                1) {}
 
   /// Build an empty directive.
   ///
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetTeamsDirective(unsigned NumClauses)
-      : ACCExecutableDirective(this, ACCTargetTeamsDirectiveClass,
-                               ACCD_target_teams, SourceLocation(),
+  explicit ACCTargetGangDirective(unsigned NumClauses)
+      : ACCExecutableDirective(this, ACCTargetGangDirectiveClass,
+                               ACCD_target_gang, SourceLocation(),
                                SourceLocation(), NumClauses, 1) {}
 
 public:
@@ -3732,7 +3732,7 @@ public:
   /// \param Clauses List of clauses.
   /// \param AssociatedStmt Statement, associated with the directive.
   ///
-  static ACCTargetTeamsDirective *Create(const ASTContext &C,
+  static ACCTargetGangDirective *Create(const ASTContext &C,
                                          SourceLocation StartLoc,
                                          SourceLocation EndLoc,
                                          ArrayRef<ACCClause *> Clauses,
@@ -3743,11 +3743,11 @@ public:
   /// \param C AST context.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetTeamsDirective *CreateEmpty(const ASTContext &C,
+  static ACCTargetGangDirective *CreateEmpty(const ASTContext &C,
                                               unsigned NumClauses, EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTargetTeamsDirectiveClass;
+    return T->getStmtClass() == ACCTargetGangDirectiveClass;
   }
 };
 
@@ -3759,7 +3759,7 @@ public:
 /// In this example directive '#pragma acc target teams distribute' has clause
 /// 'private' with the variables 'x'
 ///
-class ACCTargetTeamsDistributeDirective final : public ACCLoopLikeDirective {
+class ACCTargetGangDistributeDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3769,11 +3769,11 @@ class ACCTargetTeamsDistributeDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetTeamsDistributeDirective(SourceLocation StartLoc,
+  ACCTargetGangDistributeDirective(SourceLocation StartLoc,
                                     SourceLocation EndLoc,
                                     unsigned CollapsedNum, unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetTeamsDistributeDirectiveClass,
-                         ACCD_target_teams_distribute, StartLoc, EndLoc,
+      : ACCLoopLikeDirective(this, ACCTargetGangDistributeDirectiveClass,
+                         ACCD_target_gang_distribute, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3781,10 +3781,10 @@ class ACCTargetTeamsDistributeDirective final : public ACCLoopLikeDirective {
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetTeamsDistributeDirective(unsigned CollapsedNum,
+  explicit ACCTargetGangDistributeDirective(unsigned CollapsedNum,
                                              unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetTeamsDistributeDirectiveClass,
-                         ACCD_target_teams_distribute, SourceLocation(),
+      : ACCLoopLikeDirective(this, ACCTargetGangDistributeDirectiveClass,
+                         ACCD_target_gang_distribute, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
@@ -3798,7 +3798,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTargetTeamsDistributeDirective *
+  static ACCTargetGangDistributeDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3809,12 +3809,12 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetTeamsDistributeDirective *
+  static ACCTargetGangDistributeDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTargetTeamsDistributeDirectiveClass;
+    return T->getStmtClass() == ACCTargetGangDistributeDirectiveClass;
   }
 };
 
@@ -3827,7 +3827,7 @@ public:
 /// In this example directive '#pragma acc target teams distribute parallel
 /// loop' has clause 'private' with the variables 'x'
 ///
-class ACCTargetTeamsDistributeParallelLoopDirective final
+class ACCTargetGangDistributeParallelLoopDirective final
     : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
   /// true if the construct has inner cancel directive.
@@ -3840,13 +3840,13 @@ class ACCTargetTeamsDistributeParallelLoopDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetTeamsDistributeParallelLoopDirective(SourceLocation StartLoc,
+  ACCTargetGangDistributeParallelLoopDirective(SourceLocation StartLoc,
                                                SourceLocation EndLoc,
                                                unsigned CollapsedNum,
                                                unsigned NumClauses)
       : ACCLoopLikeDirective(this,
-                         ACCTargetTeamsDistributeParallelLoopDirectiveClass,
-                         ACCD_target_teams_distribute_parallel_loop, StartLoc,
+                         ACCTargetGangDistributeParallelLoopDirectiveClass,
+                         ACCD_target_gang_distribute_parallel_loop, StartLoc,
                          EndLoc, CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3855,11 +3855,11 @@ class ACCTargetTeamsDistributeParallelLoopDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetTeamsDistributeParallelLoopDirective(unsigned CollapsedNum,
+  explicit ACCTargetGangDistributeParallelLoopDirective(unsigned CollapsedNum,
                                                         unsigned NumClauses)
       : ACCLoopLikeDirective(
-            this, ACCTargetTeamsDistributeParallelLoopDirectiveClass,
-            ACCD_target_teams_distribute_parallel_loop, SourceLocation(),
+            this, ACCTargetGangDistributeParallelLoopDirectiveClass,
+            ACCD_target_gang_distribute_parallel_loop, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses),
         HasCancel(false) {}
 
@@ -3878,7 +3878,7 @@ public:
   /// \param Exprs Helper expressions for CodeGen.
   /// \param HasCancel true if this directive has inner cancel directive.
   ///
-  static ACCTargetTeamsDistributeParallelLoopDirective *
+  static ACCTargetGangDistributeParallelLoopDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs, bool HasCancel);
@@ -3889,7 +3889,7 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetTeamsDistributeParallelLoopDirective *
+  static ACCTargetGangDistributeParallelLoopDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
@@ -3898,7 +3898,7 @@ public:
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() ==
-           ACCTargetTeamsDistributeParallelLoopDirectiveClass;
+           ACCTargetGangDistributeParallelLoopDirectiveClass;
   }
 };
 
@@ -3911,7 +3911,7 @@ public:
 /// In this example directive '#pragma acc target teams distribute parallel
 /// loop simd' has clause 'private' with the variables 'x'
 ///
-class ACCTargetTeamsDistributeParallelLoopVectorDirective final
+class ACCTargetGangDistributeParallelLoopVectorDirective final
     : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
@@ -3922,13 +3922,13 @@ class ACCTargetTeamsDistributeParallelLoopVectorDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetTeamsDistributeParallelLoopVectorDirective(SourceLocation StartLoc,
+  ACCTargetGangDistributeParallelLoopVectorDirective(SourceLocation StartLoc,
                                                    SourceLocation EndLoc,
                                                    unsigned CollapsedNum,
                                                    unsigned NumClauses)
       : ACCLoopLikeDirective(this,
-                         ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass,
-                         ACCD_target_teams_distribute_parallel_loop_vector,
+                         ACCTargetGangDistributeParallelLoopVectorDirectiveClass,
+                         ACCD_target_gang_distribute_parallel_loop_vector,
                          StartLoc, EndLoc, CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -3936,11 +3936,11 @@ class ACCTargetTeamsDistributeParallelLoopVectorDirective final
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetTeamsDistributeParallelLoopVectorDirective(
+  explicit ACCTargetGangDistributeParallelLoopVectorDirective(
       unsigned CollapsedNum, unsigned NumClauses)
       : ACCLoopLikeDirective(
-            this, ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass,
-            ACCD_target_teams_distribute_parallel_loop_vector, SourceLocation(),
+            this, ACCTargetGangDistributeParallelLoopVectorDirectiveClass,
+            ACCD_target_gang_distribute_parallel_loop_vector, SourceLocation(),
             SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
@@ -3954,7 +3954,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTargetTeamsDistributeParallelLoopVectorDirective *
+  static ACCTargetGangDistributeParallelLoopVectorDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -3965,13 +3965,13 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetTeamsDistributeParallelLoopVectorDirective *
+  static ACCTargetGangDistributeParallelLoopVectorDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() ==
-           ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass;
+           ACCTargetGangDistributeParallelLoopVectorDirectiveClass;
   }
 };
 
@@ -3984,7 +3984,7 @@ public:
 /// In this example directive '#pragma acc target teams distribute simd'
 /// has clause 'private' with the variables 'x'
 ///
-class ACCTargetTeamsDistributeVectorDirective final : public ACCLoopLikeDirective {
+class ACCTargetGangDistributeVectorDirective final : public ACCLoopLikeDirective {
   friend class ASTStmtReader;
 
   /// Build directive with the given start and end location.
@@ -3994,12 +3994,12 @@ class ACCTargetTeamsDistributeVectorDirective final : public ACCLoopLikeDirectiv
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  ACCTargetTeamsDistributeVectorDirective(SourceLocation StartLoc,
+  ACCTargetGangDistributeVectorDirective(SourceLocation StartLoc,
                                         SourceLocation EndLoc,
                                         unsigned CollapsedNum,
                                         unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetTeamsDistributeVectorDirectiveClass,
-                         ACCD_target_teams_distribute_vector, StartLoc, EndLoc,
+      : ACCLoopLikeDirective(this, ACCTargetGangDistributeVectorDirectiveClass,
+                         ACCD_target_gang_distribute_vector, StartLoc, EndLoc,
                          CollapsedNum, NumClauses) {}
 
   /// Build an empty directive.
@@ -4007,10 +4007,10 @@ class ACCTargetTeamsDistributeVectorDirective final : public ACCLoopLikeDirectiv
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  explicit ACCTargetTeamsDistributeVectorDirective(unsigned CollapsedNum,
+  explicit ACCTargetGangDistributeVectorDirective(unsigned CollapsedNum,
                                                  unsigned NumClauses)
-      : ACCLoopLikeDirective(this, ACCTargetTeamsDistributeVectorDirectiveClass,
-                         ACCD_target_teams_distribute_vector, SourceLocation(),
+      : ACCLoopLikeDirective(this, ACCTargetGangDistributeVectorDirectiveClass,
+                         ACCD_target_gang_distribute_vector, SourceLocation(),
                          SourceLocation(), CollapsedNum, NumClauses) {}
 
 public:
@@ -4024,7 +4024,7 @@ public:
   /// \param AssociatedStmt Statement, associated with the directive.
   /// \param Exprs Helper expressions for CodeGen.
   ///
-  static ACCTargetTeamsDistributeVectorDirective *
+  static ACCTargetGangDistributeVectorDirective *
   Create(const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
          unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses,
          Stmt *AssociatedStmt, const HelperExprs &Exprs);
@@ -4035,12 +4035,12 @@ public:
   /// \param CollapsedNum Number of collapsed nested loops.
   /// \param NumClauses Number of clauses.
   ///
-  static ACCTargetTeamsDistributeVectorDirective *
+  static ACCTargetGangDistributeVectorDirective *
   CreateEmpty(const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
               EmptyShell);
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == ACCTargetTeamsDistributeVectorDirectiveClass;
+    return T->getStmtClass() == ACCTargetGangDistributeVectorDirectiveClass;
   }
 };
 

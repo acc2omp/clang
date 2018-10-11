@@ -62,8 +62,8 @@ const ACCClauseWithPreInit *ACCClauseWithPreInit::get(const ACCClause *C) {
     return static_cast<const ACCIfClause *>(C);
   case ACCC_num_threads:
     return static_cast<const ACCNumThreadsClause *>(C);
-  case ACCC_num_teams:
-    return static_cast<const ACCNumTeamsClause *>(C);
+  case ACCC_num_gangs:
+    return static_cast<const ACCNumGangClause *>(C);
   case ACCC_thread_limit:
     return static_cast<const ACCThreadLimitClause *>(C);
   case ACCC_device:
@@ -169,7 +169,7 @@ const ACCClauseWithPostUpdate *ACCClauseWithPostUpdate::get(const ACCClause *C) 
   case ACCC_copyin:
   case ACCC_copyout:
   case ACCC_delete:
-  case ACCC_num_teams:
+  case ACCC_num_gangs:
   case ACCC_thread_limit:
   case ACCC_priority:
   case ACCC_grainsize:

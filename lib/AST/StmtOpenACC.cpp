@@ -838,30 +838,30 @@ ACCExitDataDirective::CreateEmpty(const ASTContext &C, unsigned N,
   return new (Mem) ACCExitDataDirective(N);
 }
 
-ACCTeamsDirective *ACCTeamsDirective::Create(const ASTContext &C,
+ACCGangDirective *ACCGangDirective::Create(const ASTContext &C,
                                              SourceLocation StartLoc,
                                              SourceLocation EndLoc,
                                              ArrayRef<ACCClause *> Clauses,
                                              Stmt *AssociatedStmt) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTeamsDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCGangDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() + sizeof(Stmt *));
-  ACCTeamsDirective *Dir =
-      new (Mem) ACCTeamsDirective(StartLoc, EndLoc, Clauses.size());
+  ACCGangDirective *Dir =
+      new (Mem) ACCGangDirective(StartLoc, EndLoc, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   return Dir;
 }
 
-ACCTeamsDirective *ACCTeamsDirective::CreateEmpty(const ASTContext &C,
+ACCGangDirective *ACCGangDirective::CreateEmpty(const ASTContext &C,
                                                   unsigned NumClauses,
                                                   EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTeamsDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCGangDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses + sizeof(Stmt *));
-  return new (Mem) ACCTeamsDirective(NumClauses);
+  return new (Mem) ACCGangDirective(NumClauses);
 }
 
 ACCTaskLoopDirective *ACCTaskLoopDirective::Create(
@@ -1309,16 +1309,16 @@ ACCTargetVectorDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
   return new (Mem) ACCTargetVectorDirective(CollapsedNum, NumClauses);
 }
 
-ACCTeamsDistributeDirective *ACCTeamsDistributeDirective::Create(
+ACCGangDistributeDirective *ACCGangDistributeDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTeamsDistributeDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCGangDistributeDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_teams_distribute));
-  ACCTeamsDistributeDirective *Dir = new (Mem) ACCTeamsDistributeDirective(
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_gang_distribute));
+  ACCGangDistributeDirective *Dir = new (Mem) ACCGangDistributeDirective(
       StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1346,30 +1346,30 @@ ACCTeamsDistributeDirective *ACCTeamsDistributeDirective::Create(
   return Dir;
 }
 
-ACCTeamsDistributeDirective *
-ACCTeamsDistributeDirective::CreateEmpty(const ASTContext &C,
+ACCGangDistributeDirective *
+ACCGangDistributeDirective::CreateEmpty(const ASTContext &C,
                                          unsigned NumClauses,
                                          unsigned CollapsedNum, EmptyShell) {
   unsigned Size =
-      llvm::alignTo(sizeof(ACCTeamsDistributeDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCGangDistributeDirective), alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
-      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_teams_distribute));
-  return new (Mem) ACCTeamsDistributeDirective(CollapsedNum, NumClauses);
+      sizeof(Stmt *) * numLoopChildren(CollapsedNum, ACCD_gang_distribute));
+  return new (Mem) ACCGangDistributeDirective(CollapsedNum, NumClauses);
 }
 
-ACCTeamsDistributeVectorDirective *ACCTeamsDistributeVectorDirective::Create(
+ACCGangDistributeVectorDirective *ACCGangDistributeVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  unsigned Size = llvm::alignTo(sizeof(ACCTeamsDistributeVectorDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCGangDistributeVectorDirective),
                                 alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                  sizeof(Stmt *) *
-                     numLoopChildren(CollapsedNum, ACCD_teams_distribute_vector));
-  ACCTeamsDistributeVectorDirective *Dir =
-      new (Mem) ACCTeamsDistributeVectorDirective(StartLoc, EndLoc, CollapsedNum,
+                     numLoopChildren(CollapsedNum, ACCD_gang_distribute_vector));
+  ACCGangDistributeVectorDirective *Dir =
+      new (Mem) ACCGangDistributeVectorDirective(StartLoc, EndLoc, CollapsedNum,
                                                 Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1397,32 +1397,32 @@ ACCTeamsDistributeVectorDirective *ACCTeamsDistributeVectorDirective::Create(
   return Dir;
 }
 
-ACCTeamsDistributeVectorDirective *ACCTeamsDistributeVectorDirective::CreateEmpty(
+ACCGangDistributeVectorDirective *ACCGangDistributeVectorDirective::CreateEmpty(
     const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
     EmptyShell) {
-  unsigned Size = llvm::alignTo(sizeof(ACCTeamsDistributeVectorDirective),
+  unsigned Size = llvm::alignTo(sizeof(ACCGangDistributeVectorDirective),
                                 alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                  sizeof(Stmt *) *
-                     numLoopChildren(CollapsedNum, ACCD_teams_distribute_vector));
-  return new (Mem) ACCTeamsDistributeVectorDirective(CollapsedNum, NumClauses);
+                     numLoopChildren(CollapsedNum, ACCD_gang_distribute_vector));
+  return new (Mem) ACCGangDistributeVectorDirective(CollapsedNum, NumClauses);
 }
 
-ACCTeamsDistributeParallelLoopVectorDirective *
-ACCTeamsDistributeParallelLoopVectorDirective::Create(
+ACCGangDistributeParallelLoopVectorDirective *
+ACCGangDistributeParallelLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopVectorDirective),
+  auto Size = llvm::alignTo(sizeof(ACCGangDistributeParallelLoopVectorDirective),
                             alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() +
                  sizeof(Stmt *) *
                      numLoopChildren(CollapsedNum,
-                                     ACCD_teams_distribute_parallel_loop_vector));
-  ACCTeamsDistributeParallelLoopVectorDirective *Dir = new (Mem)
-      ACCTeamsDistributeParallelLoopVectorDirective(StartLoc, EndLoc, CollapsedNum,
+                                     ACCD_gang_distribute_parallel_loop_vector));
+  ACCGangDistributeParallelLoopVectorDirective *Dir = new (Mem)
+      ACCGangDistributeParallelLoopVectorDirective(StartLoc, EndLoc, CollapsedNum,
                                                  Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1461,35 +1461,35 @@ ACCTeamsDistributeParallelLoopVectorDirective::Create(
   return Dir;
 }
 
-ACCTeamsDistributeParallelLoopVectorDirective *
-ACCTeamsDistributeParallelLoopVectorDirective::CreateEmpty(const ASTContext &C,
+ACCGangDistributeParallelLoopVectorDirective *
+ACCGangDistributeParallelLoopVectorDirective::CreateEmpty(const ASTContext &C,
                                                         unsigned NumClauses,
                                                         unsigned CollapsedNum,
                                                         EmptyShell) {
-  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopVectorDirective),
+  auto Size = llvm::alignTo(sizeof(ACCGangDistributeParallelLoopVectorDirective),
                             alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses +
                  sizeof(Stmt *) *
                      numLoopChildren(CollapsedNum,
-                                     ACCD_teams_distribute_parallel_loop_vector));
+                                     ACCD_gang_distribute_parallel_loop_vector));
   return new (Mem)
-      ACCTeamsDistributeParallelLoopVectorDirective(CollapsedNum, NumClauses);
+      ACCGangDistributeParallelLoopVectorDirective(CollapsedNum, NumClauses);
 }
 
-ACCTeamsDistributeParallelLoopDirective *
-ACCTeamsDistributeParallelLoopDirective::Create(
+ACCGangDistributeParallelLoopDirective *
+ACCGangDistributeParallelLoopDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs, bool HasCancel) {
-  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopDirective),
+  auto Size = llvm::alignTo(sizeof(ACCGangDistributeParallelLoopDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_teams_distribute_parallel_loop));
-  ACCTeamsDistributeParallelLoopDirective *Dir = new (Mem)
-      ACCTeamsDistributeParallelLoopDirective(StartLoc, EndLoc, CollapsedNum,
+          numLoopChildren(CollapsedNum, ACCD_gang_distribute_parallel_loop));
+  ACCGangDistributeParallelLoopDirective *Dir = new (Mem)
+      ACCGangDistributeParallelLoopDirective(StartLoc, EndLoc, CollapsedNum,
                                              Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1529,57 +1529,57 @@ ACCTeamsDistributeParallelLoopDirective::Create(
   return Dir;
 }
 
-ACCTeamsDistributeParallelLoopDirective *
-ACCTeamsDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
+ACCGangDistributeParallelLoopDirective *
+ACCGangDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
                                                     unsigned NumClauses,
                                                     unsigned CollapsedNum,
                                                     EmptyShell) {
-  auto Size = llvm::alignTo(sizeof(ACCTeamsDistributeParallelLoopDirective),
+  auto Size = llvm::alignTo(sizeof(ACCGangDistributeParallelLoopDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_teams_distribute_parallel_loop));
+          numLoopChildren(CollapsedNum, ACCD_gang_distribute_parallel_loop));
   return new (Mem)
-      ACCTeamsDistributeParallelLoopDirective(CollapsedNum, NumClauses);
+      ACCGangDistributeParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCTargetTeamsDirective *ACCTargetTeamsDirective::Create(
+ACCTargetGangDirective *ACCTargetGangDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCTargetGangDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * Clauses.size() + sizeof(Stmt *));
-  ACCTargetTeamsDirective *Dir =
-      new (Mem) ACCTargetTeamsDirective(StartLoc, EndLoc, Clauses.size());
+  ACCTargetGangDirective *Dir =
+      new (Mem) ACCTargetGangDirective(StartLoc, EndLoc, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
   return Dir;
 }
 
-ACCTargetTeamsDirective *
-ACCTargetTeamsDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
+ACCTargetGangDirective *
+ACCTargetGangDirective::CreateEmpty(const ASTContext &C, unsigned NumClauses,
                                      EmptyShell) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDirective), alignof(ACCClause *));
+      llvm::alignTo(sizeof(ACCTargetGangDirective), alignof(ACCClause *));
   void *Mem =
       C.Allocate(Size + sizeof(ACCClause *) * NumClauses + sizeof(Stmt *));
-  return new (Mem) ACCTargetTeamsDirective(NumClauses);
+  return new (Mem) ACCTargetGangDirective(NumClauses);
 }
 
-ACCTargetTeamsDistributeDirective *ACCTargetTeamsDistributeDirective::Create(
+ACCTargetGangDistributeDirective *ACCTargetGangDistributeDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTargetGangDistributeDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_target_teams_distribute));
-  ACCTargetTeamsDistributeDirective *Dir =
-      new (Mem) ACCTargetTeamsDistributeDirective(StartLoc, EndLoc, CollapsedNum,
+          numLoopChildren(CollapsedNum, ACCD_target_gang_distribute));
+  ACCTargetGangDistributeDirective *Dir =
+      new (Mem) ACCTargetGangDistributeDirective(StartLoc, EndLoc, CollapsedNum,
                                                   Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1607,35 +1607,35 @@ ACCTargetTeamsDistributeDirective *ACCTargetTeamsDistributeDirective::Create(
   return Dir;
 }
 
-ACCTargetTeamsDistributeDirective *
-ACCTargetTeamsDistributeDirective::CreateEmpty(const ASTContext &C,
+ACCTargetGangDistributeDirective *
+ACCTargetGangDistributeDirective::CreateEmpty(const ASTContext &C,
                                                unsigned NumClauses,
                                                unsigned CollapsedNum,
                                                EmptyShell) {
-  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTargetGangDistributeDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-           numLoopChildren(CollapsedNum, ACCD_target_teams_distribute));
-  return new (Mem) ACCTargetTeamsDistributeDirective(CollapsedNum, NumClauses);
+           numLoopChildren(CollapsedNum, ACCD_target_gang_distribute));
+  return new (Mem) ACCTargetGangDistributeDirective(CollapsedNum, NumClauses);
 }
 
-ACCTargetTeamsDistributeParallelLoopDirective *
-ACCTargetTeamsDistributeParallelLoopDirective::Create(
+ACCTargetGangDistributeParallelLoopDirective *
+ACCTargetGangDistributeParallelLoopDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs, bool HasCancel) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopDirective),
+      llvm::alignTo(sizeof(ACCTargetGangDistributeParallelLoopDirective),
                     alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_loop));
-  ACCTargetTeamsDistributeParallelLoopDirective *Dir =
-      new (Mem) ACCTargetTeamsDistributeParallelLoopDirective(
+                          ACCD_target_gang_distribute_parallel_loop));
+  ACCTargetGangDistributeParallelLoopDirective *Dir =
+      new (Mem) ACCTargetGangDistributeParallelLoopDirective(
            StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1675,38 +1675,38 @@ ACCTargetTeamsDistributeParallelLoopDirective::Create(
   return Dir;
 }
 
-ACCTargetTeamsDistributeParallelLoopDirective *
-ACCTargetTeamsDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
+ACCTargetGangDistributeParallelLoopDirective *
+ACCTargetGangDistributeParallelLoopDirective::CreateEmpty(const ASTContext &C,
                                                           unsigned NumClauses,
                                                           unsigned CollapsedNum,
                                                           EmptyShell) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopDirective),
+      llvm::alignTo(sizeof(ACCTargetGangDistributeParallelLoopDirective),
                     alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
            numLoopChildren(CollapsedNum,
-                           ACCD_target_teams_distribute_parallel_loop));
+                           ACCD_target_gang_distribute_parallel_loop));
   return new (Mem)
-      ACCTargetTeamsDistributeParallelLoopDirective(CollapsedNum, NumClauses);
+      ACCTargetGangDistributeParallelLoopDirective(CollapsedNum, NumClauses);
 }
 
-ACCTargetTeamsDistributeParallelLoopVectorDirective *
-ACCTargetTeamsDistributeParallelLoopVectorDirective::Create(
+ACCTargetGangDistributeParallelLoopVectorDirective *
+ACCTargetGangDistributeParallelLoopVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopVectorDirective),
+      llvm::alignTo(sizeof(ACCTargetGangDistributeParallelLoopVectorDirective),
                     alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_loop_vector));
-  ACCTargetTeamsDistributeParallelLoopVectorDirective *Dir =
-      new (Mem) ACCTargetTeamsDistributeParallelLoopVectorDirective(
+                          ACCD_target_gang_distribute_parallel_loop_vector));
+  ACCTargetGangDistributeParallelLoopVectorDirective *Dir =
+      new (Mem) ACCTargetGangDistributeParallelLoopVectorDirective(
            StartLoc, EndLoc, CollapsedNum, Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1745,35 +1745,35 @@ ACCTargetTeamsDistributeParallelLoopVectorDirective::Create(
   return Dir;
 }
 
-ACCTargetTeamsDistributeParallelLoopVectorDirective *
-ACCTargetTeamsDistributeParallelLoopVectorDirective::CreateEmpty(
+ACCTargetGangDistributeParallelLoopVectorDirective *
+ACCTargetGangDistributeParallelLoopVectorDirective::CreateEmpty(
     const ASTContext &C, unsigned NumClauses, unsigned CollapsedNum,
     EmptyShell) {
   auto Size =
-      llvm::alignTo(sizeof(ACCTargetTeamsDistributeParallelLoopVectorDirective),
+      llvm::alignTo(sizeof(ACCTargetGangDistributeParallelLoopVectorDirective),
                     alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
           numLoopChildren(CollapsedNum,
-                          ACCD_target_teams_distribute_parallel_loop_vector));
-  return new (Mem) ACCTargetTeamsDistributeParallelLoopVectorDirective(
+                          ACCD_target_gang_distribute_parallel_loop_vector));
+  return new (Mem) ACCTargetGangDistributeParallelLoopVectorDirective(
       CollapsedNum, NumClauses);
 }
 
-ACCTargetTeamsDistributeVectorDirective *
-ACCTargetTeamsDistributeVectorDirective::Create(
+ACCTargetGangDistributeVectorDirective *
+ACCTargetGangDistributeVectorDirective::Create(
     const ASTContext &C, SourceLocation StartLoc, SourceLocation EndLoc,
     unsigned CollapsedNum, ArrayRef<ACCClause *> Clauses, Stmt *AssociatedStmt,
     const HelperExprs &Exprs) {
-  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeVectorDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTargetGangDistributeVectorDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * Clauses.size() +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_target_teams_distribute_vector));
-  ACCTargetTeamsDistributeVectorDirective *Dir = new (Mem)
-      ACCTargetTeamsDistributeVectorDirective(StartLoc, EndLoc, CollapsedNum,
+          numLoopChildren(CollapsedNum, ACCD_target_gang_distribute_vector));
+  ACCTargetGangDistributeVectorDirective *Dir = new (Mem)
+      ACCTargetGangDistributeVectorDirective(StartLoc, EndLoc, CollapsedNum,
                                             Clauses.size());
   Dir->setClauses(Clauses);
   Dir->setAssociatedStmt(AssociatedStmt);
@@ -1801,17 +1801,17 @@ ACCTargetTeamsDistributeVectorDirective::Create(
   return Dir;
 }
 
-ACCTargetTeamsDistributeVectorDirective *
-ACCTargetTeamsDistributeVectorDirective::CreateEmpty(const ASTContext &C,
+ACCTargetGangDistributeVectorDirective *
+ACCTargetGangDistributeVectorDirective::CreateEmpty(const ASTContext &C,
                                                    unsigned NumClauses,
                                                    unsigned CollapsedNum,
                                                    EmptyShell) {
-  auto Size = llvm::alignTo(sizeof(ACCTargetTeamsDistributeVectorDirective),
+  auto Size = llvm::alignTo(sizeof(ACCTargetGangDistributeVectorDirective),
                             alignof(ACCClause *));
   void *Mem = C.Allocate(
       Size + sizeof(ACCClause *) * NumClauses +
       sizeof(Stmt *) *
-          numLoopChildren(CollapsedNum, ACCD_target_teams_distribute_vector));
+          numLoopChildren(CollapsedNum, ACCD_target_gang_distribute_vector));
   return new (Mem)
-      ACCTargetTeamsDistributeVectorDirective(CollapsedNum, NumClauses);
+      ACCTargetGangDistributeVectorDirective(CollapsedNum, NumClauses);
 }

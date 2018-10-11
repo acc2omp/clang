@@ -2032,7 +2032,7 @@ public:
   void VisitACCTargetParallelDirective(const ACCTargetParallelDirective *D);
   void
   VisitACCTargetParallelLoopDirective(const ACCTargetParallelLoopDirective *D);
-  void VisitACCTeamsDirective(const ACCTeamsDirective *D);
+  void VisitACCGangDirective(const ACCGangDirective *D);
   void VisitACCTaskLoopDirective(const ACCTaskLoopDirective *D);
   void VisitACCTaskLoopVectorDirective(const ACCTaskLoopVectorDirective *D);
   void VisitACCDistributeDirective(const ACCDistributeDirective *D);
@@ -2044,22 +2044,22 @@ public:
   void VisitACCTargetParallelLoopVectorDirective(
       const ACCTargetParallelLoopVectorDirective *D);
   void VisitACCTargetVectorDirective(const ACCTargetVectorDirective *D);
-  void VisitACCTeamsDistributeDirective(const ACCTeamsDistributeDirective *D);
-  void VisitACCTeamsDistributeVectorDirective(
-      const ACCTeamsDistributeVectorDirective *D);
-  void VisitACCTeamsDistributeParallelLoopVectorDirective(
-      const ACCTeamsDistributeParallelLoopVectorDirective *D);
-  void VisitACCTeamsDistributeParallelLoopDirective(
-      const ACCTeamsDistributeParallelLoopDirective *D);
-  void VisitACCTargetTeamsDirective(const ACCTargetTeamsDirective *D);
-  void VisitACCTargetTeamsDistributeDirective(
-      const ACCTargetTeamsDistributeDirective *D);
-  void VisitACCTargetTeamsDistributeParallelLoopDirective(
-      const ACCTargetTeamsDistributeParallelLoopDirective *D);
-  void VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
-      const ACCTargetTeamsDistributeParallelLoopVectorDirective *D);
-  void VisitACCTargetTeamsDistributeVectorDirective(
-      const ACCTargetTeamsDistributeVectorDirective *D);
+  void VisitACCGangDistributeDirective(const ACCGangDistributeDirective *D);
+  void VisitACCGangDistributeVectorDirective(
+      const ACCGangDistributeVectorDirective *D);
+  void VisitACCGangDistributeParallelLoopVectorDirective(
+      const ACCGangDistributeParallelLoopVectorDirective *D);
+  void VisitACCGangDistributeParallelLoopDirective(
+      const ACCGangDistributeParallelLoopDirective *D);
+  void VisitACCTargetGangDirective(const ACCTargetGangDirective *D);
+  void VisitACCTargetGangDistributeDirective(
+      const ACCTargetGangDistributeDirective *D);
+  void VisitACCTargetGangDistributeParallelLoopDirective(
+      const ACCTargetGangDistributeParallelLoopDirective *D);
+  void VisitACCTargetGangDistributeParallelLoopVectorDirective(
+      const ACCTargetGangDistributeParallelLoopVectorDirective *D);
+  void VisitACCTargetGangDistributeVectorDirective(
+      const ACCTargetGangDistributeVectorDirective *D);
   // -- MYHEADER --
   // -- MYHEADER --
   void VisitOMPExecutableDirective(const OMPExecutableDirective *D);
@@ -2274,7 +2274,7 @@ void ACCClauseEnqueue::VisitACCDeviceClause(const ACCDeviceClause *C) {
   Visitor->AddStmt(C->getDevice());
 }
 
-void ACCClauseEnqueue::VisitACCNumTeamsClause(const ACCNumTeamsClause *C) {
+void ACCClauseEnqueue::VisitACCNumGangClause(const ACCNumGangClause *C) {
   VisitACCClauseWithPreInit(C);
   Visitor->AddStmt(C->getNumTeams());
 }
@@ -3220,7 +3220,7 @@ void EnqueueVisitor::VisitACCTargetParallelLoopDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTeamsDirective(const ACCTeamsDirective *D) {
+void EnqueueVisitor::VisitACCGangDirective(const ACCGangDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
@@ -3272,48 +3272,48 @@ void EnqueueVisitor::VisitACCTargetVectorDirective(
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTeamsDistributeDirective(
-    const ACCTeamsDistributeDirective *D) {
+void EnqueueVisitor::VisitACCGangDistributeDirective(
+    const ACCGangDistributeDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTeamsDistributeVectorDirective(
-    const ACCTeamsDistributeVectorDirective *D) {
+void EnqueueVisitor::VisitACCGangDistributeVectorDirective(
+    const ACCGangDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTeamsDistributeParallelLoopVectorDirective(
-    const ACCTeamsDistributeParallelLoopVectorDirective *D) {
+void EnqueueVisitor::VisitACCGangDistributeParallelLoopVectorDirective(
+    const ACCGangDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTeamsDistributeParallelLoopDirective(
-    const ACCTeamsDistributeParallelLoopDirective *D) {
+void EnqueueVisitor::VisitACCGangDistributeParallelLoopDirective(
+    const ACCGangDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetTeamsDirective(
-    const ACCTargetTeamsDirective *D) {
+void EnqueueVisitor::VisitACCTargetGangDirective(
+    const ACCTargetGangDirective *D) {
   VisitACCExecutableDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetTeamsDistributeDirective(
-    const ACCTargetTeamsDistributeDirective *D) {
+void EnqueueVisitor::VisitACCTargetGangDistributeDirective(
+    const ACCTargetGangDistributeDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelLoopDirective(
-    const ACCTargetTeamsDistributeParallelLoopDirective *D) {
+void EnqueueVisitor::VisitACCTargetGangDistributeParallelLoopDirective(
+    const ACCTargetGangDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
-    const ACCTargetTeamsDistributeParallelLoopVectorDirective *D) {
+void EnqueueVisitor::VisitACCTargetGangDistributeParallelLoopVectorDirective(
+    const ACCTargetGangDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void EnqueueVisitor::VisitACCTargetTeamsDistributeVectorDirective(
-    const ACCTargetTeamsDistributeVectorDirective *D) {
+void EnqueueVisitor::VisitACCTargetGangDistributeVectorDirective(
+    const ACCTargetGangDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -5984,8 +5984,8 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCTargetParallelLoopDirective");
   case CXCursor_ACCTargetUpdateDirective:
     return cxstring::createRef("ACCTargetUpdateDirective");
-  case CXCursor_ACCTeamsDirective:
-    return cxstring::createRef("ACCTeamsDirective");
+  case CXCursor_ACCGangDirective:
+    return cxstring::createRef("ACCGangDirective");
   case CXCursor_ACCCancellationPointDirective:
     return cxstring::createRef("ACCCancellationPointDirective");
   case CXCursor_ACCCancelDirective:
@@ -6006,25 +6006,25 @@ CXString clang_getCursorKindSpelling(enum CXCursorKind Kind) {
     return cxstring::createRef("ACCTargetParallelLoopVectorDirective");
   case CXCursor_ACCTargetVectorDirective:
     return cxstring::createRef("ACCTargetVectorDirective");
-  case CXCursor_ACCTeamsDistributeDirective:
-    return cxstring::createRef("ACCTeamsDistributeDirective");
-  case CXCursor_ACCTeamsDistributeVectorDirective:
-    return cxstring::createRef("ACCTeamsDistributeVectorDirective");
-  case CXCursor_ACCTeamsDistributeParallelLoopVectorDirective:
-    return cxstring::createRef("ACCTeamsDistributeParallelLoopVectorDirective");
-  case CXCursor_ACCTeamsDistributeParallelLoopDirective:
-    return cxstring::createRef("ACCTeamsDistributeParallelLoopDirective");
-  case CXCursor_ACCTargetTeamsDirective:
-    return cxstring::createRef("ACCTargetTeamsDirective");
-  case CXCursor_ACCTargetTeamsDistributeDirective:
-    return cxstring::createRef("ACCTargetTeamsDistributeDirective");
-  case CXCursor_ACCTargetTeamsDistributeParallelLoopDirective:
-    return cxstring::createRef("ACCTargetTeamsDistributeParallelLoopDirective");
-  case CXCursor_ACCTargetTeamsDistributeParallelLoopVectorDirective:
+  case CXCursor_ACCGangDistributeDirective:
+    return cxstring::createRef("ACCGangDistributeDirective");
+  case CXCursor_ACCGangDistributeVectorDirective:
+    return cxstring::createRef("ACCGangDistributeVectorDirective");
+  case CXCursor_ACCGangDistributeParallelLoopVectorDirective:
+    return cxstring::createRef("ACCGangDistributeParallelLoopVectorDirective");
+  case CXCursor_ACCGangDistributeParallelLoopDirective:
+    return cxstring::createRef("ACCGangDistributeParallelLoopDirective");
+  case CXCursor_ACCTargetGangDirective:
+    return cxstring::createRef("ACCTargetGangDirective");
+  case CXCursor_ACCTargetGangDistributeDirective:
+    return cxstring::createRef("ACCTargetGangDistributeDirective");
+  case CXCursor_ACCTargetGangDistributeParallelLoopDirective:
+    return cxstring::createRef("ACCTargetGangDistributeParallelLoopDirective");
+  case CXCursor_ACCTargetGangDistributeParallelLoopVectorDirective:
     return cxstring::createRef(
-        "ACCTargetTeamsDistributeParallelLoopVectorDirective");
-  case CXCursor_ACCTargetTeamsDistributeVectorDirective:
-    return cxstring::createRef("ACCTargetTeamsDistributeVectorDirective");
+        "ACCTargetGangDistributeParallelLoopVectorDirective");
+  case CXCursor_ACCTargetGangDistributeVectorDirective:
+    return cxstring::createRef("ACCTargetGangDistributeVectorDirective");
   // -- MYHEADER -- 
   // -- MYHEADER -- 
   case CXCursor_OMPParallelDirective:

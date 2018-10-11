@@ -629,8 +629,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCTargetUpdateDirectiveClass:
     K = CXCursor_ACCTargetUpdateDirective;
     break;
-  case Stmt::ACCTeamsDirectiveClass:
-    K = CXCursor_ACCTeamsDirective;
+  case Stmt::ACCGangDirectiveClass:
+    K = CXCursor_ACCGangDirective;
     break;
   case Stmt::ACCCancellationPointDirectiveClass:
     K = CXCursor_ACCCancellationPointDirective;
@@ -662,32 +662,32 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ACCTargetVectorDirectiveClass:
     K = CXCursor_ACCTargetVectorDirective;
     break;
-  case Stmt::ACCTeamsDistributeDirectiveClass:
-    K = CXCursor_ACCTeamsDistributeDirective;
+  case Stmt::ACCGangDistributeDirectiveClass:
+    K = CXCursor_ACCGangDistributeDirective;
     break;
-  case Stmt::ACCTeamsDistributeVectorDirectiveClass:
-    K = CXCursor_ACCTeamsDistributeVectorDirective;
+  case Stmt::ACCGangDistributeVectorDirectiveClass:
+    K = CXCursor_ACCGangDistributeVectorDirective;
     break;
-  case Stmt::ACCTeamsDistributeParallelLoopVectorDirectiveClass:
-    K = CXCursor_ACCTeamsDistributeParallelLoopVectorDirective;
+  case Stmt::ACCGangDistributeParallelLoopVectorDirectiveClass:
+    K = CXCursor_ACCGangDistributeParallelLoopVectorDirective;
     break;
-  case Stmt::ACCTeamsDistributeParallelLoopDirectiveClass:
-    K = CXCursor_ACCTeamsDistributeParallelLoopDirective;
+  case Stmt::ACCGangDistributeParallelLoopDirectiveClass:
+    K = CXCursor_ACCGangDistributeParallelLoopDirective;
     break;
-  case Stmt::ACCTargetTeamsDirectiveClass:
-    K = CXCursor_ACCTargetTeamsDirective;
+  case Stmt::ACCTargetGangDirectiveClass:
+    K = CXCursor_ACCTargetGangDirective;
     break;
-  case Stmt::ACCTargetTeamsDistributeDirectiveClass:
-    K = CXCursor_ACCTargetTeamsDistributeDirective;
+  case Stmt::ACCTargetGangDistributeDirectiveClass:
+    K = CXCursor_ACCTargetGangDistributeDirective;
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelLoopDirectiveClass:
-    K = CXCursor_ACCTargetTeamsDistributeParallelLoopDirective;
+  case Stmt::ACCTargetGangDistributeParallelLoopDirectiveClass:
+    K = CXCursor_ACCTargetGangDistributeParallelLoopDirective;
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass:
-    K = CXCursor_ACCTargetTeamsDistributeParallelLoopVectorDirective;
+  case Stmt::ACCTargetGangDistributeParallelLoopVectorDirectiveClass:
+    K = CXCursor_ACCTargetGangDistributeParallelLoopVectorDirective;
     break;
-  case Stmt::ACCTargetTeamsDistributeVectorDirectiveClass:
-    K = CXCursor_ACCTargetTeamsDistributeVectorDirective;
+  case Stmt::ACCTargetGangDistributeVectorDirectiveClass:
+    K = CXCursor_ACCTargetGangDistributeVectorDirective;
     break;
 // MYLABEL
   case Stmt::OMPParallelDirectiveClass:

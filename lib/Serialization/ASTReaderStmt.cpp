@@ -1943,8 +1943,8 @@ ACCClause *ACCClauseReader::readClause() {
                                   NumComponents);
     break;
   }
-  case ACCC_num_teams:
-    C = new (Context) ACCNumTeamsClause();
+  case ACCC_num_gangs:
+    C = new (Context) ACCNumGangClause();
     break;
   case ACCC_thread_limit:
     C = new (Context) ACCThreadLimitClause();
@@ -2670,7 +2670,7 @@ void ACCClauseReader::VisitACCDeleteClause(ACCDeleteClause *C) {
   C->setComponents(Components, ListSizes);
 }
 
-void ACCClauseReader::VisitACCNumTeamsClause(ACCNumTeamsClause *C) {
+void ACCClauseReader::VisitACCNumGangClause(ACCNumGangClause *C) {
   VisitACCClauseWithPreInit(C);
   C->setNumTeams(Reader->Record.readSubExpr());
   C->setLParenLoc(Reader->ReadSourceLocation());
@@ -3151,7 +3151,7 @@ void ASTStmtReader::VisitACCTargetParallelLoopDirective(
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCTeamsDirective(ACCTeamsDirective *D) {
+void ASTStmtReader::VisitACCGangDirective(ACCGangDirective *D) {
   VisitStmt(D);
   // The NumClauses field was read in ReadStmtFromStream.
   Record.skipInts(1);
@@ -3215,52 +3215,52 @@ void ASTStmtReader::VisitACCTargetVectorDirective(ACCTargetVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeDirective(
-    ACCTeamsDistributeDirective *D) {
+void ASTStmtReader::VisitACCGangDistributeDirective(
+    ACCGangDistributeDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeVectorDirective(
-    ACCTeamsDistributeVectorDirective *D) {
+void ASTStmtReader::VisitACCGangDistributeVectorDirective(
+    ACCGangDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeParallelLoopVectorDirective(
-    ACCTeamsDistributeParallelLoopVectorDirective *D) {
+void ASTStmtReader::VisitACCGangDistributeParallelLoopVectorDirective(
+    ACCGangDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTeamsDistributeParallelLoopDirective(
-    ACCTeamsDistributeParallelLoopDirective *D) {
+void ASTStmtReader::VisitACCGangDistributeParallelLoopDirective(
+    ACCGangDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *D) {
+void ASTStmtReader::VisitACCTargetGangDirective(ACCTargetGangDirective *D) {
   VisitStmt(D);
   // The NumClauses field was read in ReadStmtFromStream.
   Record.skipInts(1);
   VisitACCExecutableDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeDirective(
-    ACCTargetTeamsDistributeDirective *D) {
+void ASTStmtReader::VisitACCTargetGangDistributeDirective(
+    ACCTargetGangDistributeDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeParallelLoopDirective(
-    ACCTargetTeamsDistributeParallelLoopDirective *D) {
+void ASTStmtReader::VisitACCTargetGangDistributeParallelLoopDirective(
+    ACCTargetGangDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   D->setHasCancel(Record.readInt());
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
-    ACCTargetTeamsDistributeParallelLoopVectorDirective *D) {
+void ASTStmtReader::VisitACCTargetGangDistributeParallelLoopVectorDirective(
+    ACCTargetGangDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
-void ASTStmtReader::VisitACCTargetTeamsDistributeVectorDirective(
-    ACCTargetTeamsDistributeVectorDirective *D) {
+void ASTStmtReader::VisitACCTargetGangDistributeVectorDirective(
+    ACCTargetGangDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
 }
 
@@ -5162,7 +5162,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
 
     case STMT_ACC_TEAMS_DIRECTIVE:
-      S = ACCTeamsDirective::CreateEmpty(
+      S = ACCGangDirective::CreateEmpty(
           Context, Record[ASTStmtReader::NumStmtFields], Empty);
       break;
 
@@ -5243,7 +5243,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
      case STMT_ACC_TEAMS_DISTRIBUTE_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeDirective::CreateEmpty(Context, NumClauses,
+      S = ACCGangDistributeDirective::CreateEmpty(Context, NumClauses,
                                                    CollapsedNum, Empty);
       break;
     }
@@ -5251,7 +5251,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE: {
       unsigned NumClauses = Record[ASTStmtReader::NumStmtFields];
       unsigned CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeVectorDirective::CreateEmpty(Context, NumClauses,
+      S = ACCGangDistributeVectorDirective::CreateEmpty(Context, NumClauses,
                                                        CollapsedNum, Empty);
       break;
     }
@@ -5259,7 +5259,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeParallelLoopVectorDirective::CreateEmpty(
+      S = ACCGangDistributeParallelLoopVectorDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
@@ -5267,13 +5267,13 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTeamsDistributeParallelLoopDirective::CreateEmpty(
+      S = ACCGangDistributeParallelLoopDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
 
     case STMT_ACC_TARGET_TEAMS_DIRECTIVE: {
-      S = ACCTargetTeamsDirective::CreateEmpty(
+      S = ACCTargetGangDirective::CreateEmpty(
           Context, Record[ASTStmtReader::NumStmtFields], Empty);
       break;
     }
@@ -5281,7 +5281,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeDirective::CreateEmpty(Context, NumClauses,
+      S = ACCTargetGangDistributeDirective::CreateEmpty(Context, NumClauses,
                                                          CollapsedNum, Empty);
       break;
     }
@@ -5289,7 +5289,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeParallelLoopDirective::CreateEmpty(
+      S = ACCTargetGangDistributeParallelLoopDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
@@ -5297,7 +5297,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeParallelLoopVectorDirective::CreateEmpty(
+      S = ACCTargetGangDistributeParallelLoopVectorDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }
@@ -5305,7 +5305,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
     case STMT_ACC_TARGET_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE: {
       auto NumClauses = Record[ASTStmtReader::NumStmtFields];
       auto CollapsedNum = Record[ASTStmtReader::NumStmtFields + 1];
-      S = ACCTargetTeamsDistributeVectorDirective::CreateEmpty(
+      S = ACCTargetGangDistributeVectorDirective::CreateEmpty(
           Context, NumClauses, CollapsedNum, Empty);
       break;
     }

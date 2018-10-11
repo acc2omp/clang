@@ -2247,7 +2247,7 @@ void ACCClauseWriter::VisitACCDeleteClause(ACCDeleteClause *C) {
   }
 }
 
-void ACCClauseWriter::VisitACCNumTeamsClause(ACCNumTeamsClause *C) {
+void ACCClauseWriter::VisitACCNumGangClause(ACCNumGangClause *C) {
   VisitACCClauseWithPreInit(C);
   Record.AddStmt(C->getNumTeams());
   Record.AddSourceLocation(C->getLParenLoc());
@@ -2636,7 +2636,7 @@ void ASTStmtWriter::VisitACCOrderedDirective(ACCOrderedDirective *D) {
   Code = serialization::STMT_ACC_ORDERED_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDirective(ACCTeamsDirective *D) {
+void ASTStmtWriter::VisitACCGangDirective(ACCGangDirective *D) {
   VisitStmt(D);
   Record.push_back(D->getNumClauses());
   VisitACCExecutableDirective(D);
@@ -2711,60 +2711,60 @@ void ASTStmtWriter::VisitACCTargetVectorDirective(ACCTargetVectorDirective *D) {
   Code = serialization::STMT_ACC_TARGET_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeDirective(
-    ACCTeamsDistributeDirective *D) {
+void ASTStmtWriter::VisitACCGangDistributeDirective(
+    ACCGangDistributeDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeVectorDirective(
-    ACCTeamsDistributeVectorDirective *D) {
+void ASTStmtWriter::VisitACCGangDistributeVectorDirective(
+    ACCGangDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeParallelLoopVectorDirective(
-    ACCTeamsDistributeParallelLoopVectorDirective *D) {
+void ASTStmtWriter::VisitACCGangDistributeParallelLoopVectorDirective(
+    ACCGangDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTeamsDistributeParallelLoopDirective(
-    ACCTeamsDistributeParallelLoopDirective *D) {
+void ASTStmtWriter::VisitACCGangDistributeParallelLoopDirective(
+    ACCGangDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   Record.push_back(D->hasCancel() ? 1 : 0);
   Code = serialization::STMT_ACC_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDirective(ACCTargetTeamsDirective *D) {
+void ASTStmtWriter::VisitACCTargetGangDirective(ACCTargetGangDirective *D) {
   VisitStmt(D);
   Record.push_back(D->getNumClauses());
   VisitACCExecutableDirective(D);
   Code = serialization::STMT_ACC_TARGET_TEAMS_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeDirective(
-    ACCTargetTeamsDistributeDirective *D) {
+void ASTStmtWriter::VisitACCTargetGangDistributeDirective(
+    ACCTargetGangDistributeDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelLoopDirective(
-    ACCTargetTeamsDistributeParallelLoopDirective *D) {
+void ASTStmtWriter::VisitACCTargetGangDistributeParallelLoopDirective(
+    ACCTargetGangDistributeParallelLoopDirective *D) {
   VisitACCLoopLikeDirective(D);
   Record.push_back(D->hasCancel() ? 1 : 0);
   Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeParallelLoopVectorDirective(
-    ACCTargetTeamsDistributeParallelLoopVectorDirective *D) {
+void ASTStmtWriter::VisitACCTargetGangDistributeParallelLoopVectorDirective(
+    ACCTargetGangDistributeParallelLoopVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::
       STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE;
 }
 
-void ASTStmtWriter::VisitACCTargetTeamsDistributeVectorDirective(
-    ACCTargetTeamsDistributeVectorDirective *D) {
+void ASTStmtWriter::VisitACCTargetGangDistributeVectorDirective(
+    ACCTargetGangDistributeVectorDirective *D) {
   VisitACCLoopLikeDirective(D);
   Code = serialization::STMT_ACC_TARGET_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE;
 }

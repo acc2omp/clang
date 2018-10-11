@@ -1323,10 +1323,10 @@ static llvm::Value *emitParallelOrTeamsOutlinedFunction(
     HasCancel = OPFD->hasCancel();
   else if (auto *OPFD = dyn_cast<ACCDistributeParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
-  else if (auto *OPFD = dyn_cast<ACCTeamsDistributeParallelLoopDirective>(&D))
+  else if (auto *OPFD = dyn_cast<ACCGangDistributeParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
   else if (auto *OPFD =
-               dyn_cast<ACCTargetTeamsDistributeParallelLoopDirective>(&D))
+               dyn_cast<ACCTargetGangDistributeParallelLoopDirective>(&D))
     HasCancel = OPFD->hasCancel();
   CGOpenACCOutlinedRegionInfo CGInfo(*CS, ThreadIDVar, CodeGen, InnermostKind,
                                     HasCancel, OutlinedHelperName);
@@ -1345,7 +1345,7 @@ llvm::Value *CGOpenACCRuntime::emitParallelOutlinedFunction(
 llvm::Value *CGOpenACCRuntime::emitTeamsOutlinedFunction(
     const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
     OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen) {
-  const CapturedStmt *CS = D.getCapturedStmt(ACCD_teams);
+  const CapturedStmt *CS = D.getCapturedStmt(ACCD_gang);
   return emitParallelOrTeamsOutlinedFunction(
       CGM, D, CS, ThreadIDVar, InnermostKind, getOutlinedHelperName(), CodeGen);
 }
@@ -5958,8 +5958,8 @@ emitNumTeamsForTargetDirective(CGOpenACCRuntime &ACCRuntime,
   // If the target directive is combined with a teams directive:
   //   Return the value in the num_teams clause, if any.
   //   Otherwise, return 0 to denote the runtime default.
-  if (isOpenACCTeamsDirective(D.getDirectiveKind())) {
-    if (const auto *NumTeamsClause = D.getSingleClause<ACCNumTeamsClause>()) {
+  if (isOpenACCGangDirective(D.getDirectiveKind())) {
+    if (const auto *NumTeamsClause = D.getSingleClause<ACCNumGangClause>()) {
       CodeGenFunction::RunCleanupsScope NumTeamsScope(CGF);
       auto NumTeams = CGF.EmitScalarExpr(NumTeamsClause->getNumTeams(),
                                          /*IgnoreResultAssign*/ true);
@@ -5986,8 +5986,8 @@ emitNumTeamsForTargetDirective(CGOpenACCRuntime &ACCRuntime,
 
   if (auto *TeamsDir = dyn_cast_or_null<ACCExecutableDirective>(
           ignoreCompoundStmts(CS.getCapturedStmt()))) {
-    if (isOpenACCTeamsDirective(TeamsDir->getDirectiveKind())) {
-      if (auto *NTE = TeamsDir->getSingleClause<ACCNumTeamsClause>()) {
+    if (isOpenACCGangDirective(TeamsDir->getDirectiveKind())) {
+      if (auto *NTE = TeamsDir->getSingleClause<ACCNumGangClause>()) {
         CGOpenACCInnerExprInfo CGInfo(CGF, CS);
         CodeGenFunction::CGCapturedStmtRAII CapInfoRAII(CGF, &CGInfo);
         llvm::Value *NumTeams = CGF.EmitScalarExpr(NTE->getNumTeams());
@@ -6038,7 +6038,7 @@ emitNumThreadsForTargetDirective(CGOpenACCRuntime &ACCRuntime,
   //
   // If this is not a teams directive return nullptr.
 
-  if (isOpenACCTeamsDirective(D.getDirectiveKind()) ||
+  if (isOpenACCGangDirective(D.getDirectiveKind()) ||
       isOpenACCParallelDirective(D.getDirectiveKind())) {
     llvm::Value *DefaultThreadLimitVal = Bld.getInt32(0);
     llvm::Value *NumThreadsVal = nullptr;
@@ -6089,7 +6089,7 @@ emitNumThreadsForTargetDirective(CGOpenACCRuntime &ACCRuntime,
 
   if (auto *TeamsDir = dyn_cast_or_null<ACCExecutableDirective>(
           ignoreCompoundStmts(CS.getCapturedStmt()))) {
-    if (isOpenACCTeamsDirective(TeamsDir->getDirectiveKind())) {
+    if (isOpenACCGangDirective(TeamsDir->getDirectiveKind())) {
       if (auto *TLE = TeamsDir->getSingleClause<ACCThreadLimitClause>()) {
         CGOpenACCInnerExprInfo CGInfo(CGF, CS);
         CodeGenFunction::CGCapturedStmtRAII CapInfoRAII(CGF, &CGInfo);
@@ -7324,17 +7324,17 @@ void CGOpenACCRuntime::scanForTargetRegionsFunctions(const Stmt *S,
       CodeGenFunction::EmitACCTargetParallelDeviceFunction(
           CGM, ParentName, cast<ACCTargetParallelDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDirectiveClass:
+    case Stmt::ACCTargetGangDirectiveClass:
       CodeGenFunction::EmitACCTargetTeamsDeviceFunction(
-          CGM, ParentName, cast<ACCTargetTeamsDirective>(*S));
+          CGM, ParentName, cast<ACCTargetGangDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeDirectiveClass:
+    case Stmt::ACCTargetGangDistributeDirectiveClass:
       CodeGenFunction::EmitACCTargetTeamsDistributeDeviceFunction(
-          CGM, ParentName, cast<ACCTargetTeamsDistributeDirective>(*S));
+          CGM, ParentName, cast<ACCTargetGangDistributeDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeVectorDirectiveClass:
+    case Stmt::ACCTargetGangDistributeVectorDirectiveClass:
       CodeGenFunction::EmitACCTargetTeamsDistributeVectorDeviceFunction(
-          CGM, ParentName, cast<ACCTargetTeamsDistributeVectorDirective>(*S));
+          CGM, ParentName, cast<ACCTargetGangDistributeVectorDirective>(*S));
       break;
     case Stmt::ACCTargetParallelLoopDirectiveClass:
       CodeGenFunction::EmitACCTargetParallelForDeviceFunction(
@@ -7348,16 +7348,16 @@ void CGOpenACCRuntime::scanForTargetRegionsFunctions(const Stmt *S,
       CodeGenFunction::EmitACCTargetVectorDeviceFunction(
           CGM, ParentName, cast<ACCTargetVectorDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeParallelLoopDirectiveClass:
+    case Stmt::ACCTargetGangDistributeParallelLoopDirectiveClass:
       CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
           CGM, ParentName,
-          cast<ACCTargetTeamsDistributeParallelLoopDirective>(*S));
+          cast<ACCTargetGangDistributeParallelLoopDirective>(*S));
       break;
-    case Stmt::ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass:
+    case Stmt::ACCTargetGangDistributeParallelLoopVectorDirectiveClass:
       CodeGenFunction::
           EmitACCTargetTeamsDistributeParallelForVectorDeviceFunction(
               CGM, ParentName,
-              cast<ACCTargetTeamsDistributeParallelLoopVectorDirective>(*S));
+              cast<ACCTargetGangDistributeParallelLoopVectorDirective>(*S));
       break;
     default:
       llvm_unreachable("Unknown target directive for OpenACC device codegen.");

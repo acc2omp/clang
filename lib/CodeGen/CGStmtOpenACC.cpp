@@ -107,7 +107,7 @@ class ACCTeamsScope final : public ACCLexicalScope {
   bool EmitPreInitStmt(const ACCExecutableDirective &S) {
     OpenACCDirectiveKind Kind = S.getDirectiveKind();
     return !isOpenACCTargetExecutionDirective(Kind) &&
-           isOpenACCTeamsDirective(Kind);
+           isOpenACCGangDirective(Kind);
   }
 
 public:
@@ -2104,12 +2104,12 @@ emitInnerParallelForWhenCombined(CodeGenFunction &CGF,
                                          ACCPrePostActionTy &) {
     bool HasCancel = false;
     if (!isOpenACCVectorDirective(S.getDirectiveKind())) {
-      if (const auto *D = dyn_cast<ACCTeamsDistributeParallelLoopDirective>(&S))
+      if (const auto *D = dyn_cast<ACCGangDistributeParallelLoopDirective>(&S))
         HasCancel = D->hasCancel();
       else if (const auto *D = dyn_cast<ACCDistributeParallelLoopDirective>(&S))
         HasCancel = D->hasCancel();
       else if (const auto *D =
-                   dyn_cast<ACCTargetTeamsDistributeParallelLoopDirective>(&S))
+                   dyn_cast<ACCTargetGangDistributeParallelLoopDirective>(&S))
         HasCancel = D->hasCancel();
     }
     CodeGenFunction::ACCCancelStackRAII CancelRegion(CGF, S.getDirectiveKind(),
@@ -3279,7 +3279,7 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
       EmitACCPrivateClause(S, LoopScope);
       if (isOpenACCVectorDirective(S.getDirectiveKind()) &&
           !isOpenACCParallelDirective(S.getDirectiveKind()) &&
-          !isOpenACCTeamsDirective(S.getDirectiveKind()))
+          !isOpenACCGangDirective(S.getDirectiveKind()))
         EmitACCReductionClauseInit(S, LoopScope);
       HasLastprivateClause = EmitACCLastprivateClauseInit(S, LoopScope);
       EmitACCPrivateLoopCounters(S, LoopScope);
@@ -3367,7 +3367,7 @@ void CodeGenFunction::EmitACCDistributeLoop(const ACCLoopLikeDirective &S,
         ReductionKind = ACCD_parallel_loop;
       } else if (isOpenACCVectorDirective(S.getDirectiveKind())) {
         ReductionKind = ACCD_vector;
-      } else if (!isOpenACCTeamsDirective(S.getDirectiveKind()) &&
+      } else if (!isOpenACCGangDirective(S.getDirectiveKind()) &&
                  S.hasClausesOfKind<ACCReductionClause>()) {
         llvm_unreachable(
             "No reduction clauses is allowed in distribute directive.");
@@ -3855,7 +3855,7 @@ static void EmitACCAtomicExpr(CodeGenFunction &CGF, OpenACCClauseKind Kind,
   case ACCC_copy:
   case ACCC_copyin:
   case ACCC_copyout:
-  case ACCC_num_teams:
+  case ACCC_num_gangs:
   case ACCC_thread_limit:
   case ACCC_priority:
   case ACCC_grainsize:
@@ -3996,15 +3996,15 @@ void CodeGenFunction::EmitACCTargetDirective(const ACCTargetDirective &S) {
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
 
-static void emitCommonACCTeamsDirective(CodeGenFunction &CGF,
+static void emitCommonACCGangDirective(CodeGenFunction &CGF,
                                         const ACCExecutableDirective &S,
                                         OpenACCDirectiveKind InnermostKind,
                                         const ACCRegionCodeGenTy &CodeGen) {
-  const CapturedStmt *CS = S.getCapturedStmt(ACCD_teams);
+  const CapturedStmt *CS = S.getCapturedStmt(ACCD_gang);
   auto OutlinedFn = CGF.CGM.getOpenACCRuntime().emitTeamsOutlinedFunction(
       S, *CS->getCapturedDecl()->param_begin(), InnermostKind, CodeGen);
 
-  const ACCNumTeamsClause *NT = S.getSingleClause<ACCNumTeamsClause>();
+  const ACCNumGangClause *NT = S.getSingleClause<ACCNumGangClause>();
   const ACCThreadLimitClause *TL = S.getSingleClause<ACCThreadLimitClause>();
   if (NT || TL) {
     Expr *NumTeams = (NT) ? NT->getNumTeams() : nullptr;
@@ -4021,7 +4021,7 @@ static void emitCommonACCTeamsDirective(CodeGenFunction &CGF,
                                            CapturedVars);
 }
 
-void CodeGenFunction::EmitACCTeamsDirective(const ACCTeamsDirective &S) {
+void CodeGenFunction::EmitACCGangDirective(const ACCGangDirective &S) {
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     ACCPrivateScope PrivateScope(CGF);
@@ -4029,17 +4029,17 @@ void CodeGenFunction::EmitACCTeamsDirective(const ACCTeamsDirective &S) {
     CGF.EmitACCPrivateClause(S, PrivateScope);
     CGF.EmitACCReductionClauseInit(S, PrivateScope);
     (void)PrivateScope.Privatize();
-    CGF.EmitStmt(S.getCapturedStmt(ACCD_teams)->getCapturedStmt());
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitStmt(S.getCapturedStmt(ACCD_gang)->getCapturedStmt());
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute, CodeGen);
+  emitCommonACCGangDirective(*this, S, ACCD_distribute, CodeGen);
   emitPostUpdateForReductionClause(
       *this, S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
 }
 
 static void emitTargetTeamsRegion(CodeGenFunction &CGF, ACCPrePostActionTy &Action,
-                                  const ACCTargetTeamsDirective &S) {
-  auto *CS = S.getCapturedStmt(ACCD_teams);
+                                  const ACCTargetGangDirective &S) {
+  auto *CS = S.getCapturedStmt(ACCD_gang);
   Action.Enter(CGF);
   // Emit teams region as a standalone region.
   auto &&CodeGen = [&S, CS](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
@@ -4050,16 +4050,16 @@ static void emitTargetTeamsRegion(CodeGenFunction &CGF, ACCPrePostActionTy &Acti
     (void)PrivateScope.Privatize();
     Action.Enter(CGF);
     CGF.EmitStmt(CS->getCapturedStmt());
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(CGF, S, ACCD_teams, CodeGen);
+  emitCommonACCGangDirective(CGF, S, ACCD_gang, CodeGen);
   emitPostUpdateForReductionClause(
       CGF, S, [](CodeGenFunction &) -> llvm::Value * { return nullptr; });
 }
 
 void CodeGenFunction::EmitACCTargetTeamsDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDirective &S) {
+    const ACCTargetGangDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsRegion(CGF, Action, S);
   };
@@ -4071,8 +4071,8 @@ void CodeGenFunction::EmitACCTargetTeamsDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDirective(
-    const ACCTargetTeamsDirective &S) {
+void CodeGenFunction::EmitACCTargetGangDirective(
+    const ACCTargetGangDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsRegion(CGF, Action, S);
   };
@@ -4081,7 +4081,7 @@ void CodeGenFunction::EmitACCTargetTeamsDirective(
 
 static void
 emitTargetTeamsDistributeRegion(CodeGenFunction &CGF, ACCPrePostActionTy &Action,
-                                const ACCTargetTeamsDistributeDirective &S) {
+                                const ACCTargetGangDistributeDirective &S) {
   Action.Enter(CGF);
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
@@ -4095,16 +4095,16 @@ emitTargetTeamsDistributeRegion(CodeGenFunction &CGF, ACCPrePostActionTy &Action
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_distribute,
                                                     CodeGenDistribute);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute, CodeGen);
+  emitCommonACCGangDirective(CGF, S, ACCD_distribute, CodeGen);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeDirective &S) {
+    const ACCTargetGangDistributeDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeRegion(CGF, Action, S);
   };
@@ -4116,8 +4116,8 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeDirective(
-    const ACCTargetTeamsDistributeDirective &S) {
+void CodeGenFunction::EmitACCTargetGangDistributeDirective(
+    const ACCTargetGangDistributeDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeRegion(CGF, Action, S);
   };
@@ -4126,7 +4126,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeDirective(
 
 static void emitTargetTeamsDistributeVectorRegion(
     CodeGenFunction &CGF, ACCPrePostActionTy &Action,
-    const ACCTargetTeamsDistributeVectorDirective &S) {
+    const ACCTargetGangDistributeVectorDirective &S) {
   Action.Enter(CGF);
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
@@ -4140,16 +4140,16 @@ static void emitTargetTeamsDistributeVectorRegion(
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_distribute,
                                                     CodeGenDistribute);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_vector, CodeGen);
+  emitCommonACCGangDirective(CGF, S, ACCD_distribute_vector, CodeGen);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeVectorDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeVectorDirective &S) {
+    const ACCTargetGangDistributeVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeVectorRegion(CGF, Action, S);
   };
@@ -4161,16 +4161,16 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeVectorDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeVectorDirective(
-    const ACCTargetTeamsDistributeVectorDirective &S) {
+void CodeGenFunction::EmitACCTargetGangDistributeVectorDirective(
+    const ACCTargetGangDistributeVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeVectorRegion(CGF, Action, S);
   };
   emitCommonACCTargetDirective(*this, S, CodeGen);
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeDirective(
-    const ACCTeamsDistributeDirective &S) {
+void CodeGenFunction::EmitACCGangDistributeDirective(
+    const ACCGangDistributeDirective &S) {
 
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
@@ -4184,15 +4184,15 @@ void CodeGenFunction::EmitACCTeamsDistributeDirective(
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_distribute,
                                                     CodeGenDistribute);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute, CodeGen);
+  emitCommonACCGangDirective(*this, S, ACCD_distribute, CodeGen);
   emitPostUpdateForReductionClause(*this, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeVectorDirective(
-    const ACCTeamsDistributeVectorDirective &S) {
+void CodeGenFunction::EmitACCGangDistributeVectorDirective(
+    const ACCGangDistributeVectorDirective &S) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitACCLoopBodyWithStopPoint, S.getInc());
   };
@@ -4205,15 +4205,15 @@ void CodeGenFunction::EmitACCTeamsDistributeVectorDirective(
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_vector,
                                                     CodeGenDistribute);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_vector, CodeGen);
+  emitCommonACCGangDirective(*this, S, ACCD_distribute_vector, CodeGen);
   emitPostUpdateForReductionClause(*this, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeParallelLoopDirective(
-    const ACCTeamsDistributeParallelLoopDirective &S) {
+void CodeGenFunction::EmitACCGangDistributeParallelLoopDirective(
+    const ACCGangDistributeParallelLoopDirective &S) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -4227,15 +4227,15 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelLoopDirective(
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(CGF, ACCD_distribute,
                                                     CodeGenDistribute);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_parallel_loop, CodeGen);
+  emitCommonACCGangDirective(*this, S, ACCD_distribute_parallel_loop, CodeGen);
   emitPostUpdateForReductionClause(*this, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitACCTeamsDistributeParallelLoopVectorDirective(
-    const ACCTeamsDistributeParallelLoopVectorDirective &S) {
+void CodeGenFunction::EmitACCGangDistributeParallelLoopVectorDirective(
+    const ACCGangDistributeParallelLoopVectorDirective &S) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
                               S.getDistInc());
@@ -4249,15 +4249,15 @@ void CodeGenFunction::EmitACCTeamsDistributeParallelLoopVectorDirective(
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(
         CGF, ACCD_distribute, CodeGenDistribute, /*HasCancel=*/false);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
-  emitCommonACCTeamsDirective(*this, S, ACCD_distribute_parallel_loop, CodeGen);
+  emitCommonACCGangDirective(*this, S, ACCD_distribute_parallel_loop, CodeGen);
   emitPostUpdateForReductionClause(*this, S,
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
 static void emitTargetTeamsDistributeParallelForRegion(
-    CodeGenFunction &CGF, const ACCTargetTeamsDistributeParallelLoopDirective &S,
+    CodeGenFunction &CGF, const ACCTargetGangDistributeParallelLoopDirective &S,
     ACCPrePostActionTy &Action) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
@@ -4272,10 +4272,10 @@ static void emitTargetTeamsDistributeParallelForRegion(
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(
         CGF, ACCD_distribute, CodeGenDistribute, /*HasCancel=*/false);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
 
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_loop,
+  emitCommonACCGangDirective(CGF, S, ACCD_distribute_parallel_loop,
                               CodeGenTeams);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
@@ -4283,7 +4283,7 @@ static void emitTargetTeamsDistributeParallelForRegion(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeParallelLoopDirective &S) {
+    const ACCTargetGangDistributeParallelLoopDirective &S) {
   // Emit SPMD target teams distribute parallel for region as a standalone
   // region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
@@ -4297,8 +4297,8 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForDeviceFunction(
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopDirective(
-    const ACCTargetTeamsDistributeParallelLoopDirective &S) {
+void CodeGenFunction::EmitACCTargetGangDistributeParallelLoopDirective(
+    const ACCTargetGangDistributeParallelLoopDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForRegion(CGF, S, Action);
   };
@@ -4307,7 +4307,7 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopDirective(
 
 static void emitTargetTeamsDistributeParallelForVectorRegion(
     CodeGenFunction &CGF,
-    const ACCTargetTeamsDistributeParallelLoopVectorDirective &S,
+    const ACCTargetGangDistributeParallelLoopVectorDirective &S,
     ACCPrePostActionTy &Action) {
   auto &&CodeGenDistribute = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &) {
     CGF.EmitACCDistributeLoop(S, emitInnerParallelForWhenCombined,
@@ -4322,10 +4322,10 @@ static void emitTargetTeamsDistributeParallelForVectorRegion(
     (void)PrivateScope.Privatize();
     CGF.CGM.getOpenACCRuntime().emitInlinedDirective(
         CGF, ACCD_distribute, CodeGenDistribute, /*HasCancel=*/false);
-    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_teams);
+    CGF.EmitACCReductionClauseFinal(S, /*ReductionKind=*/ACCD_gang);
   };
 
-  emitCommonACCTeamsDirective(CGF, S, ACCD_distribute_parallel_loop_vector,
+  emitCommonACCGangDirective(CGF, S, ACCD_distribute_parallel_loop_vector,
                               CodeGenTeams);
   emitPostUpdateForReductionClause(CGF, S,
                                    [](CodeGenFunction &) { return nullptr; });
@@ -4333,7 +4333,7 @@ static void emitTargetTeamsDistributeParallelForVectorRegion(
 
 void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForVectorDeviceFunction(
     CodeGenModule &CGM, StringRef ParentName,
-    const ACCTargetTeamsDistributeParallelLoopVectorDirective &S) {
+    const ACCTargetGangDistributeParallelLoopVectorDirective &S) {
   // Emit SPMD target teams distribute parallel for vector region as a standalone
   // region.
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
@@ -4347,8 +4347,8 @@ void CodeGenFunction::EmitACCTargetTeamsDistributeParallelForVectorDeviceFunctio
   assert(Fn && Addr && "Target device function emission failed.");
 }
 
-void CodeGenFunction::EmitACCTargetTeamsDistributeParallelLoopVectorDirective(
-    const ACCTargetTeamsDistributeParallelLoopVectorDirective &S) {
+void CodeGenFunction::EmitACCTargetGangDistributeParallelLoopVectorDirective(
+    const ACCTargetGangDistributeParallelLoopVectorDirective &S) {
   auto &&CodeGen = [&S](CodeGenFunction &CGF, ACCPrePostActionTy &Action) {
     emitTargetTeamsDistributeParallelForVectorRegion(CGF, S, Action);
   };
@@ -4383,8 +4383,8 @@ CodeGenFunction::getACCCancelDestination(OpenACCDirectiveKind Kind) {
          Kind == ACCD_parallel_sections || Kind == ACCD_parallel_loop ||
          Kind == ACCD_distribute_parallel_loop ||
          Kind == ACCD_target_parallel_loop ||
-         Kind == ACCD_teams_distribute_parallel_loop ||
-         Kind == ACCD_target_teams_distribute_parallel_loop);
+         Kind == ACCD_gang_distribute_parallel_loop ||
+         Kind == ACCD_target_gang_distribute_parallel_loop);
   return ACCCancelStack.getExitBlock();
 }
 

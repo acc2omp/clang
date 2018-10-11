@@ -2733,7 +2733,7 @@ DEF_TRAVERSE_STMT(ACCTargetParallelDirective,
 DEF_TRAVERSE_STMT(ACCTargetParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDirective,
+DEF_TRAVERSE_STMT(ACCGangDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 DEF_TRAVERSE_STMT(ACCTargetUpdateDirective,
@@ -2763,31 +2763,31 @@ DEF_TRAVERSE_STMT(ACCTargetParallelLoopVectorDirective,
 DEF_TRAVERSE_STMT(ACCTargetVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeDirective,
+DEF_TRAVERSE_STMT(ACCGangDistributeDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeVectorDirective,
+DEF_TRAVERSE_STMT(ACCGangDistributeVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelLoopVectorDirective,
+DEF_TRAVERSE_STMT(ACCGangDistributeParallelLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTeamsDistributeParallelLoopDirective,
+DEF_TRAVERSE_STMT(ACCGangDistributeParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDirective,
+DEF_TRAVERSE_STMT(ACCTargetGangDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeDirective,
+DEF_TRAVERSE_STMT(ACCTargetGangDistributeDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelLoopDirective,
+DEF_TRAVERSE_STMT(ACCTargetGangDistributeParallelLoopDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeParallelLoopVectorDirective,
+DEF_TRAVERSE_STMT(ACCTargetGangDistributeParallelLoopVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
-DEF_TRAVERSE_STMT(ACCTargetTeamsDistributeVectorDirective,
+DEF_TRAVERSE_STMT(ACCTargetGangDistributeVectorDirective,
                   { TRY_TO(TraverseACCExecutableDirective(S)); })
 
 
@@ -3346,8 +3346,8 @@ bool RecursiveASTVisitor<Derived>::VisitACCDeleteClause(ACCDeleteClause *C) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::VisitACCNumTeamsClause(
-    ACCNumTeamsClause *C) {
+bool RecursiveASTVisitor<Derived>::VisitACCNumGangClause(
+    ACCNumGangClause *C) {
   TRY_TO(VisitACCClauseWithPreInit(C));
   TRY_TO(TraverseStmt(C->getNumTeams()));
   return true;

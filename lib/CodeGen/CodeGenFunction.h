@@ -3283,7 +3283,7 @@ public:
   void EmitACCTargetParallelDirective(const ACCTargetParallelDirective &S);
   void
   EmitACCTargetParallelLoopDirective(const ACCTargetParallelLoopDirective &S);
-  void EmitACCTeamsDirective(const ACCTeamsDirective &S);
+  void EmitACCGangDirective(const ACCGangDirective &S);
   void
   EmitACCCancellationPointDirective(const ACCCancellationPointDirective &S);
   void EmitACCCancelDirective(const ACCCancelDirective &S);
@@ -3299,22 +3299,22 @@ public:
   void EmitACCTargetParallelLoopVectorDirective(
       const ACCTargetParallelLoopVectorDirective &S);
   void EmitACCTargetVectorDirective(const ACCTargetVectorDirective &S);
-  void EmitACCTeamsDistributeDirective(const ACCTeamsDistributeDirective &S);
+  void EmitACCGangDistributeDirective(const ACCGangDistributeDirective &S);
   void
-  EmitACCTeamsDistributeVectorDirective(const ACCTeamsDistributeVectorDirective &S);
-  void EmitACCTeamsDistributeParallelLoopVectorDirective(
-      const ACCTeamsDistributeParallelLoopVectorDirective &S);
-  void EmitACCTeamsDistributeParallelLoopDirective(
-      const ACCTeamsDistributeParallelLoopDirective &S);
-  void EmitACCTargetTeamsDirective(const ACCTargetTeamsDirective &S);
-  void EmitACCTargetTeamsDistributeDirective(
-      const ACCTargetTeamsDistributeDirective &S);
-  void EmitACCTargetTeamsDistributeParallelLoopDirective(
-      const ACCTargetTeamsDistributeParallelLoopDirective &S);
-  void EmitACCTargetTeamsDistributeParallelLoopVectorDirective(
-      const ACCTargetTeamsDistributeParallelLoopVectorDirective &S);
-  void EmitACCTargetTeamsDistributeVectorDirective(
-      const ACCTargetTeamsDistributeVectorDirective &S);
+  EmitACCGangDistributeVectorDirective(const ACCGangDistributeVectorDirective &S);
+  void EmitACCGangDistributeParallelLoopVectorDirective(
+      const ACCGangDistributeParallelLoopVectorDirective &S);
+  void EmitACCGangDistributeParallelLoopDirective(
+      const ACCGangDistributeParallelLoopDirective &S);
+  void EmitACCTargetGangDirective(const ACCTargetGangDirective &S);
+  void EmitACCTargetGangDistributeDirective(
+      const ACCTargetGangDistributeDirective &S);
+  void EmitACCTargetGangDistributeParallelLoopDirective(
+      const ACCTargetGangDistributeParallelLoopDirective &S);
+  void EmitACCTargetGangDistributeParallelLoopVectorDirective(
+      const ACCTargetGangDistributeParallelLoopVectorDirective &S);
+  void EmitACCTargetGangDistributeVectorDirective(
+      const ACCTargetGangDistributeVectorDirective &S);
 
   /// Emit device code for the target directive.
   static void EmitACCTargetDeviceFunction(CodeGenModule &CGM,
@@ -3334,15 +3334,15 @@ public:
   /// Emit device code for the target teams directive.
   static void
   EmitACCTargetTeamsDeviceFunction(CodeGenModule &CGM, StringRef ParentName,
-                                   const ACCTargetTeamsDirective &S);
+                                   const ACCTargetGangDirective &S);
   /// Emit device code for the target teams distribute directive.
   static void EmitACCTargetTeamsDistributeDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeDirective &S);
+      const ACCTargetGangDistributeDirective &S);
   /// Emit device code for the target teams distribute vector directive.
   static void EmitACCTargetTeamsDistributeVectorDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeVectorDirective &S);
+      const ACCTargetGangDistributeVectorDirective &S);
   /// Emit device code for the target vector directive.
   static void EmitACCTargetVectorDeviceFunction(CodeGenModule &CGM,
                                               StringRef ParentName,
@@ -3351,11 +3351,11 @@ public:
   /// directive.
   static void EmitACCTargetTeamsDistributeParallelForVectorDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeParallelLoopVectorDirective &S);
+      const ACCTargetGangDistributeParallelLoopVectorDirective &S);
 
   static void EmitACCTargetTeamsDistributeParallelForDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
-      const ACCTargetTeamsDistributeParallelLoopDirective &S);
+      const ACCTargetGangDistributeParallelLoopDirective &S);
   /// \brief Emit inner loop of the worksharing/vector construct.
   ///
   /// \param S Directive, for which the inner loop must be emitted.

@@ -191,7 +191,7 @@ bool isOpenACCNestingTeamsDirective(OpenACCDirectiveKind DKind);
 /// 'acc teams distribute' or 'acc target teams'.
 /// \param DKind Specified directive.
 /// \return true - the directive is a teams-like directive, otherwise - false.
-bool isOpenACCTeamsDirective(OpenACCDirectiveKind DKind);
+bool isOpenACCGangDirective(OpenACCDirectiveKind DKind);
 
 /// \brief Checks if the specified directive is a simd directive.
 /// \param DKind Specified directive.

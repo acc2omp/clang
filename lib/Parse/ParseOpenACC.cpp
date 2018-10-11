@@ -39,8 +39,8 @@ enum OpenACCDirectiveKindEx {
   ACCD_target_exit,
   ACCD_update,
   ACCD_distribute_parallel,
-  ACCD_teams_distribute_parallel,
-  ACCD_target_teams_distribute_parallel
+  ACCD_gang_distribute_parallel,
+  ACCD_target_gang_distribute_parallel
 };
 
 class ThreadprivateListParserHelper final {
@@ -109,17 +109,17 @@ static OpenACCDirectiveKind ParseOpenACCDirectiveKind(Parser &P) {
     { ACCD_target, ACCD_vector, ACCD_target_vector },
     { ACCD_target_parallel, ACCD_loop, ACCD_target_parallel_loop },
     { ACCD_target_parallel_loop, ACCD_vector, ACCD_target_parallel_loop_vector },
-    { ACCD_teams, ACCD_distribute, ACCD_teams_distribute },
-    { ACCD_teams_distribute, ACCD_vector, ACCD_teams_distribute_vector },
-    { ACCD_teams_distribute, ACCD_parallel, ACCD_teams_distribute_parallel },
-    { ACCD_teams_distribute_parallel, ACCD_loop, ACCD_teams_distribute_parallel_loop },
-    { ACCD_teams_distribute_parallel_loop, ACCD_vector, ACCD_teams_distribute_parallel_loop_vector },
-    { ACCD_target, ACCD_teams, ACCD_target_teams },
-    { ACCD_target_teams, ACCD_distribute, ACCD_target_teams_distribute },
-    { ACCD_target_teams_distribute, ACCD_parallel, ACCD_target_teams_distribute_parallel },
-    { ACCD_target_teams_distribute, ACCD_vector, ACCD_target_teams_distribute_vector },
-    { ACCD_target_teams_distribute_parallel, ACCD_loop, ACCD_target_teams_distribute_parallel_loop },
-    { ACCD_target_teams_distribute_parallel_loop, ACCD_vector, ACCD_target_teams_distribute_parallel_loop_vector }
+    { ACCD_gang, ACCD_distribute, ACCD_gang_distribute },
+    { ACCD_gang_distribute, ACCD_vector, ACCD_gang_distribute_vector },
+    { ACCD_gang_distribute, ACCD_parallel, ACCD_gang_distribute_parallel },
+    { ACCD_gang_distribute_parallel, ACCD_loop, ACCD_gang_distribute_parallel_loop },
+    { ACCD_gang_distribute_parallel_loop, ACCD_vector, ACCD_gang_distribute_parallel_loop_vector },
+    { ACCD_target, ACCD_gang, ACCD_target_gang },
+    { ACCD_target_gang, ACCD_distribute, ACCD_target_gang_distribute },
+    { ACCD_target_gang_distribute, ACCD_parallel, ACCD_target_gang_distribute_parallel },
+    { ACCD_target_gang_distribute, ACCD_vector, ACCD_target_gang_distribute_vector },
+    { ACCD_target_gang_distribute_parallel, ACCD_loop, ACCD_target_gang_distribute_parallel_loop },
+    { ACCD_target_gang_distribute_parallel_loop, ACCD_vector, ACCD_target_gang_distribute_parallel_loop_vector }
   };
   enum { CancellationPoint = 0, DeclareReduction = 1, TargetData = 2 };
   auto Tok = P.getCurToken();
@@ -821,7 +821,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_parallel_sections:
   case ACCD_atomic:
   case ACCD_target:
-  case ACCD_teams:
+  case ACCD_gang:
   case ACCD_cancellation_point:
   case ACCD_cancel:
   case ACCD_data:
@@ -839,15 +839,15 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCDeclarativeDirectiveWithExtDecl(
   case ACCD_distribute_vector:
   case ACCD_target_parallel_loop_vector:
   case ACCD_target_vector:
-  case ACCD_teams_distribute:
-  case ACCD_teams_distribute_vector:
-  case ACCD_teams_distribute_parallel_loop_vector:
-  case ACCD_teams_distribute_parallel_loop:
-  case ACCD_target_teams:
-  case ACCD_target_teams_distribute:
-  case ACCD_target_teams_distribute_parallel_loop:
-  case ACCD_target_teams_distribute_parallel_loop_vector:
-  case ACCD_target_teams_distribute_vector:
+  case ACCD_gang_distribute:
+  case ACCD_gang_distribute_vector:
+  case ACCD_gang_distribute_parallel_loop_vector:
+  case ACCD_gang_distribute_parallel_loop:
+  case ACCD_target_gang:
+  case ACCD_target_gang_distribute:
+  case ACCD_target_gang_distribute_parallel_loop:
+  case ACCD_target_gang_distribute_parallel_loop_vector:
+  case ACCD_target_gang_distribute_vector:
     Diag(Tok, diag::err_acc_unexpected_directive)
         << 1 << getOpenACCDirectiveName(DKind);
     break;
@@ -990,7 +990,7 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_ordered:
   case ACCD_atomic:
   case ACCD_target:
-  case ACCD_teams:
+  case ACCD_gang:
   case ACCD_taskgroup:
   case ACCD_data:
   case ACCD_target_parallel:
@@ -1003,15 +1003,15 @@ StmtResult Parser::ParseOpenACCDeclarativeOrExecutableDirective(
   case ACCD_distribute_vector:
   case ACCD_target_parallel_loop_vector:
   case ACCD_target_vector:
-  case ACCD_teams_distribute:
-  case ACCD_teams_distribute_vector:
-  case ACCD_teams_distribute_parallel_loop_vector:
-  case ACCD_teams_distribute_parallel_loop:
-  case ACCD_target_teams:
-  case ACCD_target_teams_distribute:
-  case ACCD_target_teams_distribute_parallel_loop:
-  case ACCD_target_teams_distribute_parallel_loop_vector:
-  case ACCD_target_teams_distribute_vector: {
+  case ACCD_gang_distribute:
+  case ACCD_gang_distribute_vector:
+  case ACCD_gang_distribute_parallel_loop_vector:
+  case ACCD_gang_distribute_parallel_loop:
+  case ACCD_target_gang:
+  case ACCD_target_gang_distribute:
+  case ACCD_target_gang_distribute_parallel_loop:
+  case ACCD_target_gang_distribute_parallel_loop_vector:
+  case ACCD_target_gang_distribute_vector: {
     ConsumeToken();
     // Parse directive name of the 'critical' directive if any.
     if (DKind == ACCD_critical) {
@@ -1233,7 +1233,7 @@ ACCClause *Parser::ParseOpenACCClause(OpenACCDirectiveKind DKind,
   case ACCC_collapse:
   case ACCC_ordered:
   case ACCC_device:
-  case ACCC_num_teams:
+  case ACCC_num_gangs:
   case ACCC_thread_limit:
   case ACCC_priority:
   case ACCC_grainsize:

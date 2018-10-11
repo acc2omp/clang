@@ -265,8 +265,8 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCTargetDirectiveClass:
     EmitACCTargetDirective(cast<ACCTargetDirective>(*S));
     break;
-  case Stmt::ACCTeamsDirectiveClass:
-    EmitACCTeamsDirective(cast<ACCTeamsDirective>(*S));
+  case Stmt::ACCGangDirectiveClass:
+    EmitACCGangDirective(cast<ACCGangDirective>(*S));
     break;
   case Stmt::ACCCancellationPointDirectiveClass:
     EmitACCCancellationPointDirective(cast<ACCCancellationPointDirective>(*S));
@@ -319,39 +319,39 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::ACCTargetVectorDirectiveClass:
     EmitACCTargetVectorDirective(cast<ACCTargetVectorDirective>(*S));
     break;
-  case Stmt::ACCTeamsDistributeDirectiveClass:
-    EmitACCTeamsDistributeDirective(cast<ACCTeamsDistributeDirective>(*S));
+  case Stmt::ACCGangDistributeDirectiveClass:
+    EmitACCGangDistributeDirective(cast<ACCGangDistributeDirective>(*S));
     break;
-  case Stmt::ACCTeamsDistributeVectorDirectiveClass:
-    EmitACCTeamsDistributeVectorDirective(
-        cast<ACCTeamsDistributeVectorDirective>(*S));
+  case Stmt::ACCGangDistributeVectorDirectiveClass:
+    EmitACCGangDistributeVectorDirective(
+        cast<ACCGangDistributeVectorDirective>(*S));
     break;
-  case Stmt::ACCTeamsDistributeParallelLoopVectorDirectiveClass:
-    EmitACCTeamsDistributeParallelLoopVectorDirective(
-        cast<ACCTeamsDistributeParallelLoopVectorDirective>(*S));
+  case Stmt::ACCGangDistributeParallelLoopVectorDirectiveClass:
+    EmitACCGangDistributeParallelLoopVectorDirective(
+        cast<ACCGangDistributeParallelLoopVectorDirective>(*S));
     break;
-  case Stmt::ACCTeamsDistributeParallelLoopDirectiveClass:
-    EmitACCTeamsDistributeParallelLoopDirective(
-        cast<ACCTeamsDistributeParallelLoopDirective>(*S));
+  case Stmt::ACCGangDistributeParallelLoopDirectiveClass:
+    EmitACCGangDistributeParallelLoopDirective(
+        cast<ACCGangDistributeParallelLoopDirective>(*S));
     break;
-  case Stmt::ACCTargetTeamsDirectiveClass:
-    EmitACCTargetTeamsDirective(cast<ACCTargetTeamsDirective>(*S));
+  case Stmt::ACCTargetGangDirectiveClass:
+    EmitACCTargetGangDirective(cast<ACCTargetGangDirective>(*S));
     break;
-  case Stmt::ACCTargetTeamsDistributeDirectiveClass:
-    EmitACCTargetTeamsDistributeDirective(
-        cast<ACCTargetTeamsDistributeDirective>(*S));
+  case Stmt::ACCTargetGangDistributeDirectiveClass:
+    EmitACCTargetGangDistributeDirective(
+        cast<ACCTargetGangDistributeDirective>(*S));
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelLoopDirectiveClass:
-    EmitACCTargetTeamsDistributeParallelLoopDirective(
-        cast<ACCTargetTeamsDistributeParallelLoopDirective>(*S));
+  case Stmt::ACCTargetGangDistributeParallelLoopDirectiveClass:
+    EmitACCTargetGangDistributeParallelLoopDirective(
+        cast<ACCTargetGangDistributeParallelLoopDirective>(*S));
     break;
-  case Stmt::ACCTargetTeamsDistributeParallelLoopVectorDirectiveClass:
-    EmitACCTargetTeamsDistributeParallelLoopVectorDirective(
-        cast<ACCTargetTeamsDistributeParallelLoopVectorDirective>(*S));
+  case Stmt::ACCTargetGangDistributeParallelLoopVectorDirectiveClass:
+    EmitACCTargetGangDistributeParallelLoopVectorDirective(
+        cast<ACCTargetGangDistributeParallelLoopVectorDirective>(*S));
     break;
-  case Stmt::ACCTargetTeamsDistributeVectorDirectiveClass:
-    EmitACCTargetTeamsDistributeVectorDirective(
-        cast<ACCTargetTeamsDistributeVectorDirective>(*S));
+  case Stmt::ACCTargetGangDistributeVectorDirectiveClass:
+    EmitACCTargetGangDistributeVectorDirective(
+        cast<ACCTargetGangDistributeVectorDirective>(*S));
     break;
 
   case Stmt::OMPParallelDirectiveClass:
