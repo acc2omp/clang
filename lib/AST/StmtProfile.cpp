@@ -18,8 +18,8 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
-#include "clang/AST/ExprOpenACC.h"
-#include "clang/AST/ExprOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
 #include "clang/AST/ODRHash.h"
 #include "clang/AST/StmtVisitor.h"
 #include "llvm/ADT/FoldingSet.h"
@@ -1658,10 +1658,6 @@ StmtProfiler::VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *S) {
 }
 
 void StmtProfiler::VisitArraySubscriptExpr(const ArraySubscriptExpr *S) {
-  VisitExpr(S);
-}
-
-void StmtProfiler::VisitOMPACCArraySectionExpr(const OMPACCArraySectionExpr *S) {
   VisitExpr(S);
 }
 

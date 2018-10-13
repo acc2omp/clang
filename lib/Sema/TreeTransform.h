@@ -22,8 +22,8 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
-#include "clang/AST/ExprOpenACC.h"
-#include "clang/AST/ExprOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/StmtCXX.h"
 #include "clang/AST/StmtObjC.h"
@@ -2747,18 +2747,6 @@ public:
     return getSema().ActOnArraySubscriptExpr(/*Scope=*/nullptr, LHS,
                                              LBracketLoc, RHS,
                                              RBracketLoc);
-  }
-
-  /// \brief Build a new array section expression.
-  ///
-  /// By default, performs semantic analysis to build the new expression.
-  /// Subclasses may override this routine to provide different behavior.
-  ExprResult RebuildOMPACCArraySectionExpr(Expr *Base, SourceLocation LBracketLoc,
-                                        Expr *LowerBound,
-                                        SourceLocation ColonLoc, Expr *Length,
-                                        SourceLocation RBracketLoc) {
-    return getSema().ActOnOMPACCArraySectionExpr(Base, LBracketLoc, LowerBound,
-                                              ColonLoc, Length, RBracketLoc);
   }
 
   /// \brief Build a new array section expression.
@@ -11051,36 +11039,6 @@ TreeTransform<Derived>::TransformArraySubscriptExpr(ArraySubscriptExpr *E) {
                                            /*FIXME:*/E->getLHS()->getLocStart(),
                                                 RHS.get(),
                                                 E->getRBracketLoc());
-}
-
-template <typename Derived>
-ExprResult
-TreeTransform<Derived>::TransformOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
-  ExprResult Base = getDerived().TransformExpr(E->getBase());
-  if (Base.isInvalid())
-    return ExprError();
-
-  ExprResult LowerBound;
-  if (E->getLowerBound()) {
-    LowerBound = getDerived().TransformExpr(E->getLowerBound());
-    if (LowerBound.isInvalid())
-      return ExprError();
-  }
-
-  ExprResult Length;
-  if (E->getLength()) {
-    Length = getDerived().TransformExpr(E->getLength());
-    if (Length.isInvalid())
-      return ExprError();
-  }
-
-  if (!getDerived().AlwaysRebuild() && Base.get() == E->getBase() &&
-      LowerBound.get() == E->getLowerBound() && Length.get() == E->getLength())
-    return E;
-
-  return getDerived().RebuildOMPACCArraySectionExpr(
-      Base.get(), E->getBase()->getLocEnd(), LowerBound.get(), E->getColonLoc(),
-      Length.get(), E->getRBracketLoc());
 }
 
 template <typename Derived>

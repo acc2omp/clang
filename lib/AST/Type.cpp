@@ -2668,9 +2668,7 @@ StringRef BuiltinType::getName(const PrintingPolicy &Policy) const {
   case OCLReserveID:
     return "reserve_id_t";
   case OMPACCArraySection:
-    return "<OpenACC array section type>";
-  case OMPACCArraySection:
-    return "<OpenMP array section type>";
+    return "<OpenACC or OpenMP array section type>";
   }
 
   llvm_unreachable("Invalid builtin type.");

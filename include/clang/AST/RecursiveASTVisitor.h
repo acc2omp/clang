@@ -27,8 +27,8 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
-#include "clang/AST/ExprOpenMP.h"
-#include "clang/AST/ExprOpenACC.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
 #include "clang/AST/LambdaCapture.h"
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/AST/OpenACCClause.h"
@@ -2456,7 +2456,6 @@ DEF_TRAVERSE_STMT(CXXMemberCallExpr, {})
 // over the children.
 DEF_TRAVERSE_STMT(AddrLabelExpr, {})
 DEF_TRAVERSE_STMT(ArraySubscriptExpr, {})
-DEF_TRAVERSE_STMT(OMPACCArraySectionExpr, {})
 DEF_TRAVERSE_STMT(OMPACCArraySectionExpr, {})
 
 DEF_TRAVERSE_STMT(BlockExpr, {

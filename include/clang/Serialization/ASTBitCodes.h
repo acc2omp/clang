@@ -927,17 +927,14 @@ namespace serialization {
       /// \brief OpenCL reserve_id type.
       PREDEF_TYPE_RESERVE_ID_ID = 41,
 
-      /// \brief The placeholder type for OpenACC array section.
-      PREDEF_TYPE_ACC_ARRAY_SECTION = 42,
-
-      /// \brief The placeholder type for OpenMP array section.
-      PREDEF_TYPE_OMP_ARRAY_SECTION = 43,
+      /// \brief The placeholder type for OpenACC or OpenMP array section.
+      PREDEF_TYPE_ACC_OMP_ARRAY_SECTION = 42,
 
       /// \brief The '__float128' type
-      PREDEF_TYPE_FLOAT128_ID = 44,
+      PREDEF_TYPE_FLOAT128_ID = 43,
 
       /// \brief The '_Float16' type
-      PREDEF_TYPE_FLOAT16_ID = 45,
+      PREDEF_TYPE_FLOAT16_ID = 44,
 
       /// \brief OpenCL image types with auto numeration
 #define IMAGE_TYPE(ImgType, Id, SingletonId, Access, Suffix) \
@@ -1837,6 +1834,8 @@ namespace serialization {
       STMT_SEH_FINALLY,           // SEHFinallyStmt
       STMT_SEH_TRY,               // SEHTryStmt
 
+      //OpenACC and OpenMP Array Section
+      EXPR_ACC_OMP_ARRAY_SECTION,
       // OpenACC directives
       STMT_ACC_PARALLEL_DIRECTIVE,
       STMT_ACC_VECTOR_DIRECTIVE,
@@ -1885,7 +1884,6 @@ namespace serialization {
       STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE,
       STMT_ACC_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_VECTOR_DIRECTIVE,
       STMT_ACC_TARGET_TEAMS_DISTRIBUTE_VECTOR_DIRECTIVE,
-      EXPR_ACC_ARRAY_SECTION,
 
       // OpenMP directives
       STMT_OMP_PARALLEL_DIRECTIVE,
@@ -1935,7 +1933,6 @@ namespace serialization {
       STMT_OMP_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE,
       STMT_OMP_TARGET_TEAMS_DISTRIBUTE_PARALLEL_FOR_SIMD_DIRECTIVE,
       STMT_OMP_TARGET_TEAMS_DISTRIBUTE_SIMD_DIRECTIVE,
-      EXPR_OMP_ARRAY_SECTION,
 
       // ARC
       EXPR_OBJC_BRIDGED_CAST,     // ObjCBridgedCastExpr

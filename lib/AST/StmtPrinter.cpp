@@ -21,8 +21,8 @@
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
-#include "clang/AST/ExprOpenACC.h"
-#include "clang/AST/ExprOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Basic/CharInfo.h"
@@ -2456,19 +2456,6 @@ void StmtPrinter::VisitArraySubscriptExpr(ArraySubscriptExpr *Node) {
   PrintExpr(Node->getLHS());
   OS << "[";
   PrintExpr(Node->getRHS());
-  OS << "]";
-}
-
-void StmtPrinter::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *Node) {
-  PrintExpr(Node->getBase());
-  OS << "[";
-  if (Node->getLowerBound())
-    PrintExpr(Node->getLowerBound());
-  if (Node->getColonLoc().isValid()) {
-    OS << ":";
-    if (Node->getLength())
-      PrintExpr(Node->getLength());
-  }
   OS << "]";
 }
 

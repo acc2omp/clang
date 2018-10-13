@@ -629,15 +629,6 @@ void ASTStmtReader::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   E->setRBracketLoc(ReadSourceLocation());
 }
 
-void ASTStmtReader::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
-  VisitExpr(E);
-  E->setBase(Record.readSubExpr());
-  E->setLowerBound(Record.readSubExpr());
-  E->setLength(Record.readSubExpr());
-  E->setColonLoc(ReadSourceLocation());
-  E->setRBracketLoc(ReadSourceLocation());
-}
-
 void ASTStmtReader::VisitCallExpr(CallExpr *E) {
   VisitExpr(E);
   E->setNumArgs(Record.getContext(), Record.readInt());
@@ -4737,11 +4728,7 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       S = new (Context) ArraySubscriptExpr(Empty);
       break;
 
-    case EXPR_ACC_ARRAY_SECTION:
-      S = new (Context) OMPACCArraySectionExpr(Empty);
-      break;
-
-    case EXPR_OMP_ARRAY_SECTION:
+    case EXPR_ACC_OMP_ARRAY_SECTION:
       S = new (Context) OMPACCArraySectionExpr(Empty);
       break;
 

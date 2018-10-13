@@ -1,4 +1,4 @@
-//===--- ExprOpenMP.h - Classes for representing expressions ----*- C++ -*-===//
+//===--- ExprOpenACCOpenMP.h - Classes for representing expressions ----*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_AST_EXPROPENMP_H
-#define LLVM_CLANG_AST_EXPROPENMP_H
+#ifndef LLVM_CLANG_AST_EXPROPENACCOPENMPOPENMP_H
+#define LLVM_CLANG_AST_EXPROPENACCOPENMPOPENMP_H
 
 #include "clang/AST/Expr.h"
 

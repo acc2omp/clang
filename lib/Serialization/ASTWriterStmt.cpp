@@ -577,17 +577,7 @@ void ASTStmtWriter::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   Record.AddStmt(E->getLength());
   Record.AddSourceLocation(E->getColonLoc());
   Record.AddSourceLocation(E->getRBracketLoc());
-  Code = serialization::EXPR_ACC_ARRAY_SECTION;
-}
-
-void ASTStmtWriter::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
-  VisitExpr(E);
-  Record.AddStmt(E->getBase());
-  Record.AddStmt(E->getLowerBound());
-  Record.AddStmt(E->getLength());
-  Record.AddSourceLocation(E->getColonLoc());
-  Record.AddSourceLocation(E->getRBracketLoc());
-  Code = serialization::EXPR_OMP_ARRAY_SECTION;
+  Code = serialization::EXPR_ACC_OMP_ARRAY_SECTION;
 }
 
 void ASTStmtWriter::VisitCallExpr(CallExpr *E) {

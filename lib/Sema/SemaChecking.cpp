@@ -26,8 +26,8 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
-#include "clang/AST/ExprOpenACC.h"
-#include "clang/AST/ExprOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
+#include "clang/AST/ExprOpenACCOpenMP.h"
 #include "clang/AST/NSAPI.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Stmt.h"
@@ -8071,11 +8071,6 @@ static const Expr *EvalVal(const Expr *E,
                       ParentDecl);
     }
 
-    case Stmt::OMPACCArraySectionExprClass: {
-      return EvalAddr(cast<OMPACCArraySectionExpr>(E)->getBase(), refVars,
-                      ParentDecl);
-    }
-
     case Stmt::ConditionalOperatorClass: {
       // For conditional operators we need to see if either the LHS or RHS are
       // non-NULL Expr's.  If one is non-NULL, we return it.
@@ -11096,13 +11091,6 @@ void Sema::CheckArrayAccess(const Expr *expr) {
         const ArraySubscriptExpr *ASE = cast<ArraySubscriptExpr>(expr);
         CheckArrayAccess(ASE->getBase(), ASE->getIdx(), ASE,
                          AllowOnePastEnd > 0);
-        return;
-      }
-      case Stmt::OMPACCArraySectionExprClass: {
-        const OMPACCArraySectionExpr *ASE = cast<OMPACCArraySectionExpr>(expr);
-        if (ASE->getLowerBound())
-          CheckArrayAccess(ASE->getBase(), ASE->getLowerBound(),
-                           /*ASE=*/nullptr, AllowOnePastEnd > 0);
         return;
       }
       case Stmt::OMPACCArraySectionExprClass: {

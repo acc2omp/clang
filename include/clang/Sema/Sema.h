@@ -4278,10 +4278,6 @@ public:
   ExprResult ActOnOMPACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                       Expr *LowerBound, SourceLocation ColonLoc,
                                       Expr *Length, SourceLocation RBLoc);
-  
-  ExprResult ActOnOMPACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
-                                      Expr *LowerBound, SourceLocation ColonLoc,
-                                      Expr *Length, SourceLocation RBLoc);
 
   // This struct is for use by ActOnMemberAccess to allow
   // BuildMemberReferenceExpr to be able to reinvoke ActOnMemberAccess after
