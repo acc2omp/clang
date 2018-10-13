@@ -1264,10 +1264,10 @@ LValue CodeGenFunction::EmitLValue(const Expr *E) {
     return EmitUnaryOpLValue(cast<UnaryOperator>(E));
   case Expr::ArraySubscriptExprClass:
     return EmitArraySubscriptExpr(cast<ArraySubscriptExpr>(E));
-  case Expr::ACCArraySectionExprClass:
-    return EmitACCArraySectionExpr(cast<ACCArraySectionExpr>(E));
-  case Expr::OMPArraySectionExprClass:
-    return EmitOMPArraySectionExpr(cast<OMPArraySectionExpr>(E));
+  case Expr::OMPACCArraySectionExprClass:
+    return EmitOMPACCArraySectionExpr(cast<OMPACCArraySectionExpr>(E));
+  case Expr::OMPACCArraySectionExprClass:
+    return EmitOMPACCArraySectionExpr(cast<OMPACCArraySectionExpr>(E));
   case Expr::ExtVectorElementExprClass:
     return EmitExtVectorElementExpr(cast<ExtVectorElementExpr>(E));
   case Expr::MemberExprClass:
@@ -3436,8 +3436,8 @@ static Address emitACCArraySectionBase(CodeGenFunction &CGF, const Expr *Base,
                                        QualType BaseTy, QualType ElTy,
                                        bool IsLowerBound) {
   LValue BaseLVal;
-  if (auto *ASE = dyn_cast<ACCArraySectionExpr>(Base->IgnoreParenImpCasts())) {
-    BaseLVal = CGF.EmitACCArraySectionExpr(ASE, IsLowerBound);
+  if (auto *ASE = dyn_cast<OMPACCArraySectionExpr>(Base->IgnoreParenImpCasts())) {
+    BaseLVal = CGF.EmitOMPACCArraySectionExpr(ASE, IsLowerBound);
     if (BaseTy->isArrayType()) {
       Address Addr = BaseLVal.getAddress();
       BaseInfo = BaseLVal.getBaseInfo();
@@ -3470,9 +3470,9 @@ static Address emitACCArraySectionBase(CodeGenFunction &CGF, const Expr *Base,
   return CGF.EmitPointerWithAlignment(Base, &BaseInfo, &TBAAInfo);
 }
 
-LValue CodeGenFunction::EmitACCArraySectionExpr(const ACCArraySectionExpr *E,
+LValue CodeGenFunction::EmitOMPACCArraySectionExpr(const OMPACCArraySectionExpr *E,
                                                 bool IsLowerBound) {
-  QualType BaseTy = ACCArraySectionExpr::getBaseOriginalType(E->getBase());
+  QualType BaseTy = OMPACCArraySectionExpr::getBaseOriginalType(E->getBase());
   QualType ResultExprTy;
   if (auto *AT = getContext().getAsArrayType(BaseTy))
     ResultExprTy = AT->getElementType();
@@ -3629,8 +3629,8 @@ static Address emitOMPArraySectionBase(CodeGenFunction &CGF, const Expr *Base,
                                        QualType BaseTy, QualType ElTy,
                                        bool IsLowerBound) {
   LValue BaseLVal;
-  if (auto *ASE = dyn_cast<OMPArraySectionExpr>(Base->IgnoreParenImpCasts())) {
-    BaseLVal = CGF.EmitOMPArraySectionExpr(ASE, IsLowerBound);
+  if (auto *ASE = dyn_cast<OMPACCArraySectionExpr>(Base->IgnoreParenImpCasts())) {
+    BaseLVal = CGF.EmitOMPACCArraySectionExpr(ASE, IsLowerBound);
     if (BaseTy->isArrayType()) {
       Address Addr = BaseLVal.getAddress();
       BaseInfo = BaseLVal.getBaseInfo();
@@ -3663,9 +3663,9 @@ static Address emitOMPArraySectionBase(CodeGenFunction &CGF, const Expr *Base,
   return CGF.EmitPointerWithAlignment(Base, &BaseInfo, &TBAAInfo);
 }
 
-LValue CodeGenFunction::EmitOMPArraySectionExpr(const OMPArraySectionExpr *E,
+LValue CodeGenFunction::EmitOMPACCArraySectionExpr(const OMPACCArraySectionExpr *E,
                                                 bool IsLowerBound) {
-  QualType BaseTy = OMPArraySectionExpr::getBaseOriginalType(E->getBase());
+  QualType BaseTy = OMPACCArraySectionExpr::getBaseOriginalType(E->getBase());
   QualType ResultExprTy;
   if (auto *AT = getContext().getAsArrayType(BaseTy))
     ResultExprTy = AT->getElementType();

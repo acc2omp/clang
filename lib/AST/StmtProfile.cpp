@@ -1661,11 +1661,11 @@ void StmtProfiler::VisitArraySubscriptExpr(const ArraySubscriptExpr *S) {
   VisitExpr(S);
 }
 
-void StmtProfiler::VisitACCArraySectionExpr(const ACCArraySectionExpr *S) {
+void StmtProfiler::VisitOMPACCArraySectionExpr(const OMPACCArraySectionExpr *S) {
   VisitExpr(S);
 }
 
-void StmtProfiler::VisitOMPArraySectionExpr(const OMPArraySectionExpr *S) {
+void StmtProfiler::VisitOMPACCArraySectionExpr(const OMPACCArraySectionExpr *S) {
   VisitExpr(S);
 }
 

@@ -899,8 +899,8 @@ LValue ACCReductionCodeGen::emitSharedLValue(CodeGenFunction &CGF, const Expr *E
 
 LValue ACCReductionCodeGen::emitSharedLValueUB(CodeGenFunction &CGF,
                                             const Expr *E) {
-  if (const auto *OASE = dyn_cast<ACCArraySectionExpr>(E))
-    return CGF.EmitACCArraySectionExpr(OASE, /*IsLowerBound=*/false);
+  if (const auto *OASE = dyn_cast<OMPACCArraySectionExpr>(E))
+    return CGF.EmitOMPACCArraySectionExpr(OASE, /*IsLowerBound=*/false);
   return LValue();
 }
 
@@ -949,7 +949,7 @@ void ACCReductionCodeGen::emitAggregateType(CodeGenFunction &CGF, unsigned N) {
   auto *PrivateVD =
       cast<VarDecl>(cast<DeclRefExpr>(ClausesData[N].Private)->getDecl());
   QualType PrivateType = PrivateVD->getType();
-  bool AsArraySection = isa<ACCArraySectionExpr>(ClausesData[N].Ref);
+  bool AsArraySection = isa<OMPACCArraySectionExpr>(ClausesData[N].Ref);
   if (!PrivateType->isVariablyModifiedType()) {
     Sizes.emplace_back(
         CGF.getACCTypeSize(
@@ -1105,9 +1105,9 @@ Address ACCReductionCodeGen::adjustPrivateAddress(CodeGenFunction &CGF, unsigned
                                                Address PrivateAddr) {
   const DeclRefExpr *DE;
   const VarDecl *OrigVD = nullptr;
-  if (auto *OASE = dyn_cast<ACCArraySectionExpr>(ClausesData[N].Ref)) {
+  if (auto *OASE = dyn_cast<OMPACCArraySectionExpr>(ClausesData[N].Ref)) {
     auto *Base = OASE->getBase()->IgnoreParenImpCasts();
-    while (auto *TempOASE = dyn_cast<ACCArraySectionExpr>(Base))
+    while (auto *TempOASE = dyn_cast<OMPACCArraySectionExpr>(Base))
       Base = TempOASE->getBase()->IgnoreParenImpCasts();
     while (auto *TempASE = dyn_cast<ArraySubscriptExpr>(Base))
       Base = TempASE->getBase()->IgnoreParenImpCasts();
@@ -4634,9 +4634,9 @@ void CGOpenACCRuntime::emitTaskCall(CodeGenFunction &CGF, SourceLocation Loc,
       auto Addr = CGF.EmitLValue(E);
       llvm::Value *Size;
       QualType Ty = E->getType();
-      if (auto *ASE = dyn_cast<ACCArraySectionExpr>(E->IgnoreParenImpCasts())) {
+      if (auto *ASE = dyn_cast<OMPACCArraySectionExpr>(E->IgnoreParenImpCasts())) {
         LValue UpAddrLVal =
-            CGF.EmitACCArraySectionExpr(ASE, /*LowerBound=*/false);
+            CGF.EmitOMPACCArraySectionExpr(ASE, /*LowerBound=*/false);
         llvm::Value *UpAddr =
             CGF.Builder.CreateConstGEP1_32(UpAddrLVal.getPointer(), /*Idx0=*/1);
         llvm::Value *LowIntPtr =
@@ -6197,8 +6197,8 @@ private:
     // Given that an array section is considered a built-in type, we need to
     // do the calculation based on the length of the section instead of relying
     // on CGF.getACCTypeSize(E->getType()).
-    if (const auto *OAE = dyn_cast<ACCArraySectionExpr>(E)) {
-      QualType BaseTy = ACCArraySectionExpr::getBaseOriginalType(
+    if (const auto *OAE = dyn_cast<OMPACCArraySectionExpr>(E)) {
+      QualType BaseTy = OMPACCArraySectionExpr::getBaseOriginalType(
                             OAE->getBase()->IgnoreParenImpCasts())
                             .getCanonicalType();
 
@@ -6274,7 +6274,7 @@ private:
   /// \brief Return true if the provided expression is a final array section. A
   /// final array section, is one whose length can't be proved to be one.
   bool isFinalArraySectionExpression(const Expr *E) const {
-    auto *OASE = dyn_cast<ACCArraySectionExpr>(E);
+    auto *OASE = dyn_cast<OMPACCArraySectionExpr>(E);
 
     // It is not an array section and therefore not a unity-size one.
     if (!OASE)
@@ -6290,7 +6290,7 @@ private:
     // for this dimension. Also, we should always expect a length if the
     // base type is pointer.
     if (!Length) {
-      auto BaseQTy = ACCArraySectionExpr::getBaseOriginalType(
+      auto BaseQTy = OMPACCArraySectionExpr::getBaseOriginalType(
                          OASE->getBase()->IgnoreParenImpCasts())
                          .getCanonicalType();
       if (auto *ATy = dyn_cast<ConstantArrayType>(BaseQTy.getTypePtr()))
@@ -6488,10 +6488,10 @@ private:
       // special treatment for array sections given that they are built-in
       // types.
       const auto *OASE =
-          dyn_cast<ACCArraySectionExpr>(I->getAssociatedExpression());
+          dyn_cast<OMPACCArraySectionExpr>(I->getAssociatedExpression());
       bool IsPointer =
           (OASE &&
-           ACCArraySectionExpr::getBaseOriginalType(OASE)
+           OMPACCArraySectionExpr::getBaseOriginalType(OASE)
                .getCanonicalType()
                ->isAnyPointerType()) ||
           I->getAssociatedExpression()->getType()->isAnyPointerType();
@@ -6503,7 +6503,7 @@ private:
         assert((Next == CE ||
                 isa<MemberExpr>(Next->getAssociatedExpression()) ||
                 isa<ArraySubscriptExpr>(Next->getAssociatedExpression()) ||
-                isa<ACCArraySectionExpr>(Next->getAssociatedExpression())) &&
+                isa<OMPACCArraySectionExpr>(Next->getAssociatedExpression())) &&
                "Unexpected expression");
 
         llvm::Value *LB =

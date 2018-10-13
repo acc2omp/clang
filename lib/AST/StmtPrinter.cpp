@@ -2459,7 +2459,7 @@ void StmtPrinter::VisitArraySubscriptExpr(ArraySubscriptExpr *Node) {
   OS << "]";
 }
 
-void StmtPrinter::VisitACCArraySectionExpr(ACCArraySectionExpr *Node) {
+void StmtPrinter::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *Node) {
   PrintExpr(Node->getBase());
   OS << "[";
   if (Node->getLowerBound())
@@ -2472,7 +2472,7 @@ void StmtPrinter::VisitACCArraySectionExpr(ACCArraySectionExpr *Node) {
   OS << "]";
 }
 
-void StmtPrinter::VisitOMPArraySectionExpr(OMPArraySectionExpr *Node) {
+void StmtPrinter::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *Node) {
   PrintExpr(Node->getBase());
   OS << "[";
   if (Node->getLowerBound())

@@ -2149,11 +2149,11 @@ enum CXCursorKind {
 
   /** \brief OpenMP 4.0 [2.4, Array Section].
    */
-  CXCursor_ACCArraySectionExpr           = 147,
+  CXCursor_OMPACCArraySectionExpr           = 147,
 
   /** \brief OpenMP 4.0 [2.4, Array Section].
    */
-  CXCursor_OMPArraySectionExpr           = 148,
+  CXCursor_OMPACCArraySectionExpr           = 148,
 
   /** \brief Represents an @available(...) check.
    */

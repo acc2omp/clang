@@ -1103,8 +1103,8 @@ void CodeGenFunction::EmitACCReductionClauseInit(
     auto *LHSVD = cast<VarDecl>(cast<DeclRefExpr>(*ILHS)->getDecl());
     auto *RHSVD = cast<VarDecl>(cast<DeclRefExpr>(*IRHS)->getDecl());
     QualType Type = PrivateVD->getType();
-    bool isaACCArraySectionExpr = isa<ACCArraySectionExpr>(IRef);
-    if (isaACCArraySectionExpr && Type->isVariablyModifiedType()) {
+    bool isaOMPACCArraySectionExpr = isa<OMPACCArraySectionExpr>(IRef);
+    if (isaOMPACCArraySectionExpr && Type->isVariablyModifiedType()) {
       // Store the address of the original variable associated with the LHS
       // implicit variable.
       PrivateScope.addPrivate(LHSVD, [&RedCG, Count]() -> Address {
@@ -1113,7 +1113,7 @@ void CodeGenFunction::EmitACCReductionClauseInit(
       PrivateScope.addPrivate(RHSVD, [this, PrivateVD]() -> Address {
         return GetAddrOfLocalVar(PrivateVD);
       });
-    } else if ((isaACCArraySectionExpr && Type->isScalarType()) ||
+    } else if ((isaOMPACCArraySectionExpr && Type->isScalarType()) ||
                isa<ArraySubscriptExpr>(IRef)) {
       // Store the address of the original variable associated with the LHS
       // implicit variable.

@@ -3985,9 +3985,9 @@ public:
   LValue EmitUnaryOpLValue(const UnaryOperator *E);
   LValue EmitArraySubscriptExpr(const ArraySubscriptExpr *E,
                                 bool Accessed = false);
-  LValue EmitACCArraySectionExpr(const ACCArraySectionExpr *E,
+  LValue EmitOMPACCArraySectionExpr(const OMPACCArraySectionExpr *E,
                                  bool IsLowerBound = true);
-  LValue EmitOMPArraySectionExpr(const OMPArraySectionExpr *E,
+  LValue EmitOMPACCArraySectionExpr(const OMPACCArraySectionExpr *E,
                                  bool IsLowerBound = true);
   LValue EmitExtVectorElementExpr(const ExtVectorElementExpr *E);
   LValue EmitMemberExpr(const MemberExpr *E);

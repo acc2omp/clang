@@ -1263,7 +1263,7 @@ bool Sema::IsOpenMPCapturedByRef(ValueDecl *D, unsigned Level) {
             return false;
 
           if (isa<ArraySubscriptExpr>(EI->getAssociatedExpression()) ||
-              isa<OMPArraySectionExpr>(EI->getAssociatedExpression()) ||
+              isa<OMPACCArraySectionExpr>(EI->getAssociatedExpression()) ||
               isa<MemberExpr>(EI->getAssociatedExpression())) {
             IsVariableAssociatedWithSection = true;
             // There is nothing more we need to know about this variable.
@@ -1905,7 +1905,7 @@ public:
                                     MappableComponent &MC) {
                                return MC.getAssociatedDeclaration() ==
                                           nullptr &&
-                                      (isa<OMPArraySectionExpr>(
+                                      (isa<OMPACCArraySectionExpr>(
                                            MC.getAssociatedExpression()) ||
                                        isa<ArraySubscriptExpr>(
                                            MC.getAssociatedExpression()));
@@ -2035,7 +2035,7 @@ public:
                   // Do both expressions have the same kind?
                   if (CCI->getAssociatedExpression()->getStmtClass() !=
                       SC.getAssociatedExpression()->getStmtClass())
-                    if (!(isa<OMPArraySectionExpr>(
+                    if (!(isa<OMPACCArraySectionExpr>(
                               SC.getAssociatedExpression()) &&
                           isa<ArraySubscriptExpr>(
                               CCI->getAssociatedExpression())))
@@ -3081,9 +3081,6 @@ StmtResult Sema::ActOnOpenMPExecutableDirective(
   case OMPD_parallel_for:
     Res = ActOnOpenMPParallelForDirective(ClausesWithImplicit, AStmt, StartLoc,
                                           EndLoc, VarsWithInheritedDSA);
-    llvm::outs()<< "============= Generated Action for OMPD_parallel_for {\n";
-    Res.get()->dumpColor();
-    llvm::outs()<< "} =============\n";
     AllowedNameModifiers.push_back(OMPD_parallel);
     break;
   case OMPD_parallel_for_simd:
@@ -3288,7 +3285,7 @@ StmtResult Sema::ActOnOpenMPExecutableDirective(
     llvm_unreachable("Unknown OpenMP directive");
   }
 
-  llvm::outs() << "=============== ActOnOpenMPDirective ; end of main switch ============= \n";
+  /* llvm::outs() << "=============== ActOnOpenMPDirective ; end of main switch ============= \n"; */
 
   for (auto P : VarsWithInheritedDSA) {
     Diag(P.second->getExprLoc(), diag::err_omp_no_dsa_for_variable)
@@ -9175,7 +9172,7 @@ getPrivateItem(Sema &S, Expr *&RefExpr, SourceLocation &ELoc,
   enum {
     NoArrayExpr = -1,
     ArraySubscript = 0,
-    OMPArraySection = 1
+    OMPACCArraySection = 1
   } IsArrayExpr = NoArrayExpr;
   if (AllowArraySection) {
     if (auto *ASE = dyn_cast_or_null<ArraySubscriptExpr>(RefExpr)) {
@@ -9184,14 +9181,14 @@ getPrivateItem(Sema &S, Expr *&RefExpr, SourceLocation &ELoc,
         Base = TempASE->getBase()->IgnoreParenImpCasts();
       RefExpr = Base;
       IsArrayExpr = ArraySubscript;
-    } else if (auto *OASE = dyn_cast_or_null<OMPArraySectionExpr>(RefExpr)) {
+    } else if (auto *OASE = dyn_cast_or_null<OMPACCArraySectionExpr>(RefExpr)) {
       auto *Base = OASE->getBase()->IgnoreParenImpCasts();
-      while (auto *TempOASE = dyn_cast<OMPArraySectionExpr>(Base))
+      while (auto *TempOASE = dyn_cast<OMPACCArraySectionExpr>(Base))
         Base = TempOASE->getBase()->IgnoreParenImpCasts();
       while (auto *TempASE = dyn_cast<ArraySubscriptExpr>(Base))
         Base = TempASE->getBase()->IgnoreParenImpCasts();
       RefExpr = Base;
-      IsArrayExpr = OMPArraySection;
+      IsArrayExpr = OMPACCArraySection;
     }
   }
   ELoc = RefExpr->getExprLoc();
@@ -10050,7 +10047,7 @@ struct ReductionData {
 } // namespace
 
 static bool CheckOMPArraySectionConstantForReduction(
-    ASTContext &Context, const OMPArraySectionExpr *OASE, bool &SingleElement,
+    ASTContext &Context, const OMPACCArraySectionExpr *OASE, bool &SingleElement,
     SmallVectorImpl<llvm::APSInt> &ArraySizes) {
   const Expr *Length = OASE->getLength();
   if (Length == nullptr) {
@@ -10076,7 +10073,7 @@ static bool CheckOMPArraySectionConstantForReduction(
 
   // We require length = 1 for all array sections except the right-most to
   // guarantee that the memory region is contiguous and has no holes in it.
-  while (const auto *TempOASE = dyn_cast<OMPArraySectionExpr>(Base)) {
+  while (const auto *TempOASE = dyn_cast<OMPACCArraySectionExpr>(Base)) {
     Length = TempOASE->getLength();
     if (Length == nullptr) {
       // For array sections of the form [1:] or [:], we would need to analyze
@@ -10249,11 +10246,11 @@ static bool ActOnOMPReductionKindClause(
     Expr *TaskgroupDescriptor = nullptr;
     QualType Type;
     auto *ASE = dyn_cast<ArraySubscriptExpr>(RefExpr->IgnoreParens());
-    auto *OASE = dyn_cast<OMPArraySectionExpr>(RefExpr->IgnoreParens());
+    auto *OASE = dyn_cast<OMPACCArraySectionExpr>(RefExpr->IgnoreParens());
     if (ASE)
       Type = ASE->getType().getNonReferenceType();
     else if (OASE) {
-      auto BaseType = OMPArraySectionExpr::getBaseOriginalType(OASE->getBase());
+      auto BaseType = OMPACCArraySectionExpr::getBaseOriginalType(OASE->getBase());
       if (auto *ATy = BaseType->getAsArrayTypeUnsafe())
         Type = ATy->getElementType();
       else
@@ -11517,7 +11514,7 @@ Sema::ActOnOpenMPDependClause(OpenMPDependClauseKind DepKind,
       ExprResult Res =
           CreateBuiltinUnaryOp(ELoc, UO_AddrOf, RefExpr->IgnoreParenImpCasts());
       getDiagnostics().setSuppressAllDiagnostics(Suppress);
-      if (!Res.isUsable() && !isa<OMPArraySectionExpr>(SimpleExpr)) {
+      if (!Res.isUsable() && !isa<OMPACCArraySectionExpr>(SimpleExpr)) {
         Diag(ELoc, diag::err_omp_expected_addressable_lvalue_or_array_item)
             << RefExpr->getSourceRange();
         continue;
@@ -11587,7 +11584,7 @@ static bool CheckTypeMappable(SourceLocation SL, SourceRange SR, Sema &SemaRef,
 static bool CheckArrayExpressionDoesNotReferToWholeSize(Sema &SemaRef,
                                                         const Expr *E,
                                                         QualType BaseQTy) {
-  auto *OASE = dyn_cast<OMPArraySectionExpr>(E);
+  auto *OASE = dyn_cast<OMPACCArraySectionExpr>(E);
 
   // If this is an array subscript, it refers to the whole size if the size of
   // the dimension is constant and equals 1. Also, an array section assumes the
@@ -11641,7 +11638,7 @@ static bool CheckArrayExpressionDoesNotReferToWholeSize(Sema &SemaRef,
 static bool CheckArrayExpressionDoesNotReferToUnitySize(Sema &SemaRef,
                                                         const Expr *E,
                                                         QualType BaseQTy) {
-  auto *OASE = dyn_cast<OMPArraySectionExpr>(E);
+  auto *OASE = dyn_cast<OMPACCArraySectionExpr>(E);
 
   // An array subscript always refer to a single element. Also, an array section
   // assumes the format of an array subscript if no colon is used.
@@ -11679,6 +11676,9 @@ static Expr *CheckMapClauseExpressionBase(
     OpenMPClauseKind CKind, bool NoDiagnose) {
   SourceLocation ELoc = E->getExprLoc();
   SourceRange ERange = E->getSourceRange();
+
+  llvm::outs() << "##### <CM-Degub> : Expr *E->dumpColor() =";
+  E->dumpColor();
 
   // The base of elements of list in a map clause have to be either:
   //  - a reference to variable or field.
@@ -11721,10 +11721,13 @@ static Expr *CheckMapClauseExpressionBase(
   bool AllowUnitySizeArraySection = true;
   bool AllowWholeSizeArraySection = true;
 
+  int iteration_count = 0;
   while (!RelevantExpr) {
+    llvm::outs() << "-- << CM_Debug >> iteration_count is " << ++iteration_count << "th -- \n";
     E = E->IgnoreParenImpCasts();
 
     if (auto *CurE = dyn_cast<DeclRefExpr>(E)) {
+      llvm::outs() << " ---- << CM-Debug >> Spot no 4 ----\n";
       if (!isa<VarDecl>(CurE->getDecl()))
         return nullptr;
 
@@ -11738,6 +11741,7 @@ static Expr *CheckMapClauseExpressionBase(
       // Record the component.
       CurComponents.emplace_back(CurE, CurE->getDecl());
     } else if (auto *CurE = dyn_cast<MemberExpr>(E)) {
+      llvm::outs() << " ---- << CM-Debug >> Spot no 3 ----\n";
       auto *BaseE = CurE->getBase()->IgnoreParenImpCasts();
 
       if (isa<CXXThisExpr>(BaseE))
@@ -11806,6 +11810,7 @@ static Expr *CheckMapClauseExpressionBase(
       // Record the component.
       CurComponents.emplace_back(CurE, FD);
     } else if (auto *CurE = dyn_cast<ArraySubscriptExpr>(E)) {
+      llvm::outs() << " ---- << CM-Debug >> Spot no 2 ----\n";
       E = CurE->getBase()->IgnoreParenImpCasts();
 
       if (!E->getType()->isAnyPointerType() && !E->getType()->isArrayType()) {
@@ -11826,12 +11831,13 @@ static Expr *CheckMapClauseExpressionBase(
 
       // Record the component - we don't have any declaration associated.
       CurComponents.emplace_back(CurE, nullptr);
-    } else if (auto *CurE = dyn_cast<OMPArraySectionExpr>(E)) {
+    } else if (auto *CurE = dyn_cast<OMPACCArraySectionExpr>(E)) {
       assert(!NoDiagnose && "Array sections cannot be implicitly mapped.");
+      llvm::outs() << " ---- << CM-Debug >> Spot no 1 ----\n";
       E = CurE->getBase()->IgnoreParenImpCasts();
 
       QualType CurType =
-          OMPArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
+          OMPACCArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
 
       // OpenMP 4.5 [2.15.5.1, map Clause, Restrictions, C++, p.1]
       //  If the type of a list item is a reference to a type T then the type
@@ -11938,9 +11944,9 @@ static bool CheckMapConflicts(
           //  variable in map clauses of the same construct.
           if (CurrentRegionOnly &&
               (isa<ArraySubscriptExpr>(CI->getAssociatedExpression()) ||
-               isa<OMPArraySectionExpr>(CI->getAssociatedExpression())) &&
+               isa<OMPACCArraySectionExpr>(CI->getAssociatedExpression())) &&
               (isa<ArraySubscriptExpr>(SI->getAssociatedExpression()) ||
-               isa<OMPArraySectionExpr>(SI->getAssociatedExpression()))) {
+               isa<OMPACCArraySectionExpr>(SI->getAssociatedExpression()))) {
             SemaRef.Diag(CI->getAssociatedExpression()->getExprLoc(),
                          diag::err_omp_multiple_array_items_in_map_clause)
                 << CI->getAssociatedExpression()->getSourceRange();
@@ -11967,11 +11973,11 @@ static bool CheckMapConflicts(
           if (auto *ASE =
                   dyn_cast<ArraySubscriptExpr>(SI->getAssociatedExpression())) {
             Type = ASE->getBase()->IgnoreParenImpCasts()->getType();
-          } else if (auto *OASE = dyn_cast<OMPArraySectionExpr>(
+          } else if (auto *OASE = dyn_cast<OMPACCArraySectionExpr>(
                          SI->getAssociatedExpression())) {
             auto *E = OASE->getBase()->IgnoreParenImpCasts();
             Type =
-                OMPArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
+                OMPACCArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
           }
           if (Type.isNull() || Type->isAnyPointerType() ||
               CheckArrayExpressionDoesNotReferToWholeSize(

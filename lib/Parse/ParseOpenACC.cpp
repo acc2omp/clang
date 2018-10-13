@@ -1819,14 +1819,13 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     // Page 137
     // https://www.openmp.org/wp-content/uploads/openmp-examples-4.5.0.pdf
     if (IsMapClauseModifierToken(Tok)) {
-      /*
       if (PP.LookAhead(0).is(tok::colon)) {
         if (Data.MapType == ACCC_MAP_unknown)
           Diag(Tok, diag::err_acc_unknown_map_type);
         else if (Data.MapType == ACCC_MAP_always)
           Diag(Tok, diag::err_acc_map_type_missing);
         ConsumeToken();
-      } else */
+      } else 
       if (PP.LookAhead(0).is(tok::comma)) {
         if (IsMapClauseModifierToken(PP.LookAhead(1)) &&
             PP.LookAhead(2).is(tok::colon)) {
@@ -1889,7 +1888,7 @@ bool Parser::ParseOpenACCVarList(OpenACCDirectiveKind DKind,
     if (Tok.is(tok::colon))
       Data.ColonLoc = ConsumeToken();
     else if (ColonExpected)
-      Diag(Tok, diag::warn_pragma_expected_colon) << "copy, copyin or copyout type";
+      Diag(Tok, diag::warn_pragma_expected_colon) << "create, copy, copyin, copyout or delete type";
 
   } else if (Kind == ACCC_map) {
     // Handle map type for map clause.

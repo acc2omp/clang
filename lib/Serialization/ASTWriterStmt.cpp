@@ -570,7 +570,7 @@ void ASTStmtWriter::VisitArraySubscriptExpr(ArraySubscriptExpr *E) {
   Code = serialization::EXPR_ARRAY_SUBSCRIPT;
 }
 
-void ASTStmtWriter::VisitACCArraySectionExpr(ACCArraySectionExpr *E) {
+void ASTStmtWriter::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   VisitExpr(E);
   Record.AddStmt(E->getBase());
   Record.AddStmt(E->getLowerBound());
@@ -580,7 +580,7 @@ void ASTStmtWriter::VisitACCArraySectionExpr(ACCArraySectionExpr *E) {
   Code = serialization::EXPR_ACC_ARRAY_SECTION;
 }
 
-void ASTStmtWriter::VisitOMPArraySectionExpr(OMPArraySectionExpr *E) {
+void ASTStmtWriter::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   VisitExpr(E);
   Record.AddStmt(E->getBase());
   Record.AddStmt(E->getLowerBound());

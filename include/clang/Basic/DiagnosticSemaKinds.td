@@ -8792,6 +8792,12 @@ def err_acc_reduction_identifier_mismatch : Error<
   "in_reduction variable must have the same reduction operation as in a task_reduction clause">;
 def note_acc_previous_reduction_identifier : Note<
   "previously marked as task_reduction with different reduction operation">;
+def warn_acc_prohibited_region : Warning<
+  "region cannot be%select{| closely}0 nested inside '%1' region"
+  "%select{|; perhaps you forget to enclose 'acc %3' directive into a parallel region?|"
+  "; perhaps you forget to enclose 'acc %3' directive into a for or a parallel for region with 'ordered' clause?|"
+  "; perhaps you forget to enclose 'acc %3' directive into a target region?|"
+  "; perhaps you forget to enclose 'acc %3' directive into a teams region?}2">;
 def err_acc_prohibited_region : Error<
   "region cannot be%select{| closely}0 nested inside '%1' region"
   "%select{|; perhaps you forget to enclose 'acc %3' directive into a parallel region?|"

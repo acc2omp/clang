@@ -620,7 +620,7 @@ void ASTStmtReader::VisitArraySubscriptExpr(ArraySubscriptExpr *E) {
   E->setRBracketLoc(ReadSourceLocation());
 }
 
-void ASTStmtReader::VisitACCArraySectionExpr(ACCArraySectionExpr *E) {
+void ASTStmtReader::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   VisitExpr(E);
   E->setBase(Record.readSubExpr());
   E->setLowerBound(Record.readSubExpr());
@@ -629,7 +629,7 @@ void ASTStmtReader::VisitACCArraySectionExpr(ACCArraySectionExpr *E) {
   E->setRBracketLoc(ReadSourceLocation());
 }
 
-void ASTStmtReader::VisitOMPArraySectionExpr(OMPArraySectionExpr *E) {
+void ASTStmtReader::VisitOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   VisitExpr(E);
   E->setBase(Record.readSubExpr());
   E->setLowerBound(Record.readSubExpr());
@@ -4738,11 +4738,11 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
 
     case EXPR_ACC_ARRAY_SECTION:
-      S = new (Context) ACCArraySectionExpr(Empty);
+      S = new (Context) OMPACCArraySectionExpr(Empty);
       break;
 
     case EXPR_OMP_ARRAY_SECTION:
-      S = new (Context) OMPArraySectionExpr(Empty);
+      S = new (Context) OMPACCArraySectionExpr(Empty);
       break;
 
     case EXPR_CALL:

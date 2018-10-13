@@ -8066,13 +8066,13 @@ static const Expr *EvalVal(const Expr *E,
       return EvalAddr(ASE->getBase(), refVars, ParentDecl);
     }
 
-    case Stmt::ACCArraySectionExprClass: {
-      return EvalAddr(cast<ACCArraySectionExpr>(E)->getBase(), refVars,
+    case Stmt::OMPACCArraySectionExprClass: {
+      return EvalAddr(cast<OMPACCArraySectionExpr>(E)->getBase(), refVars,
                       ParentDecl);
     }
 
-    case Stmt::OMPArraySectionExprClass: {
-      return EvalAddr(cast<OMPArraySectionExpr>(E)->getBase(), refVars,
+    case Stmt::OMPACCArraySectionExprClass: {
+      return EvalAddr(cast<OMPACCArraySectionExpr>(E)->getBase(), refVars,
                       ParentDecl);
     }
 
@@ -11098,15 +11098,15 @@ void Sema::CheckArrayAccess(const Expr *expr) {
                          AllowOnePastEnd > 0);
         return;
       }
-      case Stmt::ACCArraySectionExprClass: {
-        const ACCArraySectionExpr *ASE = cast<ACCArraySectionExpr>(expr);
+      case Stmt::OMPACCArraySectionExprClass: {
+        const OMPACCArraySectionExpr *ASE = cast<OMPACCArraySectionExpr>(expr);
         if (ASE->getLowerBound())
           CheckArrayAccess(ASE->getBase(), ASE->getLowerBound(),
                            /*ASE=*/nullptr, AllowOnePastEnd > 0);
         return;
       }
-      case Stmt::OMPArraySectionExprClass: {
-        const OMPArraySectionExpr *ASE = cast<OMPArraySectionExpr>(expr);
+      case Stmt::OMPACCArraySectionExprClass: {
+        const OMPACCArraySectionExpr *ASE = cast<OMPACCArraySectionExpr>(expr);
         if (ASE->getLowerBound())
           CheckArrayAccess(ASE->getBase(), ASE->getLowerBound(),
                            /*ASE=*/nullptr, AllowOnePastEnd > 0);

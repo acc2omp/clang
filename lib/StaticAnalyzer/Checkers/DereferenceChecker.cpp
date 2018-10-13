@@ -138,9 +138,9 @@ void DereferenceChecker::reportBug(ProgramStateRef State, const Stmt *S,
     os << " results in a null pointer dereference";
     break;
   }
-  case Stmt::OMPArraySectionExprClass: {
+  case Stmt::OMPACCArraySectionExprClass: {
     os << "Array access";
-    const OMPArraySectionExpr *AE = cast<OMPArraySectionExpr>(S);
+    const OMPACCArraySectionExpr *AE = cast<OMPACCArraySectionExpr>(S);
     AddDerefSource(os, Ranges, AE->getBase()->IgnoreParenCasts(),
                    State.get(), N->getLocationContext());
     os << " results in a null pointer dereference";

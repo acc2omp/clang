@@ -1264,7 +1264,7 @@ bool Sema::IsOpenACCCapturedByRef(ValueDecl *D, unsigned Level) {
             return false;
 
           if (isa<ArraySubscriptExpr>(EI->getAssociatedExpression()) ||
-              isa<ACCArraySectionExpr>(EI->getAssociatedExpression()) ||
+              isa<OMPACCArraySectionExpr>(EI->getAssociatedExpression()) ||
               isa<MemberExpr>(EI->getAssociatedExpression())) {
             IsVariableAssociatedWithSection = true;
             // There is nothing more we need to know about this variable.
@@ -1906,7 +1906,7 @@ public:
                                     MappableComponent &MC) {
                                return MC.getAssociatedDeclaration() ==
                                           nullptr &&
-                                      (isa<ACCArraySectionExpr>(
+                                      (isa<OMPACCArraySectionExpr>(
                                            MC.getAssociatedExpression()) ||
                                        isa<ArraySubscriptExpr>(
                                            MC.getAssociatedExpression()));
@@ -2036,7 +2036,7 @@ public:
                   // Do both expressions have the same kind?
                   if (CCI->getAssociatedExpression()->getStmtClass() !=
                       SC.getAssociatedExpression()->getStmtClass())
-                    if (!(isa<ACCArraySectionExpr>(
+                    if (!(isa<OMPACCArraySectionExpr>(
                               SC.getAssociatedExpression()) &&
                           isa<ArraySubscriptExpr>(
                               CCI->getAssociatedExpression())))
@@ -2782,6 +2782,7 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
                           ParentRegion == ACCD_critical ||
                           ParentRegion == ACCD_ordered;
       Recommend = ShouldBeInParallelRegion;
+      llvm::outs() << "###### It's this situation #####\n";
     } else if (CurrentRegion == ACCD_ordered) {
       // OpenACC [2.16, Nesting of Regions]
       // An ordered region may not be closely nested inside a critical,
@@ -2849,9 +2850,17 @@ static bool checkNestingOfRegions(Sema &SemaRef, DSAStackTy *Stack,
         SemaRef.Diag(StartLoc, diag::err_acc_orphaned_device_directive)
             << getOpenACCDirectiveName(CurrentRegion) << Recommend;
       } else {
-        SemaRef.Diag(StartLoc, diag::err_acc_prohibited_region)
-            << CloseNesting << getOpenACCDirectiveName(OffendingRegion)
-            << Recommend << getOpenACCDirectiveName(CurrentRegion);
+        llvm::outs() << "####### THE DEBUG IS MINE : emiting err_acc_prohibited_region ########\n";
+        if(std::string(getOpenACCDirectiveName(OffendingRegion)).compare("loop") == 0){
+            SemaRef.Diag(StartLoc, diag::warn_acc_prohibited_region)
+                << CloseNesting << getOpenACCDirectiveName(OffendingRegion)
+                << Recommend << getOpenACCDirectiveName(CurrentRegion);
+            return false;
+        } else {
+            SemaRef.Diag(StartLoc, diag::err_acc_prohibited_region)
+                << CloseNesting << getOpenACCDirectiveName(OffendingRegion)
+                << Recommend << getOpenACCDirectiveName(CurrentRegion);
+        }
       }
       return true;
     }
@@ -9177,7 +9186,7 @@ getPrivateItem(Sema &S, Expr *&RefExpr, SourceLocation &ELoc,
   enum {
     NoArrayExpr = -1,
     ArraySubscript = 0,
-    ACCArraySection = 1
+    OMPACCArraySection = 1
   } IsArrayExpr = NoArrayExpr;
   if (AllowArraySection) {
     if (auto *ASE = dyn_cast_or_null<ArraySubscriptExpr>(RefExpr)) {
@@ -9186,14 +9195,14 @@ getPrivateItem(Sema &S, Expr *&RefExpr, SourceLocation &ELoc,
         Base = TempASE->getBase()->IgnoreParenImpCasts();
       RefExpr = Base;
       IsArrayExpr = ArraySubscript;
-    } else if (auto *OASE = dyn_cast_or_null<ACCArraySectionExpr>(RefExpr)) {
+    } else if (auto *OASE = dyn_cast_or_null<OMPACCArraySectionExpr>(RefExpr)) {
       auto *Base = OASE->getBase()->IgnoreParenImpCasts();
-      while (auto *TempOASE = dyn_cast<ACCArraySectionExpr>(Base))
+      while (auto *TempOASE = dyn_cast<OMPACCArraySectionExpr>(Base))
         Base = TempOASE->getBase()->IgnoreParenImpCasts();
       while (auto *TempASE = dyn_cast<ArraySubscriptExpr>(Base))
         Base = TempASE->getBase()->IgnoreParenImpCasts();
       RefExpr = Base;
-      IsArrayExpr = ACCArraySection;
+      IsArrayExpr = OMPACCArraySection;
     }
   }
   ELoc = RefExpr->getExprLoc();
@@ -10052,7 +10061,7 @@ struct ReductionData {
 } // namespace
 
 static bool CheckACCArraySectionConstantForReduction(
-    ASTContext &Context, const ACCArraySectionExpr *OASE, bool &SingleElement,
+    ASTContext &Context, const OMPACCArraySectionExpr *OASE, bool &SingleElement,
     SmallVectorImpl<llvm::APSInt> &ArraySizes) {
   const Expr *Length = OASE->getLength();
   if (Length == nullptr) {
@@ -10078,7 +10087,7 @@ static bool CheckACCArraySectionConstantForReduction(
 
   // We require length = 1 for all array sections except the right-most to
   // guarantee that the memory region is contiguous and has no holes in it.
-  while (const auto *TempOASE = dyn_cast<ACCArraySectionExpr>(Base)) {
+  while (const auto *TempOASE = dyn_cast<OMPACCArraySectionExpr>(Base)) {
     Length = TempOASE->getLength();
     if (Length == nullptr) {
       // For array sections of the form [1:] or [:], we would need to analyze
@@ -10251,11 +10260,11 @@ static bool ActOnACCReductionKindClause(
     Expr *TaskgroupDescriptor = nullptr;
     QualType Type;
     auto *ASE = dyn_cast<ArraySubscriptExpr>(RefExpr->IgnoreParens());
-    auto *OASE = dyn_cast<ACCArraySectionExpr>(RefExpr->IgnoreParens());
+    auto *OASE = dyn_cast<OMPACCArraySectionExpr>(RefExpr->IgnoreParens());
     if (ASE)
       Type = ASE->getType().getNonReferenceType();
     else if (OASE) {
-      auto BaseType = ACCArraySectionExpr::getBaseOriginalType(OASE->getBase());
+      auto BaseType = OMPACCArraySectionExpr::getBaseOriginalType(OASE->getBase());
       if (auto *ATy = BaseType->getAsArrayTypeUnsafe())
         Type = ATy->getElementType();
       else
@@ -11426,7 +11435,7 @@ Sema::ActOnOpenACCDependClause(OpenACCDependClauseKind DepKind,
       ExprResult Res =
           CreateBuiltinUnaryOp(ELoc, UO_AddrOf, RefExpr->IgnoreParenImpCasts());
       getDiagnostics().setSuppressAllDiagnostics(Suppress);
-      if (!Res.isUsable() && !isa<ACCArraySectionExpr>(SimpleExpr)) {
+      if (!Res.isUsable() && !isa<OMPACCArraySectionExpr>(SimpleExpr)) {
         Diag(ELoc, diag::err_acc_expected_addressable_lvalue_or_array_item)
             << RefExpr->getSourceRange();
         continue;
@@ -11496,7 +11505,7 @@ static bool CheckTypeMappable(SourceLocation SL, SourceRange SR, Sema &SemaRef,
 static bool CheckArrayExpressionDoesNotReferToWholeSize(Sema &SemaRef,
                                                         const Expr *E,
                                                         QualType BaseQTy) {
-  auto *OASE = dyn_cast<ACCArraySectionExpr>(E);
+  auto *OASE = dyn_cast<OMPACCArraySectionExpr>(E);
 
   // If this is an array subscript, it refers to the whole size if the size of
   // the dimension is constant and equals 1. Also, an array section assumes the
@@ -11550,7 +11559,7 @@ static bool CheckArrayExpressionDoesNotReferToWholeSize(Sema &SemaRef,
 static bool CheckArrayExpressionDoesNotReferToUnitySize(Sema &SemaRef,
                                                         const Expr *E,
                                                         QualType BaseQTy) {
-  auto *OASE = dyn_cast<ACCArraySectionExpr>(E);
+  auto *OASE = dyn_cast<OMPACCArraySectionExpr>(E);
 
   // An array subscript always refer to a single element. Also, an array section
   // assumes the format of an array subscript if no colon is used.
@@ -11588,6 +11597,8 @@ static Expr *CheckMapClauseExpressionBase(
     OpenACCClauseKind CKind, bool NoDiagnose) {
   SourceLocation ELoc = E->getExprLoc();
   SourceRange ERange = E->getSourceRange();
+  llvm::outs() << "##### <CM-Degub> : Expr *E->dumpColor() =";
+  E->dumpColor();
 
   // The base of elements of list in a map clause have to be either:
   //  - a reference to variable or field.
@@ -11630,10 +11641,13 @@ static Expr *CheckMapClauseExpressionBase(
   bool AllowUnitySizeArraySection = true;
   bool AllowWholeSizeArraySection = true;
 
+  int iteration_count = 0;
   while (!RelevantExpr) {
+    llvm::outs() << "-- << CM_Debug >> iteration_count is " << ++iteration_count << "th -- \n";
     E = E->IgnoreParenImpCasts();
 
     if (auto *CurE = dyn_cast<DeclRefExpr>(E)) {
+      llvm::outs() << " ---- << CM-Debug >> Spot no 4 ----\n";
       if (!isa<VarDecl>(CurE->getDecl()))
         return nullptr;
 
@@ -11647,6 +11661,7 @@ static Expr *CheckMapClauseExpressionBase(
       // Record the component.
       CurComponents.emplace_back(CurE, CurE->getDecl());
     } else if (auto *CurE = dyn_cast<MemberExpr>(E)) {
+      llvm::outs() << " ---- << CM-Debug >> Spot no 3 ----\n";
       auto *BaseE = CurE->getBase()->IgnoreParenImpCasts();
 
       if (isa<CXXThisExpr>(BaseE))
@@ -11715,6 +11730,7 @@ static Expr *CheckMapClauseExpressionBase(
       // Record the component.
       CurComponents.emplace_back(CurE, FD);
     } else if (auto *CurE = dyn_cast<ArraySubscriptExpr>(E)) {
+      llvm::outs() << " ---- << CM-Debug >> Spot no 2 ----\n";
       E = CurE->getBase()->IgnoreParenImpCasts();
 
       if (!E->getType()->isAnyPointerType() && !E->getType()->isArrayType()) {
@@ -11735,12 +11751,13 @@ static Expr *CheckMapClauseExpressionBase(
 
       // Record the component - we don't have any declaration associated.
       CurComponents.emplace_back(CurE, nullptr);
-    } else if (auto *CurE = dyn_cast<ACCArraySectionExpr>(E)) {
+    } else if (auto *CurE = dyn_cast<OMPACCArraySectionExpr>(E)) {
+      llvm::outs() << " ---- << CM-Debug >> Spot no 1 ----\n";
       assert(!NoDiagnose && "Array sections cannot be implicitly mapped.");
       E = CurE->getBase()->IgnoreParenImpCasts();
 
       QualType CurType =
-          ACCArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
+          OMPACCArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
 
       // OpenACC 4.5 [2.15.5.1, map Clause, Restrictions, C++, p.1]
       //  If the type of a list item is a reference to a type T then the type
@@ -11847,9 +11864,9 @@ static bool CheckMapConflicts(
           //  variable in map clauses of the same construct.
           if (CurrentRegionOnly &&
               (isa<ArraySubscriptExpr>(CI->getAssociatedExpression()) ||
-               isa<ACCArraySectionExpr>(CI->getAssociatedExpression())) &&
+               isa<OMPACCArraySectionExpr>(CI->getAssociatedExpression())) &&
               (isa<ArraySubscriptExpr>(SI->getAssociatedExpression()) ||
-               isa<ACCArraySectionExpr>(SI->getAssociatedExpression()))) {
+               isa<OMPACCArraySectionExpr>(SI->getAssociatedExpression()))) {
             SemaRef.Diag(CI->getAssociatedExpression()->getExprLoc(),
                          diag::err_acc_multiple_array_items_in_map_clause)
                 << CI->getAssociatedExpression()->getSourceRange();
@@ -11876,11 +11893,11 @@ static bool CheckMapConflicts(
           if (auto *ASE =
                   dyn_cast<ArraySubscriptExpr>(SI->getAssociatedExpression())) {
             Type = ASE->getBase()->IgnoreParenImpCasts()->getType();
-          } else if (auto *OASE = dyn_cast<ACCArraySectionExpr>(
+          } else if (auto *OASE = dyn_cast<OMPACCArraySectionExpr>(
                          SI->getAssociatedExpression())) {
             auto *E = OASE->getBase()->IgnoreParenImpCasts();
             Type =
-                ACCArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
+                OMPACCArraySectionExpr::getBaseOriginalType(E).getCanonicalType();
           }
           if (Type.isNull() || Type->isAnyPointerType() ||
               CheckArrayExpressionDoesNotReferToWholeSize(

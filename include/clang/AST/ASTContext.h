@@ -1020,8 +1020,8 @@ public:
 #include "clang/Basic/OpenCLImageTypes.def"
   CanQualType OCLSamplerTy, OCLEventTy, OCLClkEventTy;
   CanQualType OCLQueueTy, OCLReserveIDTy;
-  CanQualType ACCArraySectionTy;
-  CanQualType OMPArraySectionTy;
+  CanQualType OMPACCArraySectionTy;
+  CanQualType OMPACCArraySectionTy;
 
   // Types for deductions in C++0x [stmt.ranged]'s desugaring. Built on demand.
   mutable QualType AutoDeductTy;     // Deduction against 'auto'.

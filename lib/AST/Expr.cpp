@@ -3065,8 +3065,8 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
 
   case ParenExprClass:
   case ArraySubscriptExprClass:
-  case ACCArraySectionExprClass:
-  case OMPArraySectionExprClass:
+  case OMPACCArraySectionExprClass:
+  case OMPACCArraySectionExprClass:
   case MemberExprClass:
   case ConditionalOperatorClass:
   case BinaryConditionalOperatorClass:
@@ -4081,9 +4081,9 @@ QualType AtomicExpr::getValueType() const {
   return T;
 }
 
-QualType ACCArraySectionExpr::getBaseOriginalType(const Expr *Base) {
+QualType OMPACCArraySectionExpr::getBaseOriginalType(const Expr *Base) {
   unsigned ArraySectionCount = 0;
-  while (auto *OASE = dyn_cast<ACCArraySectionExpr>(Base->IgnoreParens())) {
+  while (auto *OASE = dyn_cast<OMPACCArraySectionExpr>(Base->IgnoreParens())) {
     Base = OASE->getBase();
     ++ArraySectionCount;
   }
@@ -4109,9 +4109,9 @@ QualType ACCArraySectionExpr::getBaseOriginalType(const Expr *Base) {
   return OriginalTy;
 }
 
-QualType OMPArraySectionExpr::getBaseOriginalType(const Expr *Base) {
+QualType OMPACCArraySectionExpr::getBaseOriginalType(const Expr *Base) {
   unsigned ArraySectionCount = 0;
-  while (auto *OASE = dyn_cast<OMPArraySectionExpr>(Base->IgnoreParens())) {
+  while (auto *OASE = dyn_cast<OMPACCArraySectionExpr>(Base->IgnoreParens())) {
     Base = OASE->getBase();
     ++ArraySectionCount;
   }

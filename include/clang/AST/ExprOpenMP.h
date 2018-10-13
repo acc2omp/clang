@@ -42,18 +42,18 @@ namespace clang {
 /// When the length is absent, it defaults to the size of the array dimension
 /// minus the lower-bound.
 /// When the lower-bound is absent it defaults to 0.
-class OMPArraySectionExpr : public Expr {
+class OMPACCArraySectionExpr : public Expr {
   enum { BASE, LOWER_BOUND, LENGTH, END_EXPR };
   Stmt *SubExprs[END_EXPR];
   SourceLocation ColonLoc;
   SourceLocation RBracketLoc;
 
 public:
-  OMPArraySectionExpr(Expr *Base, Expr *LowerBound, Expr *Length, QualType Type,
+  OMPACCArraySectionExpr(Expr *Base, Expr *LowerBound, Expr *Length, QualType Type,
                       ExprValueKind VK, ExprObjectKind OK,
                       SourceLocation ColonLoc, SourceLocation RBracketLoc)
       : Expr(
-            OMPArraySectionExprClass, Type, VK, OK,
+            OMPACCArraySectionExprClass, Type, VK, OK,
             Base->isTypeDependent() ||
                 (LowerBound && LowerBound->isTypeDependent()) ||
                 (Length && Length->isTypeDependent()),
@@ -73,8 +73,8 @@ public:
   }
 
   /// \brief Create an empty array section expression.
-  explicit OMPArraySectionExpr(EmptyShell Shell)
-      : Expr(OMPArraySectionExprClass, Shell) {}
+  explicit OMPACCArraySectionExpr(EmptyShell Shell)
+      : Expr(OMPACCArraySectionExprClass, Shell) {}
 
   /// An array section can be written only as Base[LowerBound:Length].
 
@@ -117,7 +117,7 @@ public:
   }
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == OMPArraySectionExprClass;
+    return T->getStmtClass() == OMPACCArraySectionExprClass;
   }
 
   child_range children() {

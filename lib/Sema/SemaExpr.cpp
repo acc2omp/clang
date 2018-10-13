@@ -4116,13 +4116,13 @@ ExprResult
 Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
                               Expr *idx, SourceLocation rbLoc) {
   if (base && !base->getType().isNull() &&
-      base->getType()->isSpecificPlaceholderType(BuiltinType::ACCArraySection))
-    return ActOnACCArraySectionExpr(base, lbLoc, idx, SourceLocation(),
+      base->getType()->isSpecificPlaceholderType(BuiltinType::OMPACCArraySection))
+    return ActOnOMPACCArraySectionExpr(base, lbLoc, idx, SourceLocation(),
                                     /*Length=*/nullptr, rbLoc);
 
   if (base && !base->getType().isNull() &&
-      base->getType()->isSpecificPlaceholderType(BuiltinType::OMPArraySection))
-    return ActOnOMPArraySectionExpr(base, lbLoc, idx, SourceLocation(),
+      base->getType()->isSpecificPlaceholderType(BuiltinType::OMPACCArraySection))
+    return ActOnOMPACCArraySectionExpr(base, lbLoc, idx, SourceLocation(),
                                     /*Length=*/nullptr, rbLoc);
 
   // Since this might be a postfix expression, get rid of ParenListExprs.
@@ -4193,13 +4193,13 @@ Sema::ActOnArraySubscriptExpr(Scope *S, Expr *base, SourceLocation lbLoc,
   return CreateBuiltinArraySubscriptExpr(base, lbLoc, idx, rbLoc);
 }
 
-ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
+ExprResult Sema::ActOnOMPACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                           Expr *LowerBound,
                                           SourceLocation ColonLoc, Expr *Length,
                                           SourceLocation RBLoc) {
   if (Base->getType()->isPlaceholderType() &&
       !Base->getType()->isSpecificPlaceholderType(
-          BuiltinType::ACCArraySection)) {
+          BuiltinType::OMPACCArraySection)) {
     ExprResult Result = CheckPlaceholderExpr(Base);
     if (Result.isInvalid())
       return ExprError();
@@ -4230,12 +4230,12 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
        (LowerBound->isTypeDependent() || LowerBound->isValueDependent())) ||
       (Length && (Length->isTypeDependent() || Length->isValueDependent()))) {
     return new (Context)
-        ACCArraySectionExpr(Base, LowerBound, Length, Context.DependentTy,
+        OMPACCArraySectionExpr(Base, LowerBound, Length, Context.DependentTy,
                             VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
   }
 
   // Perform default conversions.
-  QualType OriginalTy = ACCArraySectionExpr::getBaseOriginalType(Base);
+  QualType OriginalTy = OMPACCArraySectionExpr::getBaseOriginalType(Base);
   QualType ResultTy;
   if (OriginalTy->isAnyPointerType()) {
     ResultTy = OriginalTy->getPointeeType();
@@ -4327,24 +4327,24 @@ ExprResult Sema::ActOnACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
   }
 
   if (!Base->getType()->isSpecificPlaceholderType(
-          BuiltinType::ACCArraySection)) {
+          BuiltinType::OMPACCArraySection)) {
     ExprResult Result = DefaultFunctionArrayLvalueConversion(Base);
     if (Result.isInvalid())
       return ExprError();
     Base = Result.get();
   }
   return new (Context)
-      ACCArraySectionExpr(Base, LowerBound, Length, Context.ACCArraySectionTy,
+      OMPACCArraySectionExpr(Base, LowerBound, Length, Context.OMPACCArraySectionTy,
                           VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
 }
 
-ExprResult Sema::ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,
+ExprResult Sema::ActOnOMPACCArraySectionExpr(Expr *Base, SourceLocation LBLoc,
                                           Expr *LowerBound,
                                           SourceLocation ColonLoc, Expr *Length,
                                           SourceLocation RBLoc) {
   if (Base->getType()->isPlaceholderType() &&
       !Base->getType()->isSpecificPlaceholderType(
-          BuiltinType::OMPArraySection)) {
+          BuiltinType::OMPACCArraySection)) {
     ExprResult Result = CheckPlaceholderExpr(Base);
     if (Result.isInvalid())
       return ExprError();
@@ -4375,12 +4375,12 @@ ExprResult Sema::ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,
        (LowerBound->isTypeDependent() || LowerBound->isValueDependent())) ||
       (Length && (Length->isTypeDependent() || Length->isValueDependent()))) {
     return new (Context)
-        OMPArraySectionExpr(Base, LowerBound, Length, Context.DependentTy,
+        OMPACCArraySectionExpr(Base, LowerBound, Length, Context.DependentTy,
                             VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
   }
 
   // Perform default conversions.
-  QualType OriginalTy = OMPArraySectionExpr::getBaseOriginalType(Base);
+  QualType OriginalTy = OMPACCArraySectionExpr::getBaseOriginalType(Base);
   QualType ResultTy;
   if (OriginalTy->isAnyPointerType()) {
     ResultTy = OriginalTy->getPointeeType();
@@ -4472,14 +4472,14 @@ ExprResult Sema::ActOnOMPArraySectionExpr(Expr *Base, SourceLocation LBLoc,
   }
 
   if (!Base->getType()->isSpecificPlaceholderType(
-          BuiltinType::OMPArraySection)) {
+          BuiltinType::OMPACCArraySection)) {
     ExprResult Result = DefaultFunctionArrayLvalueConversion(Base);
     if (Result.isInvalid())
       return ExprError();
     Base = Result.get();
   }
   return new (Context)
-      OMPArraySectionExpr(Base, LowerBound, Length, Context.OMPArraySectionTy,
+      OMPACCArraySectionExpr(Base, LowerBound, Length, Context.OMPACCArraySectionTy,
                           VK_LValue, OK_Ordinary, ColonLoc, RBLoc);
 }
 
@@ -5168,7 +5168,7 @@ static bool isPlaceholderToRemoveAsArg(QualType type) {
   // These are always invalid as call arguments and should be reported.
   case BuiltinType::BoundMember:
   case BuiltinType::BuiltinFn:
-  case BuiltinType::OMPArraySection:
+  case BuiltinType::OMPACCArraySection:
     return true;
 
   }
@@ -16291,12 +16291,12 @@ ExprResult Sema::CheckPlaceholderExpr(Expr *E) {
   }
 
   // Expressions of unknown type.
-  case BuiltinType::ACCArraySection:
+  case BuiltinType::OMPACCArraySection:
     Diag(E->getLocStart(), diag::err_acc_array_section_use);
     return ExprError();
 
   // Expressions of unknown type.
-  case BuiltinType::OMPArraySection:
+  case BuiltinType::OMPACCArraySection:
     Diag(E->getLocStart(), diag::err_omp_array_section_use);
     return ExprError();
 

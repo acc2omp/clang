@@ -2753,11 +2753,11 @@ public:
   ///
   /// By default, performs semantic analysis to build the new expression.
   /// Subclasses may override this routine to provide different behavior.
-  ExprResult RebuildACCArraySectionExpr(Expr *Base, SourceLocation LBracketLoc,
+  ExprResult RebuildOMPACCArraySectionExpr(Expr *Base, SourceLocation LBracketLoc,
                                         Expr *LowerBound,
                                         SourceLocation ColonLoc, Expr *Length,
                                         SourceLocation RBracketLoc) {
-    return getSema().ActOnACCArraySectionExpr(Base, LBracketLoc, LowerBound,
+    return getSema().ActOnOMPACCArraySectionExpr(Base, LBracketLoc, LowerBound,
                                               ColonLoc, Length, RBracketLoc);
   }
 
@@ -2765,11 +2765,11 @@ public:
   ///
   /// By default, performs semantic analysis to build the new expression.
   /// Subclasses may override this routine to provide different behavior.
-  ExprResult RebuildOMPArraySectionExpr(Expr *Base, SourceLocation LBracketLoc,
+  ExprResult RebuildOMPACCArraySectionExpr(Expr *Base, SourceLocation LBracketLoc,
                                         Expr *LowerBound,
                                         SourceLocation ColonLoc, Expr *Length,
                                         SourceLocation RBracketLoc) {
-    return getSema().ActOnOMPArraySectionExpr(Base, LBracketLoc, LowerBound,
+    return getSema().ActOnOMPACCArraySectionExpr(Base, LBracketLoc, LowerBound,
                                               ColonLoc, Length, RBracketLoc);
   }
 
@@ -11055,7 +11055,7 @@ TreeTransform<Derived>::TransformArraySubscriptExpr(ArraySubscriptExpr *E) {
 
 template <typename Derived>
 ExprResult
-TreeTransform<Derived>::TransformACCArraySectionExpr(ACCArraySectionExpr *E) {
+TreeTransform<Derived>::TransformOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   ExprResult Base = getDerived().TransformExpr(E->getBase());
   if (Base.isInvalid())
     return ExprError();
@@ -11078,14 +11078,14 @@ TreeTransform<Derived>::TransformACCArraySectionExpr(ACCArraySectionExpr *E) {
       LowerBound.get() == E->getLowerBound() && Length.get() == E->getLength())
     return E;
 
-  return getDerived().RebuildACCArraySectionExpr(
+  return getDerived().RebuildOMPACCArraySectionExpr(
       Base.get(), E->getBase()->getLocEnd(), LowerBound.get(), E->getColonLoc(),
       Length.get(), E->getRBracketLoc());
 }
 
 template <typename Derived>
 ExprResult
-TreeTransform<Derived>::TransformOMPArraySectionExpr(OMPArraySectionExpr *E) {
+TreeTransform<Derived>::TransformOMPACCArraySectionExpr(OMPACCArraySectionExpr *E) {
   ExprResult Base = getDerived().TransformExpr(E->getBase());
   if (Base.isInvalid())
     return ExprError();
@@ -11108,7 +11108,7 @@ TreeTransform<Derived>::TransformOMPArraySectionExpr(OMPArraySectionExpr *E) {
       LowerBound.get() == E->getLowerBound() && Length.get() == E->getLength())
     return E;
 
-  return getDerived().RebuildOMPArraySectionExpr(
+  return getDerived().RebuildOMPACCArraySectionExpr(
       Base.get(), E->getBase()->getLocEnd(), LowerBound.get(), E->getColonLoc(),
       Length.get(), E->getRBracketLoc());
 }

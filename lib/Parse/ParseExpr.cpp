@@ -1547,7 +1547,9 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
       if (!LHS.isInvalid() && !Idx.isInvalid() && !Length.isInvalid() &&
           Tok.is(tok::r_square)) {
         if (ColonLoc.isValid()) {
-          LHS = Actions.ActOnOMPArraySectionExpr(LHS.get(), Loc, Idx.get(),
+          /* LHS = Actions.ActOnOMPACCArraySectionExpr(LHS.get(), Loc, Idx.get(), */
+          /*                                        ColonLoc, Length.get(), RLoc); */
+          LHS = Actions.ActOnOMPACCArraySectionExpr(LHS.get(), Loc, Idx.get(),
                                                  ColonLoc, Length.get(), RLoc);
         } else {
           LHS = Actions.ActOnArraySubscriptExpr(getCurScope(), LHS.get(), Loc,

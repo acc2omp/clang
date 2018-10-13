@@ -234,14 +234,11 @@ PLACEHOLDER_TYPE(BuiltinFn, BuiltinFnTy)
 // context.
 PLACEHOLDER_TYPE(ARCUnbridgedCast, ARCUnbridgedCastTy)
 
-// A placeholder type for OpenMP array sections.
-PLACEHOLDER_TYPE(ACCArraySection, ACCArraySectionTy)
-
-// A placeholder type for OpenMP array sections.
-PLACEHOLDER_TYPE(OMPArraySection, OMPArraySectionTy)
+// A placeholder type for OpenACC and OpenMP array sections.
+PLACEHOLDER_TYPE(OMPACCArraySection, OMPACCArraySectionTy)
 
 #ifdef LAST_BUILTIN_TYPE
-LAST_BUILTIN_TYPE(OMPArraySection)
+LAST_BUILTIN_TYPE(OMPACCArraySection)
 #undef LAST_BUILTIN_TYPE
 #endif
 

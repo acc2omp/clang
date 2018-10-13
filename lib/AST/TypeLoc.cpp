@@ -364,7 +364,7 @@ TypeSpecifierType BuiltinTypeLoc::getWrittenTypeSpec() const {
   case BuiltinType::OCLQueue:
   case BuiltinType::OCLReserveID:
   case BuiltinType::BuiltinFn:
-  case BuiltinType::OMPArraySection:
+  case BuiltinType::OMPACCArraySection:
     return TST_unspecified;
   }
 
