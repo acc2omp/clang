@@ -2122,13 +2122,11 @@ PragmaNoOpenACCHandler::HandlePragma(Preprocessor &PP,
                                     Token &FirstTok) {
 
   llvm::outs() << "I AM NO_OPENACC! THIS IS WHERE WE HANDLE THE PRAGMA WHEN ACC IS DISABLED\n";
-  
 
-//TODO: change diags for acc specific
-  if (!PP.getDiagnostics().isIgnored(diag::warn_pragma_omp_ignored,
+  if (!PP.getDiagnostics().isIgnored(diag::warn_pragma_acc_ignored,
                                      FirstTok.getLocation())) {
-    PP.Diag(FirstTok, diag::warn_pragma_omp_ignored);
-    PP.getDiagnostics().setSeverity(diag::warn_pragma_omp_ignored,
+    PP.Diag(FirstTok, diag::warn_pragma_acc_ignored);
+    PP.getDiagnostics().setSeverity(diag::warn_pragma_acc_ignored,
                                     diag::Severity::Ignored, SourceLocation());
   }
   PP.DiscardUntilEndOfDirective();

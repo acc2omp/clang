@@ -10,6 +10,7 @@
 /// \brief This file implements the OpenACC enum and support functions.
 ///
 //===----------------------------------------------------------------------===//
+#include "clang/AST/ASTContext.h"
 
 #include "clang/Basic/OpenACCKinds.h"
 #include "clang/Basic/IdentifierTable.h"
@@ -79,6 +80,9 @@ const char *clang::getOpenACCClauseName(OpenACCClauseKind Kind) {
 
 unsigned clang::getOpenACCSimpleClauseType(OpenACCClauseKind Kind,
                                           StringRef Str) {
+
+    llvm::outs() << " ######### getOpenACCSimpleClauseType = " << getOpenACCClauseName(Kind) << " ##########\n";
+
   switch (Kind) {
   case ACCC_default:
     return llvm::StringSwitch<OpenACCDefaultClauseKind>(Str)
@@ -113,6 +117,44 @@ unsigned clang::getOpenACCSimpleClauseType(OpenACCClauseKind Kind,
 #define OPENACC_MAP_KIND(Name) .Case(#Name, ACCC_MAP_##Name)
 #include "clang/Basic/OpenACCKinds.def"
         .Default(ACCC_MAP_unknown);
+    //
+    //TODO acc2mp Substitute Map clause for actual create, copy, copyin, copyout, delete
+  case ACCC_create:
+    return llvm::StringSwitch<OpenACCMapClauseKind>(Str)
+#define OPENACC_MAP_KIND(Name) .Case(#Name, ACCC_MAP_##Name)
+#include "clang/Basic/OpenACCKinds.def"
+        .Default(ACCC_MAP_unknown);
+  case ACCC_copy:
+    return llvm::StringSwitch<OpenACCMapClauseKind>(Str)
+#define OPENACC_MAP_KIND(Name) .Case(#Name, ACCC_MAP_##Name)
+#include "clang/Basic/OpenACCKinds.def"
+        .Default(ACCC_MAP_unknown);
+  case ACCC_copyin:
+    return llvm::StringSwitch<OpenACCMapClauseKind>(Str)
+#define OPENACC_MAP_KIND(Name) .Case(#Name, ACCC_MAP_##Name)
+#include "clang/Basic/OpenACCKinds.def"
+        .Default(ACCC_MAP_unknown);
+  case ACCC_copyout:
+    return llvm::StringSwitch<OpenACCMapClauseKind>(Str)
+#define OPENACC_MAP_KIND(Name) .Case(#Name, ACCC_MAP_##Name)
+#include "clang/Basic/OpenACCKinds.def"
+        .Default(ACCC_MAP_unknown);
+  case ACCC_delete:
+    return llvm::StringSwitch<OpenACCMapClauseKind>(Str)
+#define OPENACC_MAP_KIND(Name) .Case(#Name, ACCC_MAP_##Name)
+#include "clang/Basic/OpenACCKinds.def"
+        .Default(ACCC_MAP_unknown);
+  /* case ACCC_create: */
+  /*   return ACCC_MAP_alloc; */
+  /* case ACCC_copy: */
+  /*   return ACCC_MAP_tofrom; */
+  /* case ACCC_copyin: */
+  /*   return ACCC_MAP_to; */
+  /* case ACCC_copyout: */
+  /*   return ACCC_MAP_from; */
+  /* case ACCC_delete: */
+  /*   return ACCC_MAP_delete; */
+
   case ACCC_dist_schedule:
     return llvm::StringSwitch<OpenACCDistScheduleClauseKind>(Str)
 #define OPENACC_DIST_SCHEDULE_KIND(Name) .Case(#Name, ACCC_DIST_SCHEDULE_##Name)
@@ -142,11 +184,6 @@ unsigned clang::getOpenACCSimpleClauseType(OpenACCClauseKind Kind,
   case ACCC_task_reduction:
   case ACCC_in_reduction:
   case ACCC_aligned:
-  case ACCC_create:
-  case ACCC_copy:
-  case ACCC_copyout:
-  case ACCC_copyin:
-  case ACCC_delete:
   case ACCC_copyprivate:
   case ACCC_ordered:
   case ACCC_nowait:

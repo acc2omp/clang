@@ -12059,7 +12059,10 @@ checkMappableExpressionList(Sema &SemaRef, DSAStackTy *DSAS,
                             OpenACCMapClauseKind MapType = ACCC_MAP_unknown,
                             bool IsMapTypeImplicit = false) {
   // We only expect mappable expressions in 'to', 'from', and 'map' clauses.
-  assert((CKind == ACCC_map || CKind == ACCC_to || CKind == ACCC_from) &&
+  assert((CKind == ACCC_map || CKind == ACCC_to || CKind == ACCC_from
+              || CKind == ACCC_create
+              || CKind == ACCC_copy || CKind == ACCC_copyin || CKind == ACCC_copyout
+              || CKind == ACCC_delete) &&
          "Unexpected clause kind with mappable expressions!");
 
   // Keep track of the mappable components and base declarations in this clause.
@@ -12256,7 +12259,7 @@ Sema::ActOnOpenACCCreateClause(OpenACCMapClauseKind MapTypeModifier,
                            ArrayRef<Expr *> VarList, SourceLocation StartLoc,
                            SourceLocation LParenLoc, SourceLocation EndLoc) {
   MappableVarListInfo MVLI(VarList);
-  checkMappableExpressionList(*this, DSAStack, ACCC_copy, MVLI, StartLoc,
+  checkMappableExpressionList(*this, DSAStack, ACCC_create, MVLI, StartLoc,
                               MapType, IsMapTypeImplicit);
 
   // We need to produce a map clause even if we don't have variables so that
@@ -12324,7 +12327,7 @@ Sema::ActOnOpenACCDeleteClause(OpenACCMapClauseKind MapTypeModifier,
                            ArrayRef<Expr *> VarList, SourceLocation StartLoc,
                            SourceLocation LParenLoc, SourceLocation EndLoc) {
   MappableVarListInfo MVLI(VarList);
-  checkMappableExpressionList(*this, DSAStack, ACCC_copy, MVLI, StartLoc,
+  checkMappableExpressionList(*this, DSAStack, ACCC_delete, MVLI, StartLoc,
                               MapType, IsMapTypeImplicit);
 
   // We need to produce a map clause even if we don't have variables so that
