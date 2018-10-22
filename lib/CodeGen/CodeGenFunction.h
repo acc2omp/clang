@@ -3333,14 +3333,14 @@ public:
       const ACCTargetParallelLoopVectorDirective &S);
   /// Emit device code for the target teams directive.
   static void
-  EmitACCTargetTeamsDeviceFunction(CodeGenModule &CGM, StringRef ParentName,
+  EmitACCTargetGangDeviceFunction(CodeGenModule &CGM, StringRef ParentName,
                                    const ACCTargetGangDirective &S);
   /// Emit device code for the target teams distribute directive.
-  static void EmitACCTargetTeamsDistributeDeviceFunction(
+  static void EmitACCTargetGangDistributeDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
       const ACCTargetGangDistributeDirective &S);
   /// Emit device code for the target teams distribute vector directive.
-  static void EmitACCTargetTeamsDistributeVectorDeviceFunction(
+  static void EmitACCTargetGangDistributeVectorDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
       const ACCTargetGangDistributeVectorDirective &S);
   /// Emit device code for the target vector directive.
@@ -3349,11 +3349,11 @@ public:
                                               const ACCTargetVectorDirective &S);
   /// Emit device code for the target teams distribute parallel for vector
   /// directive.
-  static void EmitACCTargetTeamsDistributeParallelForVectorDeviceFunction(
+  static void EmitACCTargetGangDistributeParallelForVectorDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
       const ACCTargetGangDistributeParallelLoopVectorDirective &S);
 
-  static void EmitACCTargetTeamsDistributeParallelForDeviceFunction(
+  static void EmitACCTargetGangDistributeParallelForDeviceFunction(
       CodeGenModule &CGM, StringRef ParentName,
       const ACCTargetGangDistributeParallelLoopDirective &S);
   /// \brief Emit inner loop of the worksharing/vector construct.

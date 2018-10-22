@@ -1146,7 +1146,7 @@ CapturedStmt *CapturedStmt::Create(const ASTContext &Context, Stmt *S,
   }
 
 
-  // TODO acc2mp fix result malformation
+  /* // TODO acc2mp fix result malformation */
   void *Mem = Context.Allocate(Size);
   CapturedStmt* result = new (Mem) CapturedStmt(S, Kind, Captures, CaptureInits, CD, RD);
 

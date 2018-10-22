@@ -7315,6 +7315,8 @@ void CGOpenMPRuntime::scanForTargetRegionsFunctions(const Stmt *S,
                                                             ParentName, Line))
       return;
 
+    llvm::outs() << "................. ## DEBUG CodeGen: EmitFunction of StmtClass: " << S->getStmtClassName() << " ..........\n";
+
     switch (S->getStmtClass()) {
     case Stmt::OMPTargetDirectiveClass:
       CodeGenFunction::EmitOMPTargetDeviceFunction(
@@ -7401,8 +7403,10 @@ bool CGOpenMPRuntime::emitTargetFunctions(GlobalDecl GD) {
 }
 
 bool CGOpenMPRuntime::emitTargetGlobalVariable(GlobalDecl GD) {
+  llvm::outs() << "................. ## DEBUG CodeGen: emitTargetGlocalVariable: ..........\n";
   if (!CGM.getLangOpts().OpenMPIsDevice)
     return false;
+  llvm::outs() << "................. ## DEBUG CodeGen: CGM.getLangOpts().OpenMPIsDevice = true ..........\n";
 
   // Check if there are Ctors/Dtors in this declaration and look for target
   // regions in it. We use the complete variant to produce the kernel name
@@ -7428,6 +7432,7 @@ bool CGOpenMPRuntime::emitTargetGlobalVariable(GlobalDecl GD) {
 }
 
 bool CGOpenMPRuntime::emitTargetGlobal(GlobalDecl GD) {
+
   auto *VD = GD.getDecl();
   if (isa<FunctionDecl>(VD))
     return emitTargetFunctions(GD);

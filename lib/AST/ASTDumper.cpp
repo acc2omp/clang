@@ -2074,16 +2074,10 @@ void ASTDumper::VisitCapturedStmt(const CapturedStmt *Node) {
 void ASTDumper::VisitACCExecutableDirective(
     const ACCExecutableDirective *Node) {
 
-  llvm::outs() << " <<<< ASTDumper DEBUG >>>>> ACCExecutableDirective name is "
-      << getOpenACCDirectiveName(Node->getDirectiveKind()) << "\n{ VisitStmt(Node): ";
-
-
   VisitStmt(Node);
 
-  llvm::outs() << "\n} Ended VisitStmt(Node)\n";
   int iter = 0;
   for (auto *C : Node->clauses()) {
-    llvm::outs() << "Going through clauses, now it's " << iter++ <<"th iteration\n";
     dumpChild([=] {
       if (!C) {
         ColorScope Color(*this, NullColor);
@@ -2102,9 +2096,7 @@ void ASTDumper::VisitACCExecutableDirective(
         OS << " <implicit>";
       int iter2 = 0;
       for (auto *S : C->children()) {
-        llvm::outs()<<"-Visiting Child no["<<iter2++<<"]{";
         dumpStmt(S);
-        llvm::outs()<<"} ended visiting child no[" << iter2 - 1 <<"]\n";
       }
     });
   }

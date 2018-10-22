@@ -2232,6 +2232,7 @@ void
 PragmaNoOpenMPHandler::HandlePragma(Preprocessor &PP,
                                     PragmaIntroducerKind Introducer,
                                     Token &FirstTok) {
+  llvm::outs() << "I AM NO_OPENMP! THIS IS WHERE WE HANDLE THE PRAGMA WHEN OMP IS DISABLED\n";
   if (!PP.getDiagnostics().isIgnored(diag::warn_pragma_omp_ignored,
                                      FirstTok.getLocation())) {
     PP.Diag(FirstTok, diag::warn_pragma_omp_ignored);
@@ -2247,6 +2248,7 @@ void
 PragmaOpenMPHandler::HandlePragma(Preprocessor &PP,
                                   PragmaIntroducerKind Introducer,
                                   Token &FirstTok) {
+  llvm::outs() << "I AM OPENMP! THIS IS WHERE WE HANDLE THE PRAGMA\n";
   SmallVector<Token, 16> Pragma;
   Token Tok;
   Tok.startToken();
@@ -2279,6 +2281,15 @@ PragmaOpenMPHandler::HandlePragma(Preprocessor &PP,
   std::copy(Pragma.begin(), Pragma.end(), Toks.get());
   PP.EnterTokenStream(std::move(Toks), Pragma.size(),
                       /*DisableMacroExpansion=*/false);
+  //TODO acc2mp THIS IS JUST A DEBUG, remove later
+  llvm::outs()<<"Pragma token size is: "<< Pragma.size() << "\n";
+
+
+  while(Pragma.size() > 0){
+    llvm::outs()<<" ["<< Pragma.pop_back_val().getName() << "]";
+  }
+
+  llvm::outs()<<"\nPassed tokens into PP.EnterTokenStream()\n";
 }
 
 /// \brief Handle '#pragma pointers_to_members'

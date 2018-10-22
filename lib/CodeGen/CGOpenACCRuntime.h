@@ -648,7 +648,7 @@ public:
   /// \param InnermostKind Kind of innermost directive (for simple directives it
   /// is a directive itself, for combined - its innermost directive).
   /// \param CodeGen Code generation sequence for the \a D directive.
-  virtual llvm::Value *emitTeamsOutlinedFunction(
+  virtual llvm::Value *emitGangOutlinedFunction(
       const ACCExecutableDirective &D, const VarDecl *ThreadIDVar,
       OpenACCDirectiveKind InnermostKind, const ACCRegionCodeGenTy &CodeGen);
 
@@ -1242,7 +1242,7 @@ public:
   /// \param CapturedVars A pointer to the record with the references to
   /// variables used in \a OutlinedFn function.
   ///
-  virtual void emitTeamsCall(CodeGenFunction &CGF,
+  virtual void emitGangCall(CodeGenFunction &CGF,
                              const ACCExecutableDirective &D,
                              SourceLocation Loc, llvm::Value *OutlinedFn,
                              ArrayRef<llvm::Value *> CapturedVars);
@@ -1250,9 +1250,9 @@ public:
   /// \brief Emits call to void __kmpc_push_num_teams(ident_t *loc, kmp_int32
   /// global_tid, kmp_int32 num_teams, kmp_int32 thread_limit) to generate code
   /// for num_teams clause.
-  /// \param NumTeams An integer expression of teams.
+  /// \param NumGangs An integer expression of teams.
   /// \param ThreadLimit An integer expression of threads.
-  virtual void emitNumTeamsClause(CodeGenFunction &CGF, const Expr *NumTeams,
+  virtual void emitNumGangsClause(CodeGenFunction &CGF, const Expr *NumGangs,
                                   const Expr *ThreadLimit, SourceLocation Loc);
 
   /// Struct that keeps all the relevant information that should be kept
@@ -1392,7 +1392,7 @@ public:
   /// is a directive itself, for combined - its innermost directive).
   /// \param CodeGen Code generation sequence for the \a D directive.
   llvm::Value *
-  emitTeamsOutlinedFunction(const ACCExecutableDirective &D,
+  emitGangOutlinedFunction(const ACCExecutableDirective &D,
                             const VarDecl *ThreadIDVar,
                             OpenACCDirectiveKind InnermostKind,
                             const ACCRegionCodeGenTy &CodeGen) override;
@@ -1864,16 +1864,16 @@ public:
   /// \param CapturedVars A pointer to the record with the references to
   /// variables used in \a OutlinedFn function.
   ///
-  void emitTeamsCall(CodeGenFunction &CGF, const ACCExecutableDirective &D,
+  void emitGangCall(CodeGenFunction &CGF, const ACCExecutableDirective &D,
                      SourceLocation Loc, llvm::Value *OutlinedFn,
                      ArrayRef<llvm::Value *> CapturedVars) override;
 
   /// \brief Emits call to void __kmpc_push_num_teams(ident_t *loc, kmp_int32
   /// global_tid, kmp_int32 num_teams, kmp_int32 thread_limit) to generate code
   /// for num_teams clause.
-  /// \param NumTeams An integer expression of teams.
+  /// \param NumGangs An integer expression of teams.
   /// \param ThreadLimit An integer expression of threads.
-  void emitNumTeamsClause(CodeGenFunction &CGF, const Expr *NumTeams,
+  void emitNumGangsClause(CodeGenFunction &CGF, const Expr *NumGangs,
                           const Expr *ThreadLimit, SourceLocation Loc) override;
 
   /// \brief Emit the target data mapping code associated with \a D.

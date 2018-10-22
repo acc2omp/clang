@@ -1894,10 +1894,10 @@ public:
   ///
   /// By default, performs semantic analysis to build the new statement.
   /// Subclasses may override this routine to provide different behavior.
-  ACCClause *RebuildACCNumGangClause(Expr *NumTeams, SourceLocation StartLoc,
+  ACCClause *RebuildACCNumGangsClause(Expr *NumTeams, SourceLocation StartLoc,
                                       SourceLocation LParenLoc,
                                       SourceLocation EndLoc) {
-    return getSema().ActOnOpenACCNumGangClause(NumTeams, StartLoc, LParenLoc, 
+    return getSema().ActOnOpenACCNumGangsClause(NumTeams, StartLoc, LParenLoc, 
                                                EndLoc);
   }
 
@@ -9328,11 +9328,11 @@ ACCClause *TreeTransform<Derived>::TransformACCDeleteClause(ACCDeleteClause *C) 
 
 template <typename Derived>
 ACCClause *
-TreeTransform<Derived>::TransformACCNumGangClause(ACCNumGangClause *C) {
-  ExprResult E = getDerived().TransformExpr(C->getNumTeams());
+TreeTransform<Derived>::TransformACCNumGangsClause(ACCNumGangsClause *C) {
+  ExprResult E = getDerived().TransformExpr(C->getNumGangs());
   if (E.isInvalid())
     return nullptr;
-  return getDerived().RebuildACCNumGangClause(
+  return getDerived().RebuildACCNumGangsClause(
       E.get(), C->getLocStart(), C->getLParenLoc(), C->getLocEnd());
 }
 

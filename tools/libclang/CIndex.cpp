@@ -2274,9 +2274,9 @@ void ACCClauseEnqueue::VisitACCDeviceClause(const ACCDeviceClause *C) {
   Visitor->AddStmt(C->getDevice());
 }
 
-void ACCClauseEnqueue::VisitACCNumGangClause(const ACCNumGangClause *C) {
+void ACCClauseEnqueue::VisitACCNumGangsClause(const ACCNumGangsClause *C) {
   VisitACCClauseWithPreInit(C);
-  Visitor->AddStmt(C->getNumTeams());
+  Visitor->AddStmt(C->getNumGangs());
 }
 
 void ACCClauseEnqueue::VisitACCThreadLimitClause(const ACCThreadLimitClause *C) {

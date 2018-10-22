@@ -3345,10 +3345,10 @@ bool RecursiveASTVisitor<Derived>::VisitACCDeleteClause(ACCDeleteClause *C) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::VisitACCNumGangClause(
-    ACCNumGangClause *C) {
+bool RecursiveASTVisitor<Derived>::VisitACCNumGangsClause(
+    ACCNumGangsClause *C) {
   TRY_TO(VisitACCClauseWithPreInit(C));
-  TRY_TO(TraverseStmt(C->getNumTeams()));
+  TRY_TO(TraverseStmt(C->getNumGangs()));
   return true;
 }
 

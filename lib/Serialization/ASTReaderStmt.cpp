@@ -1935,7 +1935,7 @@ ACCClause *ACCClauseReader::readClause() {
     break;
   }
   case ACCC_num_gangs:
-    C = new (Context) ACCNumGangClause();
+    C = new (Context) ACCNumGangsClause();
     break;
   case ACCC_thread_limit:
     C = new (Context) ACCThreadLimitClause();
@@ -2661,9 +2661,9 @@ void ACCClauseReader::VisitACCDeleteClause(ACCDeleteClause *C) {
   C->setComponents(Components, ListSizes);
 }
 
-void ACCClauseReader::VisitACCNumGangClause(ACCNumGangClause *C) {
+void ACCClauseReader::VisitACCNumGangsClause(ACCNumGangsClause *C) {
   VisitACCClauseWithPreInit(C);
-  C->setNumTeams(Reader->Record.readSubExpr());
+  C->setNumGangs(Reader->Record.readSubExpr());
   C->setLParenLoc(Reader->ReadSourceLocation());
 }
 

@@ -20,6 +20,7 @@
 #include "CGObjCRuntime.h"
 #include "CGOpenCLRuntime.h"
 #include "CGOpenACCRuntime.h"
+#include "CGOpenACCRuntimeNVPTX.h"
 #include "CGOpenMPRuntime.h"
 #include "CGOpenMPRuntimeNVPTX.h"
 #include "CodeGenFunction.h"
@@ -205,6 +206,11 @@ void CodeGenModule::createOpenACCRuntime() {
   // If it does not exist use the default implementation.
   switch (getTriple().getArch()) {
   case llvm::Triple::nvptx:
+  case llvm::Triple::nvptx64:
+    assert(getLangOpts().OpenACCIsDevice &&
+           "OpenACC NVPTX is only prepared to deal with device code.");
+    OpenACCRuntime.reset(new CGOpenACCRuntimeNVPTX(*this));
+    break;
   default:
     if (LangOpts.OpenACCVector)
       OpenACCRuntime.reset(new CGOpenACCVectorRuntime(*this));

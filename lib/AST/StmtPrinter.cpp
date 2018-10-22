@@ -739,9 +739,9 @@ void ACCClausePrinter::VisitACCDeviceClause(ACCDeviceClause *Node) {
   OS << ")";
 }
 
-void ACCClausePrinter::VisitACCNumGangClause(ACCNumGangClause *Node) {
+void ACCClausePrinter::VisitACCNumGangsClause(ACCNumGangsClause *Node) {
   OS << "num_teams(";
-  Node->getNumTeams()->printPretty(OS, nullptr, Policy, 0);
+  Node->getNumGangs()->printPretty(OS, nullptr, Policy, 0);
   OS << ")";
 }
 

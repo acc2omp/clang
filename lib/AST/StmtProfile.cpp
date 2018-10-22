@@ -692,10 +692,10 @@ void ACCClauseProfiler::VisitACCCopyoutClause(const ACCCopyoutClause *C) {
 void ACCClauseProfiler::VisitACCDeleteClause(const ACCDeleteClause *C) {
   VisitACCClauseList(C);
 }
-void ACCClauseProfiler::VisitACCNumGangClause(const ACCNumGangClause *C) {
+void ACCClauseProfiler::VisitACCNumGangsClause(const ACCNumGangsClause *C) {
   VistACCClauseWithPreInit(C);
-  if (C->getNumTeams())
-    Profiler->VisitStmt(C->getNumTeams());
+  if (C->getNumGangs())
+    Profiler->VisitStmt(C->getNumGangs());
 }
 void ACCClauseProfiler::VisitACCThreadLimitClause(
     const ACCThreadLimitClause *C) {

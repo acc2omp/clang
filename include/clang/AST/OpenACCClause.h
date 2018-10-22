@@ -3817,7 +3817,7 @@ class ACCCreateClause final : public ACCMappableExprListClause<ACCCreateClause>,
     return getUniqueDeclarationsNum() + getTotalComponentListNum();
   }
 
-  // TODO acc2mp modify infrastructure for copy. Also make copy(:) = map (tofrom:)
+  // TODO acc2mp modify infrastructure for create. Also make create(:) = map (alloc:)
   /// \brief Map type modifier for the 'map' clause.
   OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
 
@@ -4514,7 +4514,7 @@ class ACCDeleteClause final : public ACCMappableExprListClause<ACCCopyClause>,
     return getUniqueDeclarationsNum() + getTotalComponentListNum();
   }
 
-  // TODO acc2mp modify infrastructure for copy. Also make copy(:) = map (tofrom:)
+  // TODO acc2mp modify infrastructure for delete. Also make delete(:) = map (delete:)
   /// \brief Map type modifier for the 'map' clause.
   OpenACCMapClauseKind MapTypeModifier = ACCC_MAP_unknown;
 
@@ -4666,19 +4666,19 @@ public:
 /// \endcode
 /// In this example directive '#pragma acc teams' has clause 'num_teams'
 /// with single expression 'n'.
-class ACCNumGangClause : public ACCClause, public ACCClauseWithPreInit {
+class ACCNumGangsClause : public ACCClause, public ACCClauseWithPreInit {
   friend class ACCClauseReader;
 
   /// \brief Location of '('.
   SourceLocation LParenLoc;
 
-  /// \brief NumTeams number.
-  Stmt *NumTeams = nullptr;
+  /// \brief NumGangs number.
+  Stmt *NumGangs = nullptr;
 
-  /// \brief Set the NumTeams number.
+  /// \brief Set the NumGangs number.
   ///
-  /// \param E NumTeams number.
-  void setNumTeams(Expr *E) { NumTeams = E; }
+  /// \param E NumGangs number.
+  void setNumGangs(Expr *E) { NumGangs = E; }
 
 public:
   /// \brief Build 'num_teams' clause.
@@ -4690,16 +4690,16 @@ public:
   /// \param StartLoc Starting location of the clause.
   /// \param LParenLoc Location of '('.
   /// \param EndLoc Ending location of the clause.
-  ACCNumGangClause(Expr *E, Stmt *HelperE, OpenACCDirectiveKind CaptureRegion,
+  ACCNumGangsClause(Expr *E, Stmt *HelperE, OpenACCDirectiveKind CaptureRegion,
                     SourceLocation StartLoc, SourceLocation LParenLoc,
                     SourceLocation EndLoc)
       : ACCClause(ACCC_num_gangs, StartLoc, EndLoc), ACCClauseWithPreInit(this),
-        LParenLoc(LParenLoc), NumTeams(E) {
+        LParenLoc(LParenLoc), NumGangs(E) {
     setPreInitStmt(HelperE, CaptureRegion);
   }
 
   /// \brief Build an empty clause.
-  ACCNumGangClause()
+  ACCNumGangsClause()
       : ACCClause(ACCC_num_gangs, SourceLocation(), SourceLocation()),
         ACCClauseWithPreInit(this) {}
 
@@ -4709,13 +4709,13 @@ public:
   /// \brief Returns the location of '('.
   SourceLocation getLParenLoc() const { return LParenLoc; }
 
-  /// \brief Return NumTeams number.
-  Expr *getNumTeams() { return cast<Expr>(NumTeams); }
+  /// \brief Return NumGangs number.
+  Expr *getNumGangs() { return cast<Expr>(NumGangs); }
 
-  /// \brief Return NumTeams number.
-  Expr *getNumTeams() const { return cast<Expr>(NumTeams); }
+  /// \brief Return NumGangs number.
+  Expr *getNumGangs() const { return cast<Expr>(NumGangs); }
 
-  child_range children() { return child_range(&NumTeams, &NumTeams + 1); }
+  child_range children() { return child_range(&NumGangs, &NumGangs + 1); }
 
   static bool classof(const ACCClause *T) {
     return T->getClauseKind() == ACCC_num_gangs;

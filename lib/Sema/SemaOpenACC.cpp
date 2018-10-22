@@ -7704,7 +7704,7 @@ ACCClause *Sema::ActOnOpenACCSingleExprClause(OpenACCClauseKind Kind, Expr *Expr
     Res = ActOnOpenACCDeviceClause(Expr, StartLoc, LParenLoc, EndLoc);
     break;
   case ACCC_num_gangs:
-    Res = ActOnOpenACCNumGangClause(Expr, StartLoc, LParenLoc, EndLoc);
+    Res = ActOnOpenACCNumGangsClause(Expr, StartLoc, LParenLoc, EndLoc);
     break;
   case ACCC_thread_limit:
     Res = ActOnOpenACCThreadLimitClause(Expr, StartLoc, LParenLoc, EndLoc);
@@ -12584,7 +12584,7 @@ Sema::DeclGroupPtrTy Sema::ActOnOpenACCDeclareReductionDirectiveEnd(
   return DeclReductions;
 }
 
-ACCClause *Sema::ActOnOpenACCNumGangClause(Expr *NumTeams,
+ACCClause *Sema::ActOnOpenACCNumGangsClause(Expr *NumTeams,
                                            SourceLocation StartLoc,
                                            SourceLocation LParenLoc,
                                            SourceLocation EndLoc) {
@@ -12607,7 +12607,7 @@ ACCClause *Sema::ActOnOpenACCNumGangClause(Expr *NumTeams,
     HelperValStmt = buildPreInits(Context, Captures);
   }
 
-  return new (Context) ACCNumGangClause(ValExpr, HelperValStmt, CaptureRegion,
+  return new (Context) ACCNumGangsClause(ValExpr, HelperValStmt, CaptureRegion,
                                          StartLoc, LParenLoc, EndLoc);
 }
 

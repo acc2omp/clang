@@ -63,7 +63,7 @@ const ACCClauseWithPreInit *ACCClauseWithPreInit::get(const ACCClause *C) {
   case ACCC_num_threads:
     return static_cast<const ACCNumThreadsClause *>(C);
   case ACCC_num_gangs:
-    return static_cast<const ACCNumGangClause *>(C);
+    return static_cast<const ACCNumGangsClause *>(C);
   case ACCC_thread_limit:
     return static_cast<const ACCThreadLimitClause *>(C);
   case ACCC_device:

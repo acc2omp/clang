@@ -2237,9 +2237,9 @@ void ACCClauseWriter::VisitACCDeleteClause(ACCDeleteClause *C) {
   }
 }
 
-void ACCClauseWriter::VisitACCNumGangClause(ACCNumGangClause *C) {
+void ACCClauseWriter::VisitACCNumGangsClause(ACCNumGangsClause *C) {
   VisitACCClauseWithPreInit(C);
-  Record.AddStmt(C->getNumTeams());
+  Record.AddStmt(C->getNumGangs());
   Record.AddSourceLocation(C->getLParenLoc());
 }
 

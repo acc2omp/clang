@@ -57,6 +57,9 @@ Compilation::getArgsForToolChain(const ToolChain *TC, StringRef BoundArch,
     //TODO acc2mp Duplicate for OpenACC offload?
     // Translate OpenMP toolchain arguments provided via the -Xopenmp-target flags.
     if (DeviceOffloadKind == Action::OFK_OpenMP) {
+
+      llvm::outs() << " <<<< Driver : DeviceOffloadKind = Action::OFK_OpenMP >>>>\n";
+
       const ToolChain *HostTC = getSingleOffloadToolChain<Action::OFK_Host>();
       bool SameTripleAsHost = (TC->getTriple() == HostTC->getTriple());
       OpenMPArgs = TC->TranslateOpenMPTargetArgs(
